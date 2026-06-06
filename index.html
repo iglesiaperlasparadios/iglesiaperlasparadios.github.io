@@ -1520,25 +1520,14 @@ function renderConfigPreview(){
 }
 
 // ═══════════════════════════════════════════════
-// IMAGE GENERATION — Editorial Premium v3
+// IMAGE GENERATION — Editorial Premium v4
 // ═══════════════════════════════════════════════
 
 const MES_ACCENT = [
-  '#2773B8', // Enero
-  '#B05A2F', // Febrero
-  '#3A7D5A', // Marzo
-  '#8B4A2E', // Abril
-  '#6B3F8A', // Mayo
-  '#1E5F9E', // Junio
-  '#A06820', // Julio
-  '#2D7A50', // Agosto
-  '#1E7070', // Septiembre
-  '#B04A1A', // Octubre
-  '#3D5A80', // Noviembre
-  '#7A2050', // Diciembre
+  '#2773B8','#B05A2F','#3A7D5A','#8B4A2E','#6B3F8A','#1E5F9E',
+  '#A06820','#2D7A50','#1E7070','#B04A1A','#3D5A80','#7A2050',
 ];
 
-// Emojis — controlled size & alignment, no scaling issues
 const ROLE_EMOJI = {
   coordina:'👤', voz1:'🎤', voz2:'🎤', voz3:'🎤',
   teclado:'🎹', acustica:'🎸', acustica2:'🎸', electrica:'🎸', bateria:'🥁', bajo:'🎸'
@@ -1546,86 +1535,75 @@ const ROLE_EMOJI = {
 
 const SEC_LABEL = {principales:'CANCIONES',cena:'SANTA CENA',ofrenda:'OFRENDA',intervalo:'INTERVALO',final:'FINAL'};
 
-// Each role row height — must match actual rendered row height
-const ROLES_ROW_H = 44;
+const ROLES_ROW_H = 56;
+const DOMINGO_COLORS = ['#2563a8','#2d7a50','#6b3fa0','#c05a1f'];
 
-// Shared design tokens
-const IMG_SURFACE  = '#ffffff';
-const IMG_SOFT     = '#f7faff';
-const IMG_BORDER   = '#dbe5f0';
-const IMG_TEXT     = '#172235';
-const IMG_MUTED    = '#64748b';
-const IMG_SHADOW   = '0 10px 24px rgba(15,23,42,.08),0 2px 6px rgba(15,23,42,.04)';
+const IMG_BG      = '#f0f2f5';
+const IMG_SURFACE = '#ffffff';
+const IMG_SOFT    = '#f8f9fc';
+const IMG_BORDER  = '#dbe5f0';
+const IMG_TEXT    = '#172235';
+const IMG_MUTED   = '#64748b';
+const IMG_SHADOW  = '0 2px 12px rgba(15,23,42,.07),0 1px 3px rgba(15,23,42,.04)';
 
-// ── Band card (equipo) ─────────────────────────
 function buildBandCard(s, accent, rolesH){
   const roles = ROLE_IDS.map(([l,id])=>({label:l,id,name:(s.roles[id]||'').trim()})).filter(r=>r.name);
   const accentTint = accent+'10';
-
   const rolesHTML = roles.map((r,i)=>`
-    <div style="display:flex;align-items:center;gap:10px;padding:5px 0;${i<roles.length-1?'border-bottom:1px solid '+accent+'18':''}">
-      <span style="flex-shrink:0;font-size:15px;line-height:1;width:20px;text-align:center">${ROLE_EMOJI[r.id]||'🎵'}</span>
-      <div style="min-width:0;line-height:1.2">
-        <div style="font-size:8.5px;font-weight:600;color:${accent};letter-spacing:.1em;text-transform:uppercase;opacity:.7;margin-bottom:1px">${r.label}</div>
-        <div style="font-size:15px;font-weight:500;color:${IMG_TEXT}">${r.name}</div>
+    <div style="display:flex;align-items:center;gap:12px;padding:9px 0;${i<roles.length-1?'border-bottom:1px solid '+accent+'15':''}">
+      <div style="width:36px;height:36px;border-radius:50%;background:${accent}16;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:17px;line-height:1">${ROLE_EMOJI[r.id]||'🎵'}</div>
+      <div style="min-width:0;line-height:1.25">
+        <div style="font-size:9.5px;font-weight:600;color:${accent};letter-spacing:.09em;text-transform:uppercase;margin-bottom:2px;opacity:.8">${r.label}</div>
+        <div style="font-size:19px;font-weight:400;color:${IMG_TEXT};letter-spacing:-.01em">${r.name}</div>
       </div>
     </div>`).join('');
-
-  const exactH = roles.length * ROLES_ROW_H + 20;
-  const usedH  = Math.max(exactH, rolesH);
-
+  const usedH = Math.max(roles.length * ROLES_ROW_H + 20, rolesH);
   return `
     <div style="background:${IMG_SURFACE};border-radius:14px;border:1px solid ${IMG_BORDER};overflow:hidden;box-shadow:${IMG_SHADOW}">
-      <div style="padding:10px 15px 9px;background:${accent}">
-        <div style="font-size:17px;font-weight:700;color:#fff;letter-spacing:.01em">${s.label}</div>
+      <div style="padding:13px 16px 12px;background:${accent}">
+        <div style="font-size:19px;font-weight:700;color:#fff">${s.label}</div>
       </div>
-      <div style="padding:10px 14px 12px;background:${accentTint};min-height:${usedH}px;box-sizing:border-box">
-        ${rolesHTML||'<div style="font-size:13px;color:#c8d0dc;font-style:italic;padding:4px 0">Sin equipo asignado</div>'}
+      <div style="padding:8px 14px 14px;background:${accentTint};min-height:${usedH}px;box-sizing:border-box">
+        ${rolesHTML||'<div style="font-size:14px;color:#c8d0dc;font-style:italic;padding:4px 0">Sin equipo asignado</div>'}
       </div>
     </div>`;
 }
 
-// ── Songs card (canciones) ─────────────────────
 function buildSongsCard(s, accent){
   const songs = SECCIONES.reduce((a,sec)=>{a[sec]=s.songs[sec]||[];return a},{});
   const hasSongs = SECCIONES.some(sec=>songs[sec].length>0);
-
   const songsHTML = SECCIONES.map(sec=>{
     if(!songs[sec].length) return '';
     const isMain = sec==='principales';
     return `
-      <div style="margin-bottom:8px">
+      <div style="margin-bottom:4px">
         ${!isMain?`
-        <div style="display:flex;align-items:center;gap:6px;margin:6px 0 5px">
-          <div style="height:1px;background:${accent};opacity:.18;flex:1"></div>
-          <span style="font-size:8px;font-weight:700;color:${accent};letter-spacing:.15em;text-transform:uppercase;opacity:.8">${SEC_LABEL[sec]}</span>
-          <div style="height:1px;background:${accent};opacity:.18;flex:1"></div>
+        <div style="display:flex;align-items:center;gap:7px;margin:12px 0 7px">
+          <div style="height:1px;background:${accent};opacity:.2;flex:1"></div>
+          <span style="font-size:9px;font-weight:700;color:${accent};letter-spacing:.18em;text-transform:uppercase">${SEC_LABEL[sec]}</span>
+          <div style="height:1px;background:${accent};opacity:.2;flex:1"></div>
         </div>`:''}
         ${songs[sec].map(sg=>`
-          <div style="padding:3px 0;border-bottom:1px solid ${accent}12">
-            <div style="display:grid;grid-template-columns:1fr auto;column-gap:8px;align-items:baseline;line-height:1.4">
-              <span style="font-size:15px;font-weight:400;color:${IMG_TEXT};min-width:0">• ${sg.name}${sg.nueva?` <span style="font-size:7.5px;font-weight:700;color:#fff;background:#2d8a4e;border-radius:3px;padding:1px 4px;letter-spacing:.06em;vertical-align:middle">NUEVA</span>`:''}
-              </span>
-              ${sg.key?`<span style="font-size:15px;font-weight:700;color:${accent};white-space:nowrap">${sg.key}</span>`:'<span></span>'}
+          <div style="padding:5px 0">
+            <div style="font-size:15.5px;font-weight:400;color:${IMG_TEXT};line-height:1.45">
+              • ${sg.name}${sg.key?` <span style="color:${accent};font-weight:700">— ${sg.key}</span>`:''}${sg.nueva?` <span style="font-size:8px;font-weight:700;color:#fff;background:#2d8a4e;border-radius:3px;padding:1px 5px;vertical-align:middle">NUEVA</span>`:''}
             </div>
-            ${sg.note?`<div style="font-size:12px;color:${IMG_MUTED};padding-left:10px;margin-top:1px;font-style:italic;line-height:1.35">↳ ${sg.note}</div>`:''}
+            ${sg.note?`<div style="font-size:12px;color:${IMG_MUTED};padding-left:12px;margin-top:2px;font-style:italic;line-height:1.35">↳ ${sg.note}</div>`:''}
           </div>`).join('')}
       </div>`;
   }).join('');
-
   return `
     <div style="background:${IMG_SOFT};border-radius:14px;border:1px solid ${IMG_BORDER};overflow:hidden;box-shadow:${IMG_SHADOW}">
-      <div style="display:flex;align-items:center;gap:7px;padding:8px 14px 7px;border-bottom:1px solid ${accent}14;background:${IMG_SURFACE}">
-        <span style="font-size:15px;color:${accent}">🎵</span>
-        <span style="font-size:17px;font-weight:700;color:${accent};letter-spacing:.01em">Canciones</span>
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 16px 9px;border-bottom:1px solid ${accent}18;background:${IMG_SURFACE}">
+        <span style="font-size:15px">🎵</span>
+        <span style="font-size:17px;font-weight:700;color:${accent}">Canciones</span>
       </div>
-      <div style="padding:8px 14px 12px">
-        ${hasSongs?songsHTML:'<div style="font-size:13px;color:#c8d0dc;font-style:italic">Sin canciones asignadas</div>'}
+      <div style="padding:10px 16px 14px">
+        ${hasSongs?songsHTML:'<div style="font-size:14px;color:#c8d0dc;font-style:italic">Sin canciones asignadas</div>'}
       </div>
     </div>`;
 }
 
-// ── Full month layout ──────────────────────────
 function buildMonthHTML(services, opts={}){
   const {versiculo='',devText='',desafio='',nuevas=[]} = opts;
   const month  = services[0]?.month ?? new Date().getMonth();
@@ -1633,106 +1611,68 @@ function buildMonthHTML(services, opts={}){
   const accent = MES_ACCENT[month] || '#1E5F9E';
   const cfg    = getConfig();
   const cols   = services.length;
-  const colW   = 248;
-  const gap    = 14;
+  const gap    = 16;
   const padX   = 32;
-  const W      = Math.max(cols*colW+(cols-1)*gap+padX*2, 640);
+  const W      = Math.max(cols*260+(cols-1)*gap+padX*2, 680);
+  const CARD_COLORS = ['#2563a8','#2d7a50','#c05a1f'];
 
-  const iglesia    = cfg.iglesia    || 'Perlas para Dios';
-  const ministerio = cfg.ministerio || 'Ministerio de Alabanza';
-
-  const footerLogo = cfg.logo
-    ? `<img src="${cfg.logo}" style="width:18px;height:18px;object-fit:contain;opacity:.4;margin-right:8px;vertical-align:middle">`
-    : '';
-
-  // 3 cards superiores — grid con proporciones: reflexión 2fr · desafío 1.35fr · nueva 1fr
-  const reflexionBlock = (devText || desafio || nuevas.length) ? `
+  const reflexionBlock = (devText||desafio||nuevas.length) ? `
     <div style="display:grid;grid-template-columns:${devText?'2fr':''}${desafio?' 1.35fr':''}${nuevas.length?' 1fr':''};gap:${gap}px;margin-bottom:22px;align-items:start">
-
-      ${devText?`
-      <div style="background:${IMG_SURFACE};border-radius:14px;border:1px solid ${IMG_BORDER};border-top:4px solid ${accent};padding:16px 18px;box-shadow:${IMG_SHADOW}">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-          <span style="font-size:16px;line-height:1">🙏</span>
-          <span style="font-size:13px;font-weight:800;color:${accent};letter-spacing:.08em;text-transform:uppercase">Reflexión del mes</span>
+      ${devText?`<div style="background:${IMG_SURFACE};border-radius:14px;border:1px solid ${IMG_BORDER};padding:18px 20px;box-shadow:${IMG_SHADOW}">
+        <div style="display:flex;align-items:center;gap:11px;margin-bottom:12px">
+          <div style="width:38px;height:38px;border-radius:50%;background:${CARD_COLORS[0]}15;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0">🙏</div>
+          <span style="font-size:13px;font-weight:800;color:${CARD_COLORS[0]};letter-spacing:.08em;text-transform:uppercase">Reflexión del mes</span>
         </div>
-        <div style="font-size:14px;color:#3a4a5a;line-height:1.8">${devText}</div>
+        <div style="font-size:15px;color:#3a4a5a;line-height:1.78">${devText}</div>
       </div>`:''}
-
-      ${desafio?`
-      <div style="background:${IMG_SURFACE};border-radius:14px;border:1px solid ${IMG_BORDER};border-top:4px solid ${accent};padding:16px 18px;box-shadow:${IMG_SHADOW}">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-          <span style="font-size:16px;line-height:1">💪</span>
-          <span style="font-size:13px;font-weight:800;color:${accent};letter-spacing:.08em;text-transform:uppercase">Desafío del mes</span>
+      ${desafio?`<div style="background:${IMG_SURFACE};border-radius:14px;border:1px solid ${IMG_BORDER};padding:18px 20px;box-shadow:${IMG_SHADOW}">
+        <div style="display:flex;align-items:center;gap:11px;margin-bottom:12px">
+          <div style="width:38px;height:38px;border-radius:50%;background:${CARD_COLORS[1]}15;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0">💪</div>
+          <span style="font-size:13px;font-weight:800;color:${CARD_COLORS[1]};letter-spacing:.08em;text-transform:uppercase">Desafío del mes</span>
         </div>
-        <div style="font-size:14px;color:#3a4a5a;line-height:1.8">${desafio}</div>
+        <div style="font-size:15px;color:#3a4a5a;line-height:1.78">${desafio}</div>
       </div>`:''}
-
-      ${nuevas.length?`
-      <div style="background:${IMG_SURFACE};border-radius:14px;border:1px solid ${IMG_BORDER};border-top:4px solid ${accent};padding:14px 16px;box-shadow:${IMG_SHADOW}">
-        <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px">
-          <span style="font-size:15px;line-height:1">🎵</span>
-          <span style="font-size:13px;font-weight:800;color:${accent};letter-spacing:.08em;text-transform:uppercase">Canción nueva del mes</span>
+      ${nuevas.length?`<div style="background:${IMG_SURFACE};border-radius:14px;border:1px solid ${IMG_BORDER};padding:18px 18px;box-shadow:${IMG_SHADOW}">
+        <div style="display:flex;align-items:center;gap:11px;margin-bottom:12px">
+          <div style="width:36px;height:36px;border-radius:50%;background:${CARD_COLORS[2]}15;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🎵</div>
+          <span style="font-size:13px;font-weight:800;color:${CARD_COLORS[2]};letter-spacing:.08em;text-transform:uppercase">Canción nueva del mes</span>
         </div>
-        ${nuevas.map(sg=>`
-          <div style="margin-bottom:6px">
-            <div style="font-size:15px;font-weight:700;color:${IMG_TEXT};line-height:1.3">${sg.name}${sg.key?' <span style="color:'+accent+'">— '+sg.key+'</span>':''}</div>
-            ${sg.author?`<div style="font-size:11px;color:${IMG_MUTED};margin-top:2px;font-style:italic">${sg.author}</div>`:''}
-          </div>`).join('')}
+        ${nuevas.map(sg=>`<div style="margin-bottom:8px">
+          <div style="font-size:17px;font-weight:700;color:${IMG_TEXT};line-height:1.3">${sg.name}${sg.key?` <span style="color:${CARD_COLORS[2]}">— ${sg.key}</span>`:''}</div>
+          ${sg.author?`<div style="font-size:13px;color:${IMG_MUTED};margin-top:4px;font-style:italic">${sg.author}</div>`:''}
+        </div>`).join('')}
       </div>`:''}
-
     </div>` : '';
 
-  // Altura de zona de músicos — la columna más larga manda
-  const maxRoles = Math.max(...services.map(s=>
-    ROLE_IDS.filter(([,id])=>(s.roles[id]||'').trim()).length
-  ),1);
+  const maxRoles = Math.max(...services.map(s=>ROLE_IDS.filter(([,id])=>(s.roles[id]||'').trim()).length),1);
   const rolesH = maxRoles * ROLES_ROW_H + 20;
 
-  // Cada columna: card banda arriba + card canciones abajo, separadas
-  const serviceCols = services.map(s=>`
-    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:${gap}px">
-      ${buildBandCard(s,accent,rolesH)}
-      ${buildSongsCard(s,accent)}
-    </div>`
-  ).join('');
+  const serviceCols = services.map((s,idx)=>{
+    const colAccent = DOMINGO_COLORS[idx % DOMINGO_COLORS.length];
+    return `<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:${gap}px">
+      ${buildBandCard(s,colAccent,rolesH)}
+      ${buildSongsCard(s,colAccent)}
+    </div>`;
+  }).join('');
 
   return `
-    <div id="_month_render" style="width:${W}px;background:#edf0f7;font-family:'Outfit',sans-serif;padding:0">
-
-      <!-- ══ HEADER ════════════════════════════ -->
-      <div style="background:${IMG_SURFACE};padding:28px ${padX}px 24px">
+    <div id="_month_render" style="width:${W}px;background:${IMG_BG};font-family:'Outfit',sans-serif;padding:0">
+      <div style="background:${IMG_BG};padding:30px ${padX}px 22px">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:24px">
-          <div style="flex-shrink:0">
-            <div style="font-size:76px;font-weight:800;color:${IMG_TEXT};line-height:.88;font-family:'Fraunces',serif;letter-spacing:-2px">${MESES[month]}</div>
-          </div>
-          ${versiculo?`
-          <div style="max-width:420px;background:${accent}0d;border-radius:12px;padding:13px 17px;border:1px solid ${accent}22">
-            <div style="display:flex;align-items:center;gap:7px;margin-bottom:5px">
-              <span style="font-size:14px;line-height:1">📖</span>
-              <span style="font-size:9.5px;font-weight:700;color:${accent};letter-spacing:.13em;text-transform:uppercase">Versículo del mes</span>
+          <div style="font-size:80px;font-weight:800;color:${IMG_TEXT};line-height:.88;font-family:'Fraunces',serif;letter-spacing:-2px">${MESES[month]}</div>
+          ${versiculo?`<div style="max-width:420px;background:${IMG_SURFACE};border-radius:12px;padding:15px 19px;border:1px solid ${IMG_BORDER};box-shadow:${IMG_SHADOW}">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <span style="font-size:15px">📖</span>
+              <span style="font-size:10px;font-weight:700;color:${accent};letter-spacing:.13em;text-transform:uppercase">Versículo del mes</span>
             </div>
-            <div style="font-size:14px;color:#2e3e52;line-height:1.65;font-style:italic">${versiculo}</div>
+            <div style="font-size:17px;color:#2e3e52;line-height:1.65;font-style:italic">${versiculo}</div>
           </div>`:''}
         </div>
       </div>
-
-      <!-- ══ BODY ══════════════════════════════ -->
-      <div style="padding:22px ${padX}px 36px">
+      <div style="padding:0 ${padX}px 40px">
         ${reflexionBlock}
-        <div style="display:flex;gap:${gap}px;align-items:flex-start">
-          ${serviceCols}
-        </div>
+        <div style="display:flex;gap:${gap}px;align-items:flex-start">${serviceCols}</div>
       </div>
-
-      <!-- ══ FOOTER ════════════════════════════ -->
-      <div style="background:${IMG_SURFACE};border-top:1px solid ${IMG_BORDER};padding:12px ${padX}px;display:flex;align-items:center;justify-content:space-between">
-        <div style="display:flex;align-items:center;gap:8px">
-          ${footerLogo}
-          <span style="font-size:10.5px;color:${IMG_MUTED};letter-spacing:.1em;text-transform:uppercase;font-weight:500">${iglesia} · ${ministerio}</span>
-        </div>
-        <div style="width:24px;height:2px;background:${accent};border-radius:2px;opacity:.4"></div>
-      </div>
-
     </div>`;
 }
 
