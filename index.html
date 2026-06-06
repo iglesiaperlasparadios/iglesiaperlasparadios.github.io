@@ -1,0 +1,2069 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ministerio de Música</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Fraunces:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<style>
+:root {
+  --bg: #0d1117;
+  --bg2: #161b22;
+  --bg3: #21262d;
+  --bg4: #30363d;
+  --border: #30363d;
+  --border2: #444c56;
+  --text: #e6edf3;
+  --text2: #8b949e;
+  --text3: #6e7681;
+  --accent: #388bfd;
+  --accent-bg: #1f3460;
+  --green: #3fb950;
+  --green-bg: #0d2a1a;
+  --amber: #d29922;
+  --amber-bg: #2d1f00;
+  --red: #f85149;
+  --red-bg: #2d0f0f;
+  --navy: #0f2a4a;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-serif; font-size: 14px; }
+body { min-height: 100vh; }
+
+/* LAYOUT */
+.shell { display: flex; height: 100vh; overflow: hidden; }
+.sidebar { width: 200px; flex-shrink: 0; background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 0; }
+.sidebar-logo { padding: 20px 16px 16px; border-bottom: 1px solid var(--border); }
+.sidebar-logo h1 { font-family: 'Fraunces', serif; font-size: 15px; font-weight: 600; color: var(--text); line-height: 1.3; }
+.sidebar-logo span { font-size: 11px; color: var(--text3); font-weight: 400; }
+.nav { flex: 1; padding: 8px 0; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 16px; font-size: 13px; font-weight: 500; color: var(--text2); cursor: pointer; border-left: 2px solid transparent; transition: all .15s; }
+.nav-item:hover { color: var(--text); background: var(--bg3); }
+.nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(56,139,253,.08); }
+.nav-item i { font-size: 16px; }
+.main { flex: 1; overflow-y: auto; background: var(--bg); }
+.page { display: none; padding: 24px; max-width: 900px; }
+.page.active { display: block; }
+.page-title { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.page-sub { font-size: 13px; color: var(--text3); margin-bottom: 20px; }
+
+/* CARDS */
+.card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+.card-title { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+
+/* FORMS */
+input, select, textarea {
+  background: var(--bg3); border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); font-family: 'Outfit', sans-serif; font-size: 13px;
+  padding: 0 10px; height: 32px; width: 100%; outline: none; transition: border .15s;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+textarea { height: auto; padding: 8px 10px; resize: vertical; line-height: 1.5; }
+select option { background: var(--bg3); }
+.field { margin-bottom: 10px; }
+.field label { display: block; font-size: 11px; color: var(--text3); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .05em; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+/* BUTTONS */
+.btn { height: 32px; padding: 0 14px; border-radius: 6px; font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--border2); background: var(--bg3); color: var(--text); transition: all .15s; display: inline-flex; align-items: center; gap: 6px; }
+.btn:hover { background: var(--bg4); border-color: var(--text3); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-primary:hover { background: #58a6ff; border-color: #58a6ff; }
+.btn-success { background: var(--green); border-color: var(--green); color: #000; }
+.btn-success:hover { opacity: .9; }
+.btn-danger { background: transparent; border-color: var(--red); color: var(--red); }
+.btn-danger:hover { background: var(--red-bg); }
+.btn-sm { height: 26px; padding: 0 10px; font-size: 12px; }
+.btn-icon { width: 28px; height: 28px; padding: 0; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; }
+.btn-full { width: 100%; justify-content: center; height: 38px; }
+.btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* BADGES */
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+.badge-green { background: var(--green-bg); color: var(--green); }
+.badge-amber { background: var(--amber-bg); color: var(--amber); }
+.badge-red { background: var(--red-bg); color: var(--red); }
+.badge-blue { background: var(--accent-bg); color: var(--accent); }
+.badge-gray { background: var(--bg3); color: var(--text3); }
+
+/* ALERTS */
+.alert { padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; display: flex; gap: 10px; align-items: flex-start; }
+.alert i { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.alert-amber { background: var(--amber-bg); border: 1px solid var(--amber); color: #f0c060; }
+.alert-red { background: var(--red-bg); border: 1px solid var(--red); color: #ff8080; }
+.alert-green { background: var(--green-bg); border: 1px solid var(--green); color: var(--green); }
+
+/* CALENDAR */
+.cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.cal-title { font-size: 14px; font-weight: 600; }
+.cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }
+.cal-dow { font-size: 10px; font-weight: 600; color: var(--text3); text-align: center; padding: 3px 0; text-transform: uppercase; }
+.cal-day { height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 5px; font-size: 12px; cursor: pointer; color: var(--text2); border: 1px solid transparent; }
+.cal-day:hover { background: var(--bg3); }
+.cal-day.empty { cursor: default; }
+.cal-day.today { border-color: var(--accent); color: var(--accent); }
+.cal-day.selected { background: var(--accent); color: #fff; font-weight: 600; }
+
+/* SERVICE CARDS */
+.service-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
+.service-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; cursor: pointer; background: var(--bg3); border-bottom: 1px solid var(--border); }
+.service-header:hover { background: var(--bg4); }
+.service-date { font-size: 14px; font-weight: 600; }
+.service-body { padding: 14px 16px; display: none; }
+.service-body.open { display: block; }
+.roles-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; margin-bottom: 12px; }
+.role-row { display: flex; align-items: center; gap: 8px; }
+.role-lbl { font-size: 11px; color: var(--text3); width: 100px; flex-shrink: 0; }
+.songs-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; margin-top: 10px; }
+.songs-sec-block { }
+.songs-sec-title { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 5px; }
+.song-item { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 5px; background: var(--bg3); border-radius: 6px; padding: 5px 8px; }
+.song-item-name { flex: 1; font-size: 12px; color: var(--text); }
+.song-item-key { font-size: 11px; color: var(--accent); font-weight: 600; flex-shrink: 0; width: 40px; }
+.song-item-note { font-size: 11px; color: var(--text3); font-style: italic; }
+
+/* LIBRARY */
+.song-lib-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: var(--bg3); border-radius: 7px; margin-bottom: 6px; border: 1px solid transparent; transition: border .15s; }
+.song-lib-item:hover { border-color: var(--border2); }
+.song-lib-name { flex: 1; font-size: 13px; font-weight: 500; }
+.song-lib-key { font-size: 12px; color: var(--accent); font-weight: 600; width: 50px; }
+.song-lib-tags { display: flex; gap: 4px; flex-wrap: wrap; flex: 1; }
+
+/* BANDAS */
+.banda-item { background: var(--bg3); border-radius: 8px; padding: 12px; margin-bottom: 8px; border: 1px solid var(--border); }
+.banda-name { font-size: 14px; font-weight: 600; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+.banda-roles { display: grid; grid-template-columns: repeat(3,1fr); gap: 4px 8px; font-size: 12px; color: var(--text2); }
+.banda-role { display: flex; gap: 4px; }
+.banda-role span:first-child { color: var(--text3); }
+
+/* PARTICIPACION */
+.part-table { width: 100%; border-collapse: collapse; }
+.part-table th { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+.part-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); font-size: 13px; }
+.part-table tr:last-child td { border-bottom: none; }
+
+/* MODAL */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 100; align-items: center; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--bg2); border: 1px solid var(--border2); border-radius: 12px; padding: 20px; width: 540px; max-height: 85vh; overflow-y: auto; }
+.modal-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+
+/* SONG PICKER */
+.song-picker-list { max-height: 280px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; }
+.sp-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--border); transition: background .1s; }
+.sp-item:last-child { border-bottom: none; }
+.sp-item:hover { background: var(--bg3); }
+.sp-item.selected { background: var(--accent-bg); }
+.sp-check { width: 16px; height: 16px; border-radius: 4px; border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.sp-item.selected .sp-check { background: var(--accent); border-color: var(--accent); }
+.sp-name { flex: 1; font-size: 13px; }
+.sp-key { font-size: 12px; color: var(--accent); font-weight: 600; width: 40px; }
+
+/* PROGRESS */
+.prog-bar { height: 4px; background: var(--bg4); border-radius: 2px; margin: 8px 0; }
+.prog-fill { height: 4px; background: var(--accent); border-radius: 2px; transition: width .3s; }
+
+/* CHIP FILTERS */
+.chip-group { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
+.chip { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); color: var(--text3); background: transparent; transition: all .15s; }
+.chip:hover { border-color: var(--text2); color: var(--text2); }
+.chip.active { border-color: var(--accent); color: var(--accent); background: rgba(56,139,253,.1); }
+
+/* WHATSAPP PREVIEW */
+.wa-preview { background: #0d1f12; border: 1px solid #1a3a22; border-radius: 10px; padding: 14px; font-size: 13px; line-height: 1.7; color: #e8f5e9; white-space: pre-wrap; font-family: 'Outfit', monospace; max-height: 320px; overflow-y: auto; }
+
+/* MISC */
+.divider { height: 1px; background: var(--border); margin: 14px 0; }
+.tag-list { display: flex; gap: 4px; flex-wrap: wrap; }
+.empty-state { text-align: center; padding: 32px 16px; color: var(--text3); font-size: 13px; }
+.empty-state i { font-size: 32px; display: block; margin-bottom: 8px; }
+.search-input { position: relative; }
+.search-input i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 15px; pointer-events: none; }
+.search-input input { padding-left: 32px; }
+.canvas-preview { border-radius: 8px; overflow: hidden; border: 1px solid var(--border); margin-top: 10px; }
+.canvas-preview canvas { display: block; width: 100%; height: auto; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <h1>Ministerio<br>de Música</h1>
+    <span>Gestión de cronogramas</span>
+  </div>
+  <nav class="nav">
+    <div class="nav-item active" onclick="goTo('mes')"><i class="ti ti-calendar-month"></i> Mes completo</div>
+    <div class="nav-item" onclick="goTo('bandas')"><i class="ti ti-users"></i> Mis bandas</div>
+    <div class="nav-item" onclick="goTo('canciones')"><i class="ti ti-music"></i> Canciones</div>
+    <div class="nav-item" onclick="goTo('listas')"><i class="ti ti-playlist"></i> Listas armadas</div>
+    <div class="nav-item" onclick="goTo('participacion')"><i class="ti ti-chart-bar"></i> Participación</div>
+    <div class="nav-item" onclick="goTo('config')"><i class="ti ti-settings"></i> Configuración</div>
+  </nav>
+  <div style="padding:12px 16px;border-top:1px solid var(--border)">
+    <button class="btn btn-sm" style="width:100%;justify-content:center;margin-bottom:5px" onclick="exportBackup()"><i class="ti ti-download"></i> Exportar backup</button>
+    <label class="btn btn-sm" style="width:100%;justify-content:center;cursor:pointer;margin-bottom:5px">
+      <i class="ti ti-upload"></i> Importar backup
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="handleBackupFile(event,'import')">
+    </label>
+    <label class="btn btn-sm" style="width:100%;justify-content:center;cursor:pointer;color:var(--text3)">
+      <i class="ti ti-shield-check"></i> Verificar backup
+      <input type="file" id="verify-file" accept=".json" style="display:none" onchange="handleBackupFile(event,'verify')">
+    </label>
+    <div style="font-size:10px;color:var(--text3);text-align:center;margin-top:8px;line-height:1.5">Guardá una copia antes<br>de cerrar el navegador</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- ===== MES COMPLETO ===== -->
+<div class="page active" id="page-mes">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+    <div class="page-title">Mes completo</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span id="save-status" style="font-size:11px;color:var(--text3)"></span>
+      <button class="btn btn-primary" onclick="manualSave()"><i class="ti ti-device-floppy"></i> Guardar</button>
+    </div>
+  </div>
+  <div class="page-sub">Armá todos los servicios del mes y generá las imágenes de una vez</div>
+
+  <div id="alerts-mes"></div>
+
+  <div class="card">
+    <div class="card-title">Configuración del mes</div>
+    <div class="row2" style="margin-bottom:10px">
+      <div>
+        <div class="cal-nav">
+          <button class="btn btn-sm btn-icon" onclick="changeMonthMes(-1)"><i class="ti ti-chevron-left"></i></button>
+          <span class="cal-title" id="cal-label-mes"></span>
+          <button class="btn btn-sm btn-icon" onclick="changeMonthMes(1)"><i class="ti ti-chevron-right"></i></button>
+        </div>
+        <div class="cal-grid" id="cal-grid-mes"></div>
+      </div>
+      <div>
+        <div class="field"><label>Días de servicio</label>
+          <div style="display:flex;gap:12px;margin-top:4px">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;text-transform:none;letter-spacing:0"><input type="checkbox" id="chk-sab" checked style="width:auto;height:auto"> Sábados</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;text-transform:none;letter-spacing:0"><input type="checkbox" id="chk-dom" style="width:auto;height:auto"> Domingos</label>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-full" onclick="buildMonth()" style="margin-top:8px"><i class="ti ti-refresh"></i> Cargar servicios</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Devocional del mes</div>
+    <div class="field"><label>Versículo</label><input id="mes-versiculo" placeholder="ej: Juan 4:24 — Dios es Espíritu..." oninput="saveMesState()"></div>
+    <div class="field"><label>Reflexión para el equipo</label><textarea id="mes-devocional" rows="3" placeholder="Texto de la reflexión del mes..." oninput="saveMesState()"></textarea></div>
+    <div class="field"><label>Desafío de la semana</label><textarea id="mes-desafio" rows="3" placeholder="Desafío práctico para el equipo este mes..." oninput="saveMesState()"></textarea></div>
+    <div class="field"><label>Canciones nuevas del mes</label>
+      <div id="mes-nuevas"></div>
+      <button class="btn btn-sm" style="margin-top:4px" onclick="addNuevaMes()"><i class="ti ti-plus"></i> Agregar</button>
+    </div>
+  </div>
+
+  <div id="services-wrap"></div>
+
+  <div id="gen-wrap" style="display:none">
+    <div id="prog-wrap" style="display:none">
+      <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+      <div style="font-size:12px;color:var(--text3);text-align:center;margin-top:4px" id="prog-label">Preparando...</div>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-success" style="flex:1" onclick="generateZip()"><i class="ti ti-photo-down"></i> Generar imagen del mes</button>
+      <button class="btn" onclick="previewFirst()"><i class="ti ti-eye"></i> Vista previa</button>
+    </div>
+    <div id="preview-wrap" style="display:none" class="canvas-preview"><canvas id="cv-preview"></canvas></div>
+  </div>
+</div>
+
+<!-- ===== BANDAS ===== -->
+<div class="page" id="page-bandas">
+  <div class="page-title">Mis bandas</div>
+  <div class="page-sub">Plantillas de equipos para asignar rápido a cada servicio</div>
+  <div class="btn-group" style="margin-bottom:16px">
+    <button class="btn btn-primary" onclick="openBandaModal()"><i class="ti ti-plus"></i> Nueva banda</button>
+  </div>
+  <div id="bandas-list"></div>
+</div>
+
+<!-- ===== CANCIONES ===== -->
+<div class="page" id="page-canciones">
+  <div class="page-title">Biblioteca de canciones</div>
+  <div class="page-sub">Todas las canciones disponibles con tonalidad y etiquetas</div>
+  <div class="btn-group" style="margin-bottom:12px">
+    <button class="btn btn-primary" onclick="openCancionModal()"><i class="ti ti-plus"></i> Nueva canción</button>
+  </div>
+  <div class="search-input" style="margin-bottom:10px">
+    <i class="ti ti-search"></i>
+    <input id="search-canciones" placeholder="Buscar canción..." oninput="renderCanciones()">
+  </div>
+  <div class="chip-group" id="filter-chips"></div>
+  <div id="canciones-list"></div>
+</div>
+
+<!-- ===== LISTAS ===== -->
+<div class="page" id="page-listas">
+  <div class="page-title">Listas armadas</div>
+  <div class="page-sub">Sets de canciones completos por servicio, listos para asignar</div>
+  <button class="btn btn-primary" style="margin-bottom:16px" onclick="openListaModal()"><i class="ti ti-plus"></i> Nueva lista</button>
+  <div id="listas-list"></div>
+</div>
+
+<!-- ===== PARTICIPACION ===== -->
+<div class="page" id="page-participacion">
+  <div class="page-title">Participación del equipo</div>
+  <div class="page-sub">Seguimiento de presencia para cuidar la carga de cada músico</div>
+  <div id="part-content"></div>
+</div>
+
+<!-- ===== CONFIGURACION ===== -->
+<div class="page" id="page-config">
+  <div class="page-title">Configuración</div>
+  <div class="page-sub">Datos de la iglesia que aparecen en todas las imágenes generadas</div>
+
+  <div class="card">
+    <div class="card-title">Identidad institucional</div>
+    <div class="field"><label>Nombre de la iglesia</label>
+      <input id="cfg-iglesia" placeholder="ej: Perlas para Dios" oninput="saveConfig()">
+    </div>
+    <div class="field"><label>Nombre del ministerio</label>
+      <input id="cfg-ministerio" placeholder="ej: Ministerio de Alabanza" oninput="saveConfig()">
+    </div>
+    <div class="field"><label>Ciudad / Sede (opcional)</label>
+      <input id="cfg-ciudad" placeholder="ej: Buenos Aires" oninput="saveConfig()">
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Logo de la iglesia</div>
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">
+      <div id="cfg-logo-preview" style="width:64px;height:64px;border-radius:50%;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+        <i class="ti ti-photo" style="font-size:24px;color:var(--text3)"></i>
+      </div>
+      <div>
+        <label class="btn btn-sm" style="cursor:pointer">
+          <i class="ti ti-upload"></i> Subir logo
+          <input type="file" id="cfg-logo-file" accept="image/*" style="display:none" onchange="handleLogoUpload(event)">
+        </label>
+        <div style="font-size:11px;color:var(--text3);margin-top:5px">PNG o JPG, fondo transparente recomendado.<br>Aparece en el header y footer de la imagen.</div>
+      </div>
+    </div>
+    <button class="btn btn-sm btn-danger" onclick="removeLogo()" id="cfg-logo-remove" style="display:none"><i class="ti ti-trash"></i> Quitar logo</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Previsualización del header</div>
+    <div id="cfg-header-preview" style="background:#f4f6f9;border-radius:8px;padding:16px;font-family:'Outfit',sans-serif">
+      <div style="font-size:11px;color:var(--text3);text-align:center">Guardá los datos para ver la previsualización</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- ===== MODALS ===== -->
+
+<!-- Modal Banda -->
+<div class="modal-overlay" id="modal-banda">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="banda-modal-title">Nueva banda</span>
+      <button class="btn btn-sm btn-icon" onclick="closeModal('modal-banda')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="field"><label>Nombre de la banda</label><input id="bm-name" placeholder="ej: Banda de Rodri"></div>
+    <div class="divider"></div>
+    <div id="bm-roles">
+      <div class="roles-grid">
+        <div class="role-row"><span class="role-lbl">Coordina</span><input class="fi" id="bm-coordina" placeholder="nombre"></div>
+        <div class="role-row"><span class="role-lbl">Voz 1</span><input class="fi" id="bm-voz1" placeholder="nombre"></div>
+        <div class="role-row"><span class="role-lbl">Voz 2</span><input class="fi" id="bm-voz2" placeholder="opcional"></div>
+        <div class="role-row"><span class="role-lbl">Voz 3</span><input class="fi" id="bm-voz3" placeholder="opcional"></div>
+        <div class="role-row"><span class="role-lbl">Teclado</span><input class="fi" id="bm-teclado" placeholder="opcional"></div>
+        <div class="role-row"><span class="role-lbl">Guit. Acústica</span><input class="fi" id="bm-acustica" placeholder="nombre"></div>
+        <div class="role-row"><span class="role-lbl">Guit. Acústica 2</span><input class="fi" id="bm-acustica2" placeholder="opcional"></div>
+        <div class="role-row"><span class="role-lbl">Guit. Eléctrica</span><input class="fi" id="bm-electrica" placeholder="nombre"></div>
+        <div class="role-row"><span class="role-lbl">Batería</span><input class="fi" id="bm-bateria" placeholder="nombre"></div>
+        <div class="role-row"><span class="role-lbl">Bajo</span><input class="fi" id="bm-bajo" placeholder="nombre"></div>
+      </div>
+    </div>
+    <div class="btn-group" style="margin-top:16px">
+      <button class="btn btn-primary btn-full" onclick="saveBanda()"><i class="ti ti-device-floppy"></i> Guardar banda</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Canción -->
+<div class="modal-overlay" id="modal-cancion">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="cancion-modal-title">Nueva canción</span>
+      <button class="btn btn-sm btn-icon" onclick="closeModal('modal-cancion')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Nombre</label><input id="cm-name" placeholder="nombre de la canción"></div>
+      <div class="field"><label>Tonalidad iglesia</label><input id="cm-key" placeholder="ej: G"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Tonalidad original</label><input id="cm-key-orig" placeholder="ej: B"></div>
+      <div class="field"><label>Artista / Autor</label><input id="cm-author" placeholder="ej: Marcos Brunet"></div>
+    </div>
+    <div class="field"><label>Nota de ejecución</label><input id="cm-note" placeholder="ej: Capo 4 en shape E si es en G"></div>
+    <div class="field"><label>Link YouTube</label><input id="cm-youtube" placeholder="https://youtube.com/..."></div>
+    <div class="field">
+      <label>Categorías espirituales</label>
+      <div class="chip-group" id="cm-cats" style="margin-top:6px"></div>
+    </div>
+    <div class="field" style="display:flex;align-items:center;gap:8px;margin-top:4px">
+      <input type="checkbox" id="cm-nueva" style="width:auto;height:auto">
+      <label for="cm-nueva" style="text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer">Marcar como canción nueva</label>
+    </div>
+    <div class="btn-group" style="margin-top:16px">
+      <button class="btn btn-primary btn-full" onclick="saveCancion()"><i class="ti ti-device-floppy"></i> Guardar canción</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Lista -->
+<div class="modal-overlay" id="modal-lista">
+  <div class="modal" style="width:600px">
+    <div class="modal-title">
+      <span id="lista-modal-title">Nueva lista</span>
+      <button class="btn btn-sm btn-icon" onclick="closeModal('modal-lista')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="field"><label>Nombre de la lista</label><input id="lm-name" placeholder="ej: Lista de adoración intensa"></div>
+    <div class="divider"></div>
+    <div id="lm-sections"></div>
+    <div class="btn-group" style="margin-top:16px">
+      <button class="btn btn-primary btn-full" onclick="saveLista()"><i class="ti ti-device-floppy"></i> Guardar lista</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Song Picker -->
+<div class="modal-overlay" id="modal-picker">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="picker-title">Elegir canciones</span>
+      <button class="btn btn-sm btn-icon" onclick="closeModal('modal-picker')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="search-input" style="margin-bottom:8px">
+      <i class="ti ti-search"></i>
+      <input id="picker-search" placeholder="Buscar..." oninput="renderPicker()">
+    </div>
+    <div class="chip-group" id="picker-cat-chips"></div>
+    <div class="song-picker-list" id="picker-list"></div>
+    <div class="btn-group" style="margin-top:12px">
+      <button class="btn btn-primary btn-full" onclick="confirmPicker()"><i class="ti ti-check"></i> Agregar seleccionadas</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Backup -->
+<div class="modal-overlay" id="modal-backup">
+  <div class="modal" style="width:480px">
+    <div class="modal-title">
+      <span id="backup-modal-title">Importar backup</span>
+      <button class="btn btn-sm btn-icon" onclick="closeModal('modal-backup')"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="backup-preview" style="margin-bottom:16px"></div>
+    <div class="btn-group">
+      <button class="btn btn-primary btn-full" id="backup-confirm-btn" onclick="confirmImport()"><i class="ti ti-check"></i> Confirmar importación</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-wa">
+  <div class="modal" style="width:580px">
+    <div class="modal-title">
+      <span>Mensaje para WhatsApp</span>
+      <button class="btn btn-sm btn-icon" onclick="closeModal('modal-wa')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="wa-preview" id="wa-text"></div>
+    <div class="btn-group" style="margin-top:12px">
+      <button class="btn btn-success btn-full" onclick="copyWa()"><i class="ti ti-copy"></i> Copiar mensaje</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// DATA LAYER
+// ═══════════════════════════════════════════════
+const CATS = ['Adoración','Celebración','Gratitud','Rendición','Cruz','Espíritu Santo','Santa Cena','Oración','Guerra espiritual','Invitación','Cierre'];
+const ROLE_IDS = [['Coordina','coordina'],['Voz 1','voz1'],['Voz 2','voz2'],['Voz 3','voz3'],['Teclado','teclado'],['Guit. Acústica','acustica'],['Guit. Acústica 2','acustica2'],['Guit. Eléctrica','electrica'],['Batería','bateria'],['Bajo','bajo']];
+const ROLE_EMOJIS = {coordina:'🎤',voz1:'🎤',voz2:'🎤',voz3:'🎤',teclado:'🎹',acustica:'🪕',electrica:'🎸',bateria:'🥁',bajo:'🎸'};
+const SECCIONES = ['principales','cena','ofrenda','intervalo','final'];
+const SEC_LABELS = {principales:'Canciones',cena:'Santa Cena',ofrenda:'Ofrenda',intervalo:'Intervalo',final:'Final'};
+const SEC_EMOJIS = {principales:'🎵',cena:'🍷',ofrenda:'🙌',intervalo:'⏸️',final:'✨'};
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DIAS_N = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+
+function db(k){ try{return JSON.parse(localStorage.getItem('mm_'+k)||'[]')}catch{return[]} }
+function dbSet(k,v){ try{localStorage.setItem('mm_'+k,JSON.stringify(v))}catch{} }
+function dbObj(k,def={}){ try{return JSON.parse(localStorage.getItem('mm_'+k)||JSON.stringify(def))}catch{return def} }
+
+function getBandas(){return db('bandas')}
+function saveBandas(v){dbSet('bandas',v)}
+function getCanciones(){return db('canciones')}
+function saveCanciones(v){dbSet('canciones',v)}
+function getListas(){return db('listas')}
+function saveListas(v){dbSet('listas',v)}
+function getHistorial(){return db('historial')}
+function saveHistorial(v){dbSet('historial',v)}
+
+// ── Autosave del mes ──────────────────────────
+let _saveTimer = null;
+
+function saveMesState(){
+  // debounce — don't hammer localStorage on every keystroke
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(_doSave, 800);
+  // show pending indicator
+  const el = document.getElementById('save-status');
+  if(el) el.innerHTML = '<i class="ti ti-circle" style="font-size:9px;color:var(--amber)"></i> Sin guardar';
+}
+
+function manualSave(){
+  clearTimeout(_saveTimer);
+  _doSave();
+  showToast('Progreso guardado','green');
+}
+
+function _mesKey(){ return 'mm_mes_'+calYM.y+'_'+calYM.m; }
+
+function _doSave(){
+  try{
+    const state = {
+      year: calYM.y,
+      month: calYM.m,
+      diasSab: document.getElementById('chk-sab')?.checked ?? true,
+      diasDom: document.getElementById('chk-dom')?.checked ?? false,
+      versiculo: document.getElementById('mes-versiculo')?.value?.trim()||'',
+      devocional: document.getElementById('mes-devocional')?.value?.trim()||'',
+      desafio: document.getElementById('mes-desafio')?.value?.trim()||'',
+      nuevas: getNuevasMes(),
+      services: monthServices.map(s=>({
+        ...s,
+        roles:{...s.roles},
+        songs: Object.fromEntries(SECCIONES.map(sec=>[sec,(s.songs[sec]||[]).map(sg=>({...sg}))]))
+      }))
+    };
+    localStorage.setItem(_mesKey(), JSON.stringify(state));
+    const el = document.getElementById('save-status');
+    if(el){
+      const now = new Date();
+      const t = now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
+      el.innerHTML = '<i class="ti ti-circle-check" style="font-size:9px;color:var(--green)"></i> Guardado '+t;
+    }
+  } catch(e){
+    const el = document.getElementById('save-status');
+    if(el) el.innerHTML = '<i class="ti ti-alert-circle" style="font-size:9px;color:var(--red)"></i> Error al guardar';
+  }
+}
+
+function restoreMesState(year, month){
+  try{
+    // if year/month provided, load that specific month; otherwise load most recent
+    let raw, targetKey;
+    if(year !== undefined && month !== undefined){
+      targetKey = 'mm_mes_'+year+'_'+month;
+      raw = localStorage.getItem(targetKey);
+    } else {
+      // find most recently saved month
+      const keys = Object.keys(localStorage).filter(k=>k.match(/^mm_mes_\d+_\d+$/));
+      if(!keys.length) return false;
+      // sort by year_month desc
+      keys.sort((a,b)=>{
+        const [,ya,ma] = a.split('_'); const [,yb,mb] = b.split('_');
+        return (parseInt(yb)*12+parseInt(mb)) - (parseInt(ya)*12+parseInt(ma));
+      });
+      raw = localStorage.getItem(keys[0]);
+    }
+    if(!raw) return false;
+    const state = JSON.parse(raw);
+    if(!state.services?.length) return false;
+
+    calYM = {y: state.year, m: state.month};
+    monthServices = state.services.map(s=>({
+      ...s,
+      roles: s.roles||{},
+      songs: Object.fromEntries(SECCIONES.map(sec=>[sec, s.songs?.[sec]||[]]))
+    }));
+
+    const sabEl = document.getElementById('chk-sab');
+    const domEl = document.getElementById('chk-dom');
+    if(sabEl) sabEl.checked = state.diasSab ?? true;
+    if(domEl) domEl.checked = state.diasDom ?? false;
+
+    const vEl = document.getElementById('mes-versiculo');
+    const dEl = document.getElementById('mes-devocional');
+    const dsEl = document.getElementById('mes-desafio');
+    if(vEl) vEl.value = state.versiculo||'';
+    if(dEl) dEl.value = state.devocional||'';
+    if(dsEl) dsEl.value = state.desafio||'';
+
+    const nWrap = document.getElementById('mes-nuevas');
+    if(nWrap){
+      nWrap.innerHTML='';
+      (state.nuevas||[]).forEach(n=>addNuevaMes(n.name,n.key,n.author));
+    }
+
+    renderCalMes();
+    renderServices();
+    document.getElementById('gen-wrap').style.display='block';
+    checkAlerts();
+    const el = document.getElementById('save-status');
+    if(el){ const now=new Date(); const t=now.getHours()+':'+String(now.getMinutes()).padStart(2,'0'); el.innerHTML='<i class="ti ti-circle-check" style="font-size:9px;color:var(--green)"></i> Restaurado '+t; }
+    return true;
+  } catch(e){ return false; }
+}
+
+// ═══════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════
+function goTo(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>{if(n.textContent.trim().toLowerCase().includes(id.slice(0,4)))n.classList.add('active')});
+  if(id==='bandas')renderBandas();
+  if(id==='canciones')renderCanciones();
+  if(id==='listas')renderListas();
+  if(id==='participacion')renderParticipacion();
+  if(id==='config'){loadConfigFields();renderConfigPreview();}
+}
+
+// ═══════════════════════════════════════════════
+// CALENDAR
+// ═══════════════════════════════════════════════
+let calYM, calY, calM;
+function initCal(){
+  const n=new Date(); calY=n.getFullYear(); calM=n.getMonth();
+  calYM={y:n.getFullYear(),m:n.getMonth()};
+  renderCalMes();
+}
+function changeMonthMes(d){
+  // save current month before switching
+  if(monthServices.length) _doSave();
+  calYM.m+=d;
+  if(calYM.m>11){calYM.m=0;calYM.y++;}
+  if(calYM.m<0){calYM.m=11;calYM.y--;}
+  // try to restore saved data for the new month
+  const restored = restoreMesState(calYM.y, calYM.m);
+  if(!restored){
+    // no saved data — clear services and show empty calendar
+    monthServices = [];
+    const vEl = document.getElementById('mes-versiculo');
+    const dEl = document.getElementById('mes-devocional');
+    if(vEl) vEl.value = '';
+    if(dEl) dEl.value = '';
+    const nWrap = document.getElementById('mes-nuevas');
+    if(nWrap) nWrap.innerHTML = '';
+    document.getElementById('services-wrap').innerHTML = '';
+    document.getElementById('gen-wrap').style.display = 'none';
+    const el = document.getElementById('save-status');
+    if(el) el.innerHTML = '';
+    renderCalMes();
+  }
+}
+function renderCalMes(){
+  document.getElementById('cal-label-mes').textContent=`${MESES[calYM.m]} ${calYM.y}`;
+  const grid=document.getElementById('cal-grid-mes'); grid.innerHTML='';
+  ['Do','Lu','Ma','Mi','Ju','Vi','Sá'].forEach(d=>{const el=document.createElement('div');el.className='cal-dow';el.textContent=d;grid.appendChild(el);});
+  const first=new Date(calYM.y,calYM.m,1).getDay();
+  const days=new Date(calYM.y,calYM.m+1,0).getDate();
+  const today=new Date();
+  for(let i=0;i<first;i++){const el=document.createElement('div');el.className='cal-day empty';grid.appendChild(el);}
+  for(let d=1;d<=days;d++){
+    const el=document.createElement('div');el.className='cal-day';el.textContent=d;
+    const dow=new Date(calYM.y,calYM.m,d).getDay();
+    if(today.getDate()===d&&today.getMonth()===calYM.m&&today.getFullYear()===calYM.y)el.classList.add('today');
+    if((document.getElementById('chk-sab').checked&&dow===6)||(document.getElementById('chk-dom').checked&&dow===0))
+      el.style.color='#58a6ff';
+    grid.appendChild(el);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// MES COMPLETO
+// ═══════════════════════════════════════════════
+let monthServices=[];
+let editingBandaId=null, editingCancionId=null, editingListaId=null;
+
+function buildMonth(){
+  const yr=calYM.y, mo=calYM.m;
+  const incSab=document.getElementById('chk-sab').checked;
+  const incDom=document.getElementById('chk-dom').checked;
+  const days=new Date(yr,mo+1,0).getDate();
+  monthServices=[];
+  for(let d=1;d<=days;d++){
+    const dow=new Date(yr,mo,d).getDay();
+    if((incSab&&dow===6)||(incDom&&dow===0)){
+      const dn=DIAS_N[dow];
+      monthServices.push({
+        day:d, dow, month:mo, year:yr,
+        label:(dn.charAt(0).toUpperCase()+dn.slice(1))+' '+d,
+        roles:{}, songs:{principales:[],cena:[],ofrenda:[],intervalo:[],final:[]},
+        open:false
+      });
+    }
+  }
+  renderServices();
+  document.getElementById('gen-wrap').style.display=monthServices.length?'block':'none';
+  checkAlerts();
+  saveMesState();
+}
+
+function renderServices(){
+  const wrap=document.getElementById('services-wrap');
+  const bandas=getBandas(), listas=getListas();
+  wrap.innerHTML=monthServices.map((s,i)=>`
+    <div class="service-card">
+      <div class="service-header" onclick="toggleService(${i})" style="flex-direction:column;align-items:stretch;gap:8px;cursor:pointer">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span class="service-date"><i class="ti ti-calendar-event" style="margin-right:6px;opacity:.6"></i>${s.label} — ${MESES[s.month]}</span>
+          <div style="display:flex;align-items:center;gap:6px">
+            <button class="btn btn-sm btn-icon" title="Mensaje WhatsApp" onclick="event.stopPropagation();openWa(${i})"><i class="ti ti-brand-whatsapp"></i></button>
+            <i class="ti ti-chevron-${s.open?'up':'down'}" style="color:var(--text3);font-size:16px"></i>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap" onclick="event.stopPropagation()">
+          <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:180px">
+            <span style="font-size:11px;color:var(--text3);white-space:nowrap;flex-shrink:0"><i class="ti ti-users" style="font-size:13px"></i> Banda</span>
+            <select style="flex:1;height:28px;font-size:12px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:0 8px" onchange="applyBanda(${i},this.value)">
+              <option value="">— elegir banda —</option>
+              ${bandas.map(b=>`<option value="${b.id}">${b.name}</option>`).join('')}
+            </select>
+          </div>
+          ${listas.length?`<div style="display:flex;align-items:center;gap:6px;flex:1;min-width:180px">
+            <span style="font-size:11px;color:var(--text3);white-space:nowrap;flex-shrink:0"><i class="ti ti-playlist" style="font-size:13px"></i> Lista</span>
+            <select style="flex:1;height:28px;font-size:12px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:0 8px" onchange="applyLista(${i},this.value)">
+              <option value="">— elegir lista —</option>
+              ${listas.map(l=>`<option value="${l.id}">${l.name}</option>`).join('')}
+            </select>
+          </div>`:''}
+        </div>
+      </div>
+      <div class="service-body${s.open?' open':''}" id="sb-${i}">
+        <div class="card-title" style="margin-bottom:8px">Equipo</div>
+        <div class="roles-grid" id="sr-${i}">
+          ${ROLE_IDS.map(([l,id])=>`<div class="role-row"><span class="role-lbl">${l}</span><input style="height:28px;font-size:12px" data-role="${id}" placeholder="${id==='acustica2'?'opcional':l}" value="${s.roles[id]||''}" onchange="updateRole(${i},'${id}',this.value)"></div>`).join('')}
+        </div>
+        <div class="divider"></div>
+        <div style="display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start">
+          <div>
+            <div class="card-title" style="margin-bottom:8px">Canciones</div>
+            <div class="songs-sections">
+              ${SECCIONES.map(sec=>`
+                <div class="songs-sec-block">
+                  <div class="songs-sec-title">${SEC_LABELS[sec]}</div>
+                  <div id="ss-${i}-${sec}">
+                    ${(s.songs[sec]||[]).map((sg,si)=>renderSongItem(i,sec,si,sg)).join('')}
+                  </div>
+                  <button class="btn btn-sm" style="margin-top:4px;width:100%" onclick="openPicker(${i},'${sec}')"><i class="ti ti-plus"></i> Agregar</button>
+                </div>`).join('')}
+            </div>
+          </div>
+          <div id="hist-panel-${i}">${renderHistPanel(i)}</div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function renderSongItem(si,sec,idx,sg){
+  return `<div class="song-item" id="sitem-${si}-${sec}-${idx}">
+    <div style="flex:1">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="song-item-name">${sg.name}</span>
+        <span class="song-item-key">${sg.key||''}</span>
+        ${sg.nueva?`<span class="badge badge-green" style="font-size:10px">Nueva</span>`:''}
+      </div>
+      ${sg.note?`<div class="song-item-note">${sg.note}</div>`:''}
+      <input style="height:24px;font-size:11px;margin-top:3px;color:var(--text3);background:transparent;border-color:var(--bg4)" placeholder="nota para el equipo..." value="${sg.note||''}" onchange="updateSongNote(${si},'${sec}',${idx},this.value)">
+    </div>
+    <button class="btn btn-sm btn-icon btn-danger" onclick="removeSong(${si},'${sec}',${idx})"><i class="ti ti-x"></i></button>
+  </div>`;
+}
+
+function renderHistPanel(serviceIdx){
+  const s = monthServices[serviceIdx];
+  if(!s) return '';
+
+  // Collect up to 2 previous services — from current month first, then historial
+  const prevServices = [];
+
+  // Previous services in current month (all before this index)
+  for(let i = serviceIdx - 1; i >= 0; i--){
+    const prev = monthServices[i];
+    const hasRoles = ROLE_IDS.some(([,id]) => (prev.roles[id]||'').trim());
+    const hasSongs = SECCIONES.some(sec => (prev.songs[sec]||[]).length);
+    if(hasRoles || hasSongs){
+      prevServices.push({
+        label: prev.label + ' — ' + MESES[prev.month],
+        roles: ROLE_IDS.map(([l,id])=>({label:l, name:(prev.roles[id]||'').trim()})).filter(r=>r.name),
+        songsBySec: SECCIONES.reduce((a,sec)=>{ a[sec]=prev.songs[sec]||[]; return a; }, {}),
+        fromHistory: false
+      });
+    }
+    if(prevServices.length >= 2) break;
+  }
+
+  // Fill remaining slots from historial (previous months)
+  if(prevServices.length < 2){
+    const hist = getHistorial()
+      .filter(h => !(h.year === s.year && h.month === s.month))
+      .sort((a,b) => new Date(b.date) - new Date(a.date));
+    const seen = new Set();
+    for(const h of hist){
+      if(prevServices.length >= 2) break;
+      const key = h.year+'-'+h.month+'-'+h.serviceLabel;
+      if(seen.has(key)) continue;
+      seen.add(key);
+      const songsBySec = SECCIONES.reduce((a,sec)=>{
+        a[sec] = h.songs.filter(sg=>sg.sec===sec);
+        return a;
+      }, {});
+      const roles = h.roles
+        ? ROLE_IDS.map(([l,id])=>({label:l,name:(h.roles[id]||'').trim()})).filter(r=>r.name)
+        : [];
+      prevServices.push({
+        label: h.serviceLabel + ' — ' + MESES[h.month] + ' ' + h.year,
+        roles,
+        songsBySec,
+        fromHistory: true
+      });
+    }
+  }
+
+  if(!prevServices.length){
+    return '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px 14px">'
+      + '<div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px"><i class="ti ti-eye" style="margin-right:5px"></i>Servicio anterior</div>'
+      + '<div style="font-size:12px;color:var(--text3);font-style:italic">Cargá el mes y se mostrará el servicio anterior como referencia.</div>'
+      + '</div>';
+  }
+
+  let html = '<div style="display:flex;flex-direction:column;gap:10px">';
+  prevServices.forEach(function(prev){
+    html += buildMirrorPanel(prev.label, prev.roles, prev.songsBySec);
+  });
+  html += '</div>';
+  return html;
+}
+
+function buildMirrorPanel(label, roles, songsBySec){
+  let html = '<div style="background:var(--bg2);border:1px solid var(--border2);border-radius:8px;overflow:hidden">';
+
+  // header
+  html += '<div style="background:var(--bg3);padding:8px 13px;border-bottom:1px solid var(--border)">';
+  html += '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:1px"><i class="ti ti-eye" style="margin-right:4px;font-size:11px"></i>Servicio anterior</div>';
+  html += '<div style="font-size:12px;font-weight:600;color:var(--accent)">'+label+'</div>';
+  html += '</div>';
+
+  // roles
+  if(roles.length){
+    html += '<div style="padding:8px 13px;border-bottom:1px solid var(--border)">';
+    roles.forEach(function(r){
+      html += '<div style="display:flex;align-items:baseline;gap:6px;padding:2px 0">';
+      html += '<span style="font-size:10px;color:var(--text3);width:90px;flex-shrink:0">'+r.label+'</span>';
+      html += '<span style="font-size:12px;font-weight:600;color:var(--text)">'+r.name+'</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  // songs
+  html += '<div style="padding:8px 13px">';
+  var hasSongs = false;
+  SECCIONES.forEach(function(sec){
+    const songs = songsBySec[sec]||[];
+    if(!songs.length) return;
+    hasSongs = true;
+    html += '<div style="margin-bottom:7px">';
+    html += '<div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px">'+SEC_LABELS[sec]+'</div>';
+    songs.forEach(function(sg){
+      const key = sg.key||'';
+      html += '<div style="font-size:11px;color:var(--text2);padding:1px 0">• '+sg.name+(key?' <span style="color:var(--accent);font-weight:700">'+key+'</span>':'')+'</div>';
+    });
+    html += '</div>';
+  });
+  if(!hasSongs) html += '<div style="font-size:11px;color:var(--text3);font-style:italic">Sin canciones registradas</div>';
+  html += '</div>';
+  html += '</div>';
+  return html;
+}
+
+function saveHistorialFromServices(){
+  // load fresh each time and accumulate all services at once
+  let hist = getHistorial();
+
+  monthServices.forEach(s => {
+    const hasSongs = SECCIONES.some(sec => (s.songs[sec]||[]).length > 0);
+    const hasRoles = ROLE_IDS.some(([,id]) => (s.roles[id]||'').trim());
+    if(!hasSongs && !hasRoles) return;
+
+    // extract day number from label e.g. "Domingo 7" → 7
+    const dayNum = parseInt((s.label.match(/\d+/)||['1'])[0], 10);
+
+    const songs = [];
+    SECCIONES.forEach(sec => {
+      (s.songs[sec]||[]).forEach(sg => {
+        songs.push({name:sg.name, key:sg.key||'', sec});
+      });
+    });
+
+    const key = s.year+'-'+s.month+'-'+s.label;
+    // remove old entry for this service
+    hist = hist.filter(h => (h.year+'-'+h.month+'-'+h.serviceLabel) !== key);
+    hist.push({
+      serviceLabel: s.label,
+      month: s.month,
+      year: s.year,
+      date: new Date(s.year, s.month, dayNum).toISOString(),
+      roles: Object.fromEntries(ROLE_IDS.map(([,id])=>[id,(s.roles[id]||'').trim()])),
+      songs
+    });
+  });
+
+  // sort newest first and keep last 24
+  hist.sort((a,b) => new Date(b.date) - new Date(a.date));
+  saveHistorial(hist.slice(0,24));
+}
+
+function toggleService(i){
+  monthServices[i].open=!monthServices[i].open;
+  const body=document.getElementById('sb-'+i);
+  if(body)body.classList.toggle('open',monthServices[i].open);
+  const card=body?.closest('.service-card');
+  if(card){const ico=card.querySelector('.ti-chevron-up,.ti-chevron-down');if(ico){ico.className=monthServices[i].open?'ti ti-chevron-up':'ti ti-chevron-down';}}
+  // refresh mirror panel with latest data when opening
+  if(monthServices[i].open){
+    const panel = document.getElementById('hist-panel-'+i);
+    if(panel) panel.innerHTML = renderHistPanel(i);
+  }
+}
+
+function updateRole(si,role,val){
+  monthServices[si].roles[role]=val;
+  checkAlerts();
+  saveMesState();
+}
+
+function applyBanda(si,id){
+  if(!id)return;
+  const b=getBandas().find(b=>b.id===id);
+  if(!b)return;
+  monthServices[si].roles={...b.roles};
+  const wrap=document.getElementById('sr-'+si);
+  if(wrap) ROLE_IDS.forEach(([,rid])=>{const el=wrap.querySelector(`[data-role="${rid}"]`);if(el)el.value=b.roles[rid]||'';});
+  // open the service body so user sees the result
+  if(!monthServices[si].open){
+    monthServices[si].open=true;
+    const body=document.getElementById('sb-'+si);
+    if(body)body.classList.add('open');
+  }
+  checkAlerts();
+  showToast(`Banda "${b.name}" aplicada`, 'green');
+  saveMesState();
+}
+
+function applyLista(si,id){
+  if(!id)return;
+  const l=getListas().find(l=>l.id===id);
+  if(!l)return;
+  monthServices[si].songs=JSON.parse(JSON.stringify(l.songs)); // deep copy
+  refreshSongsSection(si);
+  if(!monthServices[si].open){
+    monthServices[si].open=true;
+    const body=document.getElementById('sb-'+si);
+    if(body)body.classList.add('open');
+  }
+  showToast(`Lista "${l.name}" aplicada`, 'green');
+  saveMesState();
+}
+
+function refreshSongsSection(si){
+  SECCIONES.forEach(sec=>{
+    const wrap=document.getElementById(`ss-${si}-${sec}`);
+    if(wrap) wrap.innerHTML=(monthServices[si].songs[sec]||[]).map((sg,idx)=>renderSongItem(si,sec,idx,sg)).join('');
+  });
+}
+
+function updateSongNote(si,sec,idx,val){
+  if(monthServices[si]?.songs[sec]?.[idx]) monthServices[si].songs[sec][idx].note=val;
+  saveMesState();
+}
+function removeSong(si,sec,idx){
+  monthServices[si].songs[sec].splice(idx,1);
+  const wrap=document.getElementById(`ss-${si}-${sec}`);
+  if(wrap) wrap.innerHTML=monthServices[si].songs[sec].map((sg,i)=>renderSongItem(si,sec,i,sg)).join('');
+  saveMesState();
+  // refresh mirror of next service
+  const nextPanel = document.getElementById('hist-panel-'+(si+1));
+  if(nextPanel) nextPanel.innerHTML = renderHistPanel(si+1);
+}
+
+function addNuevaMes(name='',key='',author=''){
+  const row=document.createElement('div');row.style.cssText='display:flex;gap:6px;margin-bottom:5px';
+  row.innerHTML=`<input style="flex:1;height:28px;font-size:12px" placeholder="nombre canción" value="${name}"><input style="width:55px;height:28px;font-size:12px" placeholder="tono" value="${key}"><input style="width:100px;height:28px;font-size:12px" placeholder="artista" value="${author}"><button class="btn btn-sm btn-icon btn-danger" onclick="this.parentNode.remove()"><i class="ti ti-x"></i></button>`;
+  document.getElementById('mes-nuevas').appendChild(row);
+}
+
+function getNuevasMes(){
+  return[...document.getElementById('mes-nuevas').querySelectorAll('div')].map(r=>{
+    const ins=r.querySelectorAll('input');return{name:ins[0]?.value.trim(),key:ins[1]?.value.trim(),author:ins[2]?.value.trim()};
+  }).filter(n=>n.name);
+}
+
+// ═══════════════════════════════════════════════
+// SONG PICKER
+// ═══════════════════════════════════════════════
+let pickerSI=null, pickerSec=null, pickerSelected=[], pickerCatFilter='';
+
+function openPicker(si,sec){
+  pickerSI=si; pickerSec=sec; pickerSelected=[];
+  document.getElementById('picker-title').textContent=`Agregar a ${SEC_LABELS[sec]}`;
+  document.getElementById('picker-search').value=''; pickerCatFilter='';
+  renderPickerCats(); renderPicker();
+  document.getElementById('modal-picker').classList.add('open');
+}
+
+function renderPickerCats(){
+  const el=document.getElementById('picker-cat-chips');
+  el.innerHTML='<span class="chip active" onclick="pickerCatFilter=\'\';renderPicker();document.querySelectorAll(\'#picker-cat-chips .chip\').forEach(c=>c.classList.remove(\'active\'));this.classList.add(\'active\')">Todas</span>'+
+    CATS.map(c=>`<span class="chip" onclick="pickerCatFilter='${c}';renderPicker();document.querySelectorAll('#picker-cat-chips .chip').forEach(c=>c.classList.remove('active'));this.classList.add('active')">${c}</span>`).join('');
+}
+
+function renderPicker(){
+  const q=document.getElementById('picker-search').value.toLowerCase();
+  let songs=getCanciones().filter(s=>(!q||s.name.toLowerCase().includes(q))&&(!pickerCatFilter||s.cats?.includes(pickerCatFilter)));
+  const list=document.getElementById('picker-list');
+  if(!songs.length){list.innerHTML='<div class="empty-state"><i class="ti ti-music-off"></i>Sin canciones</div>';return;}
+  list.innerHTML=songs.map(s=>`
+    <div class="sp-item${pickerSelected.includes(s.id)?' selected':''}" onclick="togglePickerSong('${s.id}')">
+      <div class="sp-check">${pickerSelected.includes(s.id)?'<i class="ti ti-check" style="font-size:11px;color:#fff"></i>':''}</div>
+      <span class="sp-name">${s.name}${s.nueva?` <span class="badge badge-green" style="font-size:10px">Nueva</span>`:''}</span>
+      <span class="sp-key">${s.key||''}</span>
+      ${s.cats?.length?`<div style="display:flex;gap:3px">${s.cats.slice(0,2).map(c=>`<span class="badge badge-gray" style="font-size:10px">${c}</span>`).join('')}</div>`:''}
+    </div>`).join('');
+}
+
+function togglePickerSong(id){
+  const idx=pickerSelected.indexOf(id);
+  if(idx>=0)pickerSelected.splice(idx,1);else pickerSelected.push(id);
+  renderPicker();
+}
+
+function confirmPicker(){
+  const canciones=getCanciones();
+  pickerSelected.forEach(id=>{
+    const c=canciones.find(c=>c.id===id);
+    if(c&&pickerSI!==null){
+      if(!monthServices[pickerSI].songs[pickerSec])monthServices[pickerSI].songs[pickerSec]=[];
+      monthServices[pickerSI].songs[pickerSec].push({id:c.id,name:c.name,key:c.key,nueva:c.nueva,note:c.playNote||''});
+    }
+  });
+  refreshSongsSection(pickerSI);
+  closeModal('modal-picker');
+  saveMesState();
+  // refresh mirror of NEXT service if it exists
+  const nextPanel = document.getElementById('hist-panel-'+(pickerSI+1));
+  if(nextPanel) nextPanel.innerHTML = renderHistPanel(pickerSI+1);
+}
+
+// ═══════════════════════════════════════════════
+// ALERTS
+// ═══════════════════════════════════════════════
+function checkAlerts(){
+  const n=monthServices.length;
+  if(n<3){document.getElementById('alerts-mes').innerHTML='';return;}
+  const all={};
+  monthServices.forEach((s,i)=>{
+    ROLE_IDS.forEach(([,id])=>{const v=(s.roles[id]||'').trim();if(v){if(!all[v])all[v]=[];all[v].push(i);}});
+  });
+  const ausentes=[], cargados=[];
+  Object.entries(all).forEach(([name,idxs])=>{
+    for(let i=0;i<=n-3;i++){if(!idxs.includes(i)&&!idxs.includes(i+1)&&!idxs.includes(i+2)&&!ausentes.includes(name))ausentes.push(name);}
+    if(idxs.length>=n&&n>=3&&!cargados.includes(name))cargados.push(name);
+  });
+  let html='';
+  if(ausentes.length)html+=`<div class="alert alert-amber"><i class="ti ti-alert-triangle"></i><div><strong style="display:block;margin-bottom:3px">Sin servicio 3 semanas seguidas</strong>${ausentes.map(n=>`<span class="badge badge-amber" style="margin:2px">${n}</span>`).join('')}</div></div>`;
+  if(cargados.length)html+=`<div class="alert alert-red"><i class="ti ti-battery-4"></i><div><strong style="display:block;margin-bottom:3px">Participan en todos los servicios — revisar carga</strong>${cargados.map(n=>`<span class="badge badge-red" style="margin:2px">${n}</span>`).join('')}</div></div>`;
+  document.getElementById('alerts-mes').innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════
+// WHATSAPP
+// ═══════════════════════════════════════════════
+function openWa(si){
+  const s=monthServices[si];
+  const lines=[];
+  lines.push(`*Ministerio de Música — ${s.label} ${MESES[s.month]}*`);
+  lines.push('');
+  const rolesWithValues=ROLE_IDS.filter(([,id])=>s.roles[id]);
+  if(rolesWithValues.length){
+    lines.push('*Banda*');
+    rolesWithValues.forEach(([l,id])=>{
+      const em=ROLE_EMOJIS[id]||'🎵';
+      lines.push(`${em} ${s.roles[id]} _(${l})_`);
+    });
+    lines.push('');
+  }
+  SECCIONES.forEach(sec=>{
+    const songs=s.songs[sec]||[];
+    if(!songs.length)return;
+    lines.push(`*${SEC_EMOJIS[sec]} ${SEC_LABELS[sec]}*`);
+    songs.forEach(sg=>{
+      let line=`• ${sg.name}`;
+      if(sg.key)line+=` — ${sg.key}`;
+      if(sg.note)line+=`\n  _${sg.note}_`;
+      lines.push(line);
+    });
+    lines.push('');
+  });
+  const dev=document.getElementById('mes-devocional').value.trim();
+  const vers=document.getElementById('mes-versiculo').value.trim();
+  if(vers||dev){
+    lines.push('*📖 Devocional del mes*');
+    if(vers)lines.push(`_${vers}_`);
+    if(dev)lines.push(dev);
+    lines.push('');
+  }
+  lines.push('Por favor confirmar asistencia 🙏');
+  document.getElementById('wa-text').textContent=lines.join('\n');
+  document.getElementById('modal-wa').classList.add('open');
+}
+
+function copyWa(){
+  navigator.clipboard.writeText(document.getElementById('wa-text').textContent);
+  const btn=document.querySelector('#modal-wa .btn-success');
+  btn.innerHTML='<i class="ti ti-check"></i> Copiado!';
+  setTimeout(()=>btn.innerHTML='<i class="ti ti-copy"></i> Copiar mensaje',2000);
+}
+
+// ═══════════════════════════════════════════════
+// BANDAS
+// ═══════════════════════════════════════════════
+function openBandaModal(id=null){
+  editingBandaId=id;
+  document.getElementById('banda-modal-title').textContent=id?'Editar banda':'Nueva banda';
+  if(id){
+    const b=getBandas().find(b=>b.id===id);
+    if(b){document.getElementById('bm-name').value=b.name;ROLE_IDS.forEach(([,rid])=>{const el=document.getElementById('bm-'+rid);if(el)el.value=b.roles[rid]||'';});}
+  } else {
+    document.getElementById('bm-name').value='';
+    ROLE_IDS.forEach(([,rid])=>{const el=document.getElementById('bm-'+rid);if(el)el.value='';});
+  }
+  document.getElementById('modal-banda').classList.add('open');
+}
+
+function saveBanda(){
+  const name=document.getElementById('bm-name').value.trim();
+  if(!name)return;
+  const roles={};ROLE_IDS.forEach(([,rid])=>{roles[rid]=document.getElementById('bm-'+rid).value.trim();});
+  const bandas=getBandas();
+  if(editingBandaId){const idx=bandas.findIndex(b=>b.id===editingBandaId);if(idx>=0){bandas[idx].name=name;bandas[idx].roles=roles;}}
+  else bandas.push({id:Date.now().toString(),name,roles});
+  saveBandas(bandas);
+  closeModal('modal-banda');
+  renderBandas();
+}
+
+function deleteBanda(id){
+  if(!confirm('Eliminar esta banda?'))return;
+  saveBandas(getBandas().filter(b=>b.id!==id));
+  renderBandas();
+}
+
+function renderBandas(){
+  const bandas=getBandas();
+  const el=document.getElementById('bandas-list');
+  if(!bandas.length){el.innerHTML='<div class="empty-state"><i class="ti ti-users-off"></i>No hay bandas guardadas</div>';return;}
+  el.innerHTML=bandas.map(b=>`
+    <div class="banda-item">
+      <div class="banda-name">${b.name}
+        <div class="btn-group">
+          <button class="btn btn-sm" onclick="openBandaModal('${b.id}')"><i class="ti ti-edit"></i> Editar</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteBanda('${b.id}')"><i class="ti ti-trash"></i></button>
+        </div>
+      </div>
+      <div class="banda-roles">
+        ${ROLE_IDS.filter(([,rid])=>b.roles[rid]).map(([l,rid])=>`<div class="banda-role"><span>${l}:</span><span style="color:var(--text)">${b.roles[rid]}</span></div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════
+// CANCIONES
+// ═══════════════════════════════════════════════
+let catFilter='';
+
+function openCancionModal(id=null){
+  editingCancionId=id;
+  document.getElementById('cancion-modal-title').textContent=id?'Editar canción':'Nueva canción';
+  const fields=['cm-name','cm-key','cm-key-orig','cm-author','cm-note','cm-youtube'];
+  fields.forEach(f=>document.getElementById(f).value='');
+  document.getElementById('cm-nueva').checked=false;
+  if(id){
+    const c=getCanciones().find(c=>c.id===id);
+    if(c){
+      document.getElementById('cm-name').value=c.name||'';
+      document.getElementById('cm-key').value=c.key||'';
+      document.getElementById('cm-key-orig').value=c.keyOrig||'';
+      document.getElementById('cm-author').value=c.author||'';
+      document.getElementById('cm-note').value=c.playNote||'';
+      document.getElementById('cm-youtube').value=c.youtube||'';
+      document.getElementById('cm-nueva').checked=!!c.nueva;
+    }
+  }
+  renderCmCats(id?getCanciones().find(c=>c.id===id)?.cats||[]:[]); 
+  document.getElementById('modal-cancion').classList.add('open');
+}
+
+function renderCmCats(selected=[]){
+  const el=document.getElementById('cm-cats');
+  el.innerHTML=CATS.map(c=>`<span class="chip${selected.includes(c)?' active':''}" onclick="this.classList.toggle('active')">${c}</span>`).join('');
+}
+
+function getSelectedCats(){
+  return[...document.getElementById('cm-cats').querySelectorAll('.chip.active')].map(c=>c.textContent);
+}
+
+function saveCancion(){
+  const name=document.getElementById('cm-name').value.trim();
+  if(!name)return;
+  const canciones=getCanciones();
+  // duplicate check — only when creating new, not editing
+  if(!editingCancionId){
+    const exists=canciones.find(c=>c.name.toLowerCase()===name.toLowerCase());
+    if(exists){
+      showToast(`"${name}" ya está en la biblioteca`,'amber');
+      return;
+    }
+  }
+  const c={
+    id:editingCancionId||Date.now().toString(),
+    name, key:document.getElementById('cm-key').value.trim(),
+    keyOrig:document.getElementById('cm-key-orig').value.trim(),
+    author:document.getElementById('cm-author').value.trim(),
+    playNote:document.getElementById('cm-note').value.trim(),
+    youtube:document.getElementById('cm-youtube').value.trim(),
+    nueva:document.getElementById('cm-nueva').checked,
+    cats:getSelectedCats()
+  };
+  if(editingCancionId){const idx=canciones.findIndex(cc=>cc.id===editingCancionId);if(idx>=0)canciones[idx]=c;else canciones.push(c);}
+  else canciones.push(c);
+  saveCanciones(canciones);
+  closeModal('modal-cancion');
+  renderCanciones();
+}
+
+function deleteCancion(id){
+  if(!confirm('Eliminar esta canción?'))return;
+  saveCanciones(getCanciones().filter(c=>c.id!==id));
+  renderCanciones();
+}
+
+function renderCanciones(){
+  const q=(document.getElementById('search-canciones')?.value||'').toLowerCase();
+  let songs=getCanciones()
+    .filter(s=>(!q||s.name.toLowerCase().includes(q))&&(!catFilter||s.cats?.includes(catFilter)))
+    .sort((a,b)=>a.name.localeCompare(b.name,'es',{sensitivity:'base'}));
+  const el=document.getElementById('canciones-list');
+  const chips=document.getElementById('filter-chips');
+  chips.innerHTML='<span class="chip'+(catFilter===''?' active':'')+'" onclick="catFilter=\'\';renderCanciones()">Todas</span>'+
+    CATS.map(c=>`<span class="chip${catFilter===c?' active':''}" onclick="catFilter='${c}';renderCanciones()">${c}</span>`).join('');
+  if(!songs.length){el.innerHTML='<div class="empty-state"><i class="ti ti-music-off"></i>No hay canciones</div>';return;}
+  el.innerHTML=songs.map(s=>`
+    <div class="song-lib-item">
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+          <span class="song-lib-name">${s.name}</span>
+          ${s.nueva?`<span class="badge badge-green">Nueva</span>`:''}
+          ${s.youtube?`<a href="${s.youtube}" target="_blank" style="color:var(--text3);font-size:14px"><i class="ti ti-brand-youtube"></i></a>`:''}
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text3)">
+          ${s.key?`<span>Iglesia: <strong style="color:var(--accent)">${s.key}</strong></span>`:''}
+          ${s.keyOrig?`<span>Original: <strong>${s.keyOrig}</strong></span>`:''}
+          ${s.author?`<span>${s.author}</span>`:''}
+          ${s.playNote?`<span style="font-style:italic">${s.playNote}</span>`:''}
+        </div>
+        ${s.cats?.length?`<div class="tag-list" style="margin-top:4px">${s.cats.map(c=>`<span class="badge badge-gray" style="font-size:10px">${c}</span>`).join('')}</div>`:''}
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-sm btn-icon" onclick="openCancionModal('${s.id}')"><i class="ti ti-edit"></i></button>
+        <button class="btn btn-sm btn-icon btn-danger" onclick="deleteCancion('${s.id}')"><i class="ti ti-trash"></i></button>
+      </div>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════
+// LISTAS ARMADAS
+// ═══════════════════════════════════════════════
+function openListaModal(id=null){
+  editingListaId=id;
+  document.getElementById('lista-modal-title').textContent=id?'Editar lista':'Nueva lista';
+  document.getElementById('lm-name').value=id?(getListas().find(l=>l.id===id)?.name||''):'';
+  const sections=id?getListas().find(l=>l.id===id)?.songs||{}:{};
+  const el=document.getElementById('lm-sections');
+  el.innerHTML=SECCIONES.map(sec=>`
+    <div style="margin-bottom:12px">
+      <div class="songs-sec-title">${SEC_LABELS[sec]}</div>
+      <div id="lm-${sec}">
+        ${(sections[sec]||[]).map((sg,i)=>renderListaSongRow(sec,i,sg)).join('')}
+      </div>
+      <button class="btn btn-sm" style="margin-top:4px" onclick="addListaSong('${sec}')"><i class="ti ti-plus"></i> Agregar desde biblioteca</button>
+    </div>`).join('');
+  document.getElementById('modal-lista').classList.add('open');
+}
+
+function renderListaSongRow(sec,idx,sg){
+  return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;background:var(--bg3);border-radius:6px;padding:5px 8px" id="lr-${sec}-${idx}">
+    <span style="flex:1;font-size:13px">${sg.name}</span>
+    <span style="font-size:12px;color:var(--accent);font-weight:600;width:40px">${sg.key||''}</span>
+    <button class="btn btn-sm btn-icon btn-danger" onclick="this.parentNode.remove()"><i class="ti ti-x"></i></button>
+  </div>`;
+}
+
+let listPickerSec=null;
+function addListaSong(sec){
+  listPickerSec=sec;
+  pickerSI='lista'; pickerSec=sec; pickerSelected=[];
+  document.getElementById('picker-title').textContent=`Agregar a ${SEC_LABELS[sec]}`;
+  document.getElementById('picker-search').value=''; pickerCatFilter='';
+  renderPickerCats(); renderPicker();
+  document.getElementById('modal-picker').classList.add('open');
+  // override confirm
+  document.querySelector('#modal-picker .btn-primary').onclick=()=>confirmListaPicker(sec);
+}
+
+function confirmListaPicker(sec){
+  const canciones=getCanciones();
+  pickerSelected.forEach(id=>{
+    const c=canciones.find(c=>c.id===id);
+    if(c){
+      const wrap=document.getElementById('lm-'+sec);
+      const idx=wrap.children.length;
+      wrap.insertAdjacentHTML('beforeend',renderListaSongRow(sec,idx,{name:c.name,key:c.key}));
+    }
+  });
+  closeModal('modal-picker');
+  document.querySelector('#modal-picker .btn-primary').onclick=confirmPicker;
+}
+
+function saveLista(){
+  const name=document.getElementById('lm-name').value.trim();
+  if(!name)return;
+  const songs={};
+  SECCIONES.forEach(sec=>{
+    songs[sec]=[...document.getElementById('lm-'+sec).children].map(row=>{
+      const spans=row.querySelectorAll('span');
+      return{name:spans[0]?.textContent.trim(),key:spans[1]?.textContent.trim()};
+    }).filter(s=>s.name);
+  });
+  const listas=getListas();
+  const item={id:editingListaId||Date.now().toString(),name,songs};
+  if(editingListaId){const idx=listas.findIndex(l=>l.id===editingListaId);if(idx>=0)listas[idx]=item;else listas.push(item);}
+  else listas.push(item);
+  saveListas(listas);
+  closeModal('modal-lista');
+  renderListas();
+}
+
+function deleteLista(id){
+  if(!confirm('Eliminar esta lista?'))return;
+  saveListas(getListas().filter(l=>l.id!==id));
+  renderListas();
+}
+
+function renderListas(){
+  const listas=getListas();
+  const el=document.getElementById('listas-list');
+  if(!listas.length){el.innerHTML='<div class="empty-state"><i class="ti ti-playlist-off"></i>No hay listas guardadas</div>';return;}
+  el.innerHTML=listas.map(l=>`
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-size:14px;font-weight:600">${l.name}</span>
+        <div class="btn-group">
+          <button class="btn btn-sm" onclick="openListaModal('${l.id}')"><i class="ti ti-edit"></i> Editar</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteLista('${l.id}')"><i class="ti ti-trash"></i></button>
+        </div>
+      </div>
+      ${SECCIONES.filter(sec=>(l.songs[sec]||[]).length).map(sec=>`
+        <div style="margin-bottom:8px">
+          <div class="songs-sec-title">${SEC_LABELS[sec]}</div>
+          ${l.songs[sec].map(sg=>`<div style="font-size:12px;padding:3px 0;color:var(--text2)">• ${sg.name} <span style="color:var(--accent)">${sg.key||''}</span></div>`).join('')}
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════
+// PARTICIPACION
+// ═══════════════════════════════════════════════
+function renderParticipacion(){
+  const el=document.getElementById('part-content');
+  if(!monthServices.length){el.innerHTML='<div class="empty-state"><i class="ti ti-calendar-off"></i>Cargá el mes primero en la pestaña Mes completo</div>';return;}
+  const n=monthServices.length;
+  const map={};
+  monthServices.forEach((s,i)=>{
+    ROLE_IDS.forEach(([,id])=>{
+      const v=(s.roles[id]||'').trim();
+      if(v){if(!map[v])map[v]={count:0,last:null,indices:[]};map[v].count++;map[v].last=s;map[v].indices.push(i);}
+    });
+  });
+  const rows=Object.entries(map).sort((a,b)=>b[1].count-a[1].count);
+  if(!rows.length){el.innerHTML='<div class="empty-state"><i class="ti ti-users-off"></i>Asigná músicos a los servicios</div>';return;}
+
+  let ausentes=[];
+  rows.forEach(([name,d])=>{for(let i=0;i<=n-3;i++){if(!d.indices.includes(i)&&!d.indices.includes(i+1)&&!d.indices.includes(i+2)&&!ausentes.includes(name))ausentes.push(name);}});
+
+  el.innerHTML=`
+    <div class="card">
+      <div class="card-title">Participación — ${MESES[calYM.m]} ${calYM.y}</div>
+      <table class="part-table">
+        <thead><tr><th>Músico</th><th>Servicios</th><th>Último servicio</th><th>Estado</th></tr></thead>
+        <tbody>
+          ${rows.map(([name,d])=>{
+            let badge,status;
+            if(ausentes.includes(name)){badge='badge-amber';status='Revisar ausencia';}
+            else if(d.count>=n&&n>=3){badge='badge-red';status='Muy cargado';}
+            else if(d.count===1){badge='badge-gray';status='Poca participación';}
+            else{badge='badge-green';status='OK';}
+            return`<tr>
+              <td style="font-weight:500">${name}</td>
+              <td>${d.count} de ${n}</td>
+              <td style="color:var(--text3)">${d.last?d.last.label:'-'}</td>
+              <td><span class="badge ${badge}">${status}</span></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════
+// CONFIGURACIÓN
+// ═══════════════════════════════════════════════
+function getConfig(){ try{return JSON.parse(localStorage.getItem('mm_config')||'{}')}catch{return{}} }
+function saveConfig(){
+  const cfg={
+    iglesia:  document.getElementById('cfg-iglesia')?.value.trim()||'',
+    ministerio:document.getElementById('cfg-ministerio')?.value.trim()||'',
+    ciudad:   document.getElementById('cfg-ciudad')?.value.trim()||'',
+    logo:     getConfig().logo||''
+  };
+  localStorage.setItem('mm_config',JSON.stringify(cfg));
+  renderConfigPreview();
+}
+function loadConfigFields(){
+  const cfg=getConfig();
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v||'';};
+  set('cfg-iglesia',cfg.iglesia);
+  set('cfg-ministerio',cfg.ministerio);
+  set('cfg-ciudad',cfg.ciudad);
+  if(cfg.logo){
+    const prev=document.getElementById('cfg-logo-preview');
+    if(prev)prev.innerHTML=`<img src="${cfg.logo}" style="width:100%;height:100%;object-fit:contain;border-radius:50%">`;
+    const rm=document.getElementById('cfg-logo-remove');
+    if(rm)rm.style.display='';
+  }
+}
+function handleLogoUpload(e){
+  const file=e.target.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const cfg=getConfig(); cfg.logo=ev.target.result;
+    localStorage.setItem('mm_config',JSON.stringify(cfg));
+    const prev=document.getElementById('cfg-logo-preview');
+    if(prev)prev.innerHTML=`<img src="${cfg.logo}" style="width:100%;height:100%;object-fit:contain;border-radius:50%">`;
+    const rm=document.getElementById('cfg-logo-remove');
+    if(rm)rm.style.display='';
+    renderConfigPreview();
+    showToast('Logo guardado','green');
+  };
+  reader.readAsDataURL(file);
+}
+function removeLogo(){
+  const cfg=getConfig(); cfg.logo='';
+  localStorage.setItem('mm_config',JSON.stringify(cfg));
+  const prev=document.getElementById('cfg-logo-preview');
+  if(prev)prev.innerHTML=`<i class="ti ti-photo" style="font-size:24px;color:var(--text3)"></i>`;
+  const rm=document.getElementById('cfg-logo-remove');
+  if(rm)rm.style.display='none';
+  renderConfigPreview();
+}
+function renderConfigPreview(){
+  const cfg=getConfig();
+  const el=document.getElementById('cfg-header-preview');
+  if(!el)return;
+  const accent='#2B6CB0';
+  el.innerHTML=`
+    <div style="background:#ffffff;border-bottom:1px solid #e8ecf0;padding:20px 24px;display:flex;align-items:center;gap:14px;border-radius:8px 8px 0 0">
+      ${cfg.logo?`<img src="${cfg.logo}" style="width:44px;height:44px;object-fit:contain;flex-shrink:0">`:''}
+      <div>
+        <div style="font-size:10px;font-weight:700;color:${accent};letter-spacing:.12em;text-transform:uppercase">${cfg.iglesia||'Nombre de la iglesia'}</div>
+        <div style="font-size:12px;font-weight:500;color:#4a5568">${cfg.ministerio||'Ministerio de Alabanza'}</div>
+      </div>
+    </div>
+    <div style="background:#f4f6f9;padding:16px 24px;border-radius:0 0 8px 8px">
+      <div style="font-size:9px;font-weight:700;color:${accent};letter-spacing:.12em;text-transform:uppercase;margin-bottom:3px">Ministerio de Música · 2026</div>
+      <div style="font-size:36px;font-weight:800;color:#1a2236;line-height:.95;font-family:'Fraunces',serif">Junio</div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════
+// IMAGE GENERATION — Editorial Premium v3
+// ═══════════════════════════════════════════════
+
+const MES_ACCENT = [
+  '#2773B8', // Enero
+  '#B05A2F', // Febrero
+  '#3A7D5A', // Marzo
+  '#8B4A2E', // Abril
+  '#6B3F8A', // Mayo
+  '#1E5F9E', // Junio
+  '#A06820', // Julio
+  '#2D7A50', // Agosto
+  '#1E7070', // Septiembre
+  '#B04A1A', // Octubre
+  '#3D5A80', // Noviembre
+  '#7A2050', // Diciembre
+];
+
+// Emojis — controlled size & alignment, no scaling issues
+const ROLE_EMOJI = {
+  coordina:'👤', voz1:'🎤', voz2:'🎤', voz3:'🎤',
+  teclado:'🎹', acustica:'🎸', acustica2:'🎸', electrica:'🎸', bateria:'🥁', bajo:'🎸'
+};
+
+const SEC_LABEL = {principales:'CANCIONES',cena:'SANTA CENA',ofrenda:'OFRENDA',intervalo:'INTERVALO',final:'FINAL'};
+
+// Each role row height — must match actual rendered row height
+const ROLES_ROW_H = 44;
+
+// Shared design tokens
+const IMG_SURFACE  = '#ffffff';
+const IMG_SOFT     = '#f7faff';
+const IMG_BORDER   = '#dbe5f0';
+const IMG_TEXT     = '#172235';
+const IMG_MUTED    = '#64748b';
+const IMG_SHADOW   = '0 10px 24px rgba(15,23,42,.08),0 2px 6px rgba(15,23,42,.04)';
+
+// ── Band card (equipo) ─────────────────────────
+function buildBandCard(s, accent, rolesH){
+  const roles = ROLE_IDS.map(([l,id])=>({label:l,id,name:(s.roles[id]||'').trim()})).filter(r=>r.name);
+  const accentTint = accent+'10';
+
+  const rolesHTML = roles.map((r,i)=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:5px 0;${i<roles.length-1?'border-bottom:1px solid '+accent+'18':''}">
+      <span style="flex-shrink:0;font-size:15px;line-height:1;width:20px;text-align:center">${ROLE_EMOJI[r.id]||'🎵'}</span>
+      <div style="min-width:0;line-height:1.2">
+        <div style="font-size:8.5px;font-weight:600;color:${accent};letter-spacing:.1em;text-transform:uppercase;opacity:.7;margin-bottom:1px">${r.label}</div>
+        <div style="font-size:15px;font-weight:500;color:${IMG_TEXT}">${r.name}</div>
+      </div>
+    </div>`).join('');
+
+  const exactH = roles.length * ROLES_ROW_H + 20;
+  const usedH  = Math.max(exactH, rolesH);
+
+  return `
+    <div style="background:${IMG_SURFACE};border-radius:14px;border:1px solid ${IMG_BORDER};overflow:hidden;box-shadow:${IMG_SHADOW}">
+      <div style="padding:10px 15px 9px;background:${accent}">
+        <div style="font-size:17px;font-weight:700;color:#fff;letter-spacing:.01em">${s.label}</div>
+      </div>
+      <div style="padding:10px 14px 12px;background:${accentTint};min-height:${usedH}px;box-sizing:border-box">
+        ${rolesHTML||'<div style="font-size:13px;color:#c8d0dc;font-style:italic;padding:4px 0">Sin equipo asignado</div>'}
+      </div>
+    </div>`;
+}
+
+// ── Songs card (canciones) ─────────────────────
+function buildSongsCard(s, accent){
+  const songs = SECCIONES.reduce((a,sec)=>{a[sec]=s.songs[sec]||[];return a},{});
+  const hasSongs = SECCIONES.some(sec=>songs[sec].length>0);
+
+  const songsHTML = SECCIONES.map(sec=>{
+    if(!songs[sec].length) return '';
+    const isMain = sec==='principales';
+    return `
+      <div style="margin-bottom:8px">
+        ${!isMain?`
+        <div style="display:flex;align-items:center;gap:6px;margin:6px 0 5px">
+          <div style="height:1px;background:${accent};opacity:.18;flex:1"></div>
+          <span style="font-size:8px;font-weight:700;color:${accent};letter-spacing:.15em;text-transform:uppercase;opacity:.8">${SEC_LABEL[sec]}</span>
+          <div style="height:1px;background:${accent};opacity:.18;flex:1"></div>
+        </div>`:''}
+        ${songs[sec].map(sg=>`
+          <div style="padding:3px 0;border-bottom:1px solid ${accent}12">
+            <div style="display:grid;grid-template-columns:1fr auto;column-gap:8px;align-items:baseline;line-height:1.4">
+              <span style="font-size:15px;font-weight:400;color:${IMG_TEXT};min-width:0">• ${sg.name}${sg.nueva?` <span style="font-size:7.5px;font-weight:700;color:#fff;background:#2d8a4e;border-radius:3px;padding:1px 4px;letter-spacing:.06em;vertical-align:middle">NUEVA</span>`:''}
+              </span>
+              ${sg.key?`<span style="font-size:15px;font-weight:700;color:${accent};white-space:nowrap">${sg.key}</span>`:'<span></span>'}
+            </div>
+            ${sg.note?`<div style="font-size:12px;color:${IMG_MUTED};padding-left:10px;margin-top:1px;font-style:italic;line-height:1.35">↳ ${sg.note}</div>`:''}
+          </div>`).join('')}
+      </div>`;
+  }).join('');
+
+  return `
+    <div style="background:${IMG_SOFT};border-radius:14px;border:1px solid ${IMG_BORDER};overflow:hidden;box-shadow:${IMG_SHADOW}">
+      <div style="display:flex;align-items:center;gap:7px;padding:8px 14px 7px;border-bottom:1px solid ${accent}14;background:${IMG_SURFACE}">
+        <span style="font-size:15px;color:${accent}">🎵</span>
+        <span style="font-size:17px;font-weight:700;color:${accent};letter-spacing:.01em">Canciones</span>
+      </div>
+      <div style="padding:8px 14px 12px">
+        ${hasSongs?songsHTML:'<div style="font-size:13px;color:#c8d0dc;font-style:italic">Sin canciones asignadas</div>'}
+      </div>
+    </div>`;
+}
+
+// ── Full month layout ──────────────────────────
+function buildMonthHTML(services, opts={}){
+  const {versiculo='',devText='',desafio='',nuevas=[]} = opts;
+  const month  = services[0]?.month ?? new Date().getMonth();
+  const year   = services[0]?.year  ?? new Date().getFullYear();
+  const accent = MES_ACCENT[month] || '#1E5F9E';
+  const cfg    = getConfig();
+  const cols   = services.length;
+  const colW   = 248;
+  const gap    = 14;
+  const padX   = 32;
+  const W      = Math.max(cols*colW+(cols-1)*gap+padX*2, 640);
+
+  const iglesia    = cfg.iglesia    || 'Perlas para Dios';
+  const ministerio = cfg.ministerio || 'Ministerio de Alabanza';
+
+  const footerLogo = cfg.logo
+    ? `<img src="${cfg.logo}" style="width:18px;height:18px;object-fit:contain;opacity:.4;margin-right:8px;vertical-align:middle">`
+    : '';
+
+  // 3 cards superiores — grid con proporciones: reflexión 2fr · desafío 1.35fr · nueva 1fr
+  const reflexionBlock = (devText || desafio || nuevas.length) ? `
+    <div style="display:grid;grid-template-columns:${devText?'2fr':''}${desafio?' 1.35fr':''}${nuevas.length?' 1fr':''};gap:${gap}px;margin-bottom:22px;align-items:start">
+
+      ${devText?`
+      <div style="background:${IMG_SURFACE};border-radius:14px;border:1px solid ${IMG_BORDER};border-top:4px solid ${accent};padding:16px 18px;box-shadow:${IMG_SHADOW}">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="font-size:16px;line-height:1">🙏</span>
+          <span style="font-size:13px;font-weight:800;color:${accent};letter-spacing:.08em;text-transform:uppercase">Reflexión del mes</span>
+        </div>
+        <div style="font-size:14px;color:#3a4a5a;line-height:1.8">${devText}</div>
+      </div>`:''}
+
+      ${desafio?`
+      <div style="background:${IMG_SURFACE};border-radius:14px;border:1px solid ${IMG_BORDER};border-top:4px solid ${accent};padding:16px 18px;box-shadow:${IMG_SHADOW}">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="font-size:16px;line-height:1">💪</span>
+          <span style="font-size:13px;font-weight:800;color:${accent};letter-spacing:.08em;text-transform:uppercase">Desafío del mes</span>
+        </div>
+        <div style="font-size:14px;color:#3a4a5a;line-height:1.8">${desafio}</div>
+      </div>`:''}
+
+      ${nuevas.length?`
+      <div style="background:${IMG_SURFACE};border-radius:14px;border:1px solid ${IMG_BORDER};border-top:4px solid ${accent};padding:14px 16px;box-shadow:${IMG_SHADOW}">
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px">
+          <span style="font-size:15px;line-height:1">🎵</span>
+          <span style="font-size:13px;font-weight:800;color:${accent};letter-spacing:.08em;text-transform:uppercase">Canción nueva del mes</span>
+        </div>
+        ${nuevas.map(sg=>`
+          <div style="margin-bottom:6px">
+            <div style="font-size:15px;font-weight:700;color:${IMG_TEXT};line-height:1.3">${sg.name}${sg.key?' <span style="color:'+accent+'">— '+sg.key+'</span>':''}</div>
+            ${sg.author?`<div style="font-size:11px;color:${IMG_MUTED};margin-top:2px;font-style:italic">${sg.author}</div>`:''}
+          </div>`).join('')}
+      </div>`:''}
+
+    </div>` : '';
+
+  // Altura de zona de músicos — la columna más larga manda
+  const maxRoles = Math.max(...services.map(s=>
+    ROLE_IDS.filter(([,id])=>(s.roles[id]||'').trim()).length
+  ),1);
+  const rolesH = maxRoles * ROLES_ROW_H + 20;
+
+  // Cada columna: card banda arriba + card canciones abajo, separadas
+  const serviceCols = services.map(s=>`
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:${gap}px">
+      ${buildBandCard(s,accent,rolesH)}
+      ${buildSongsCard(s,accent)}
+    </div>`
+  ).join('');
+
+  return `
+    <div id="_month_render" style="width:${W}px;background:#edf0f7;font-family:'Outfit',sans-serif;padding:0">
+
+      <!-- ══ HEADER ════════════════════════════ -->
+      <div style="background:${IMG_SURFACE};padding:28px ${padX}px 24px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:24px">
+          <div style="flex-shrink:0">
+            <div style="font-size:76px;font-weight:800;color:${IMG_TEXT};line-height:.88;font-family:'Fraunces',serif;letter-spacing:-2px">${MESES[month]}</div>
+          </div>
+          ${versiculo?`
+          <div style="max-width:420px;background:${accent}0d;border-radius:12px;padding:13px 17px;border:1px solid ${accent}22">
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:5px">
+              <span style="font-size:14px;line-height:1">📖</span>
+              <span style="font-size:9.5px;font-weight:700;color:${accent};letter-spacing:.13em;text-transform:uppercase">Versículo del mes</span>
+            </div>
+            <div style="font-size:14px;color:#2e3e52;line-height:1.65;font-style:italic">${versiculo}</div>
+          </div>`:''}
+        </div>
+      </div>
+
+      <!-- ══ BODY ══════════════════════════════ -->
+      <div style="padding:22px ${padX}px 36px">
+        ${reflexionBlock}
+        <div style="display:flex;gap:${gap}px;align-items:flex-start">
+          ${serviceCols}
+        </div>
+      </div>
+
+      <!-- ══ FOOTER ════════════════════════════ -->
+      <div style="background:${IMG_SURFACE};border-top:1px solid ${IMG_BORDER};padding:12px ${padX}px;display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:8px">
+          ${footerLogo}
+          <span style="font-size:10.5px;color:${IMG_MUTED};letter-spacing:.1em;text-transform:uppercase;font-weight:500">${iglesia} · ${ministerio}</span>
+        </div>
+        <div style="width:24px;height:2px;background:${accent};border-radius:2px;opacity:.4"></div>
+      </div>
+
+    </div>`;
+}
+
+// ── html → canvas ──────────────────────────────
+async function htmlToCanvas(html, targetId='_month_render'){
+  let container=document.getElementById('_render_container');
+  if(!container){
+    container=document.createElement('div');
+    container.id='_render_container';
+    container.style.cssText='position:fixed;left:-9999px;top:0;z-index:-1;pointer-events:none';
+    document.body.appendChild(container);
+  }
+  container.innerHTML=html;
+  await document.fonts.ready;
+  await new Promise(r=>requestAnimationFrame(r));
+  await new Promise(r=>setTimeout(r,160));
+  const el=document.getElementById(targetId)||container.firstElementChild;
+  const canvas=await html2canvas(el,{
+    scale:2.5, useCORS:true, allowTaint:true,
+    backgroundColor:'#f2f4f7', logging:false,
+    width:el.offsetWidth, windowWidth:el.offsetWidth+200,
+  });
+  container.innerHTML='';
+  return canvas;
+}
+
+// ── Preview ────────────────────────────────────
+async function previewFirst(){
+  if(!monthServices.length)return;
+  const btns=document.querySelectorAll('#gen-wrap button');
+  btns.forEach(b=>b.disabled=true);
+  showToast('Generando vista previa...','amber');
+  try{
+    const cv=await htmlToCanvas(buildMonthHTML(monthServices,{
+      versiculo:document.getElementById('mes-versiculo').value.trim(),
+      devText:document.getElementById('mes-devocional').value.trim(),
+      desafio:document.getElementById('mes-desafio').value.trim(),
+      nuevas:getNuevasMes()
+    }));
+    const out=document.getElementById('cv-preview');
+    out.width=cv.width; out.height=cv.height;
+    out.getContext('2d').drawImage(cv,0,0);
+    out.style.width='100%'; out.style.height='auto';
+    document.getElementById('preview-wrap').style.display='block';
+    showToast('Vista previa lista','green');
+  }catch(e){showToast('Error al generar','red');console.error(e);}
+  btns.forEach(b=>b.disabled=false);
+}
+
+// ── Generate & download ────────────────────────
+async function generateZip(){
+  if(!monthServices.length)return;
+  const btn =document.querySelector('#gen-wrap .btn-success');
+  const fill=document.getElementById('prog-fill');
+  const lbl =document.getElementById('prog-label');
+  btn.disabled=true;
+  document.getElementById('prog-wrap').style.display='block';
+  lbl.textContent='Generando imagen...'; fill.style.width='20%';
+  try{
+    // save history before generating
+    saveHistorialFromServices();
+    const cv=await htmlToCanvas(buildMonthHTML(monthServices,{
+      versiculo:document.getElementById('mes-versiculo').value.trim(),
+      devText:document.getElementById('mes-devocional').value.trim(),
+      desafio:document.getElementById('mes-desafio').value.trim(),
+      nuevas:getNuevasMes()
+    }));
+    fill.style.width='90%'; lbl.textContent='Descargando...';
+    const a=document.createElement('a');
+    a.href=cv.toDataURL('image/png');
+    a.download=`ministerio-${MESES[calYM.m]}-${calYM.y}.png`;
+    a.click();
+    fill.style.width='100%'; lbl.textContent='¡Listo!';
+    showToast('Imagen descargada','green');
+  }catch(e){showToast('Error al generar imagen','red');console.error(e);lbl.textContent='Error';}
+  btn.disabled=false;
+}
+
+// ═══════════════════════════════════════════════
+// BACKUP & RESTORE
+// ═══════════════════════════════════════════════
+// current app version — bump this when data model changes
+const APP_VERSION = '1.0.0';
+
+function exportBackup(){
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const ts = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+
+  // capture full services state including every field
+  const services = monthServices.map(s => ({
+    ...s,
+    roles: {...(s.roles||{})},
+    songs: Object.fromEntries(
+      SECCIONES.map(sec => [sec, (s.songs[sec]||[]).map(sg => ({...sg}))])
+    )
+  }));
+
+  const backup = {
+    app: 'ministerio-musica',
+    version: APP_VERSION,
+    exportedAt: now.toISOString(),
+    data: {
+      config:    getConfig(),
+      historial: getHistorial(),
+      bandas:    getBandas(),
+      canciones: getCanciones(),
+      listas:    getListas(),
+      mesActual: {
+        year:      calYM.y,
+        month:     calYM.m,
+        diasSab:   document.getElementById('chk-sab')?.checked ?? true,
+        diasDom:   document.getElementById('chk-dom')?.checked ?? false,
+        versiculo: document.getElementById('mes-versiculo')?.value?.trim() || '',
+        devocional:document.getElementById('mes-devocional')?.value?.trim() || '',
+        nuevas:    getNuevasMes(),
+        services
+      }
+    }
+  };
+
+  const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `ministerio-backup-${ts}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('Backup exportado correctamente', 'green');
+}
+
+// ─── Shared file reader for import & verify ──
+let pendingImportData = null;
+
+function handleBackupFile(event, mode){
+  const file = event.target.files[0];
+  if(!file) return;
+  event.target.value = '';
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const raw = JSON.parse(e.target.result);
+      const validated = validateBackup(raw);
+      if(!validated.ok) { showToast(validated.error, 'red'); return; }
+      pendingImportData = raw;
+      showBackupModal(raw, mode);
+    } catch {
+      showToast('El archivo no es un backup válido (JSON corrupto)', 'red');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ─── Validation ───────────────────────────────
+function validateBackup(raw){
+  if(!raw || typeof raw !== 'object') return {ok:false, error:'Archivo inválido'};
+  // support both new format {app,version,data} and legacy {version,bandas,...}
+  const isNew = raw.app === 'ministerio-musica' && raw.data;
+  const isLegacy = !raw.app && raw.version && (raw.bandas || raw.canciones);
+  if(!isNew && !isLegacy) return {ok:false, error:'Este archivo no es un backup de esta app'};
+  return {ok:true, isLegacy};
+}
+
+function versionCompare(a, b){
+  // returns -1 (a<b), 0 (a===b), 1 (a>b)
+  const pa = a.split('.').map(Number);
+  const pb = b.split('.').map(Number);
+  for(let i=0;i<3;i++){
+    if((pa[i]||0) < (pb[i]||0)) return -1;
+    if((pa[i]||0) > (pb[i]||0)) return 1;
+  }
+  return 0;
+}
+
+// ─── Modal display ────────────────────────────
+function showBackupModal(raw, mode){
+  const isLegacy = !raw.app;
+  const fileVersion = raw.version || '?';
+  const appVersion  = APP_VERSION;
+  const vCmp = isLegacy ? -1 : versionCompare(fileVersion, appVersion);
+
+  // normalise data access (legacy vs new)
+  const d     = isLegacy ? raw : raw.data;
+  const meta  = isLegacy ? raw.mesActual : raw.data.mesActual;
+  const b     = d.bandas?.length    || 0;
+  const c     = d.canciones?.length || 0;
+  const l     = d.listas?.length    || 0;
+  const s     = meta?.services?.length || 0;
+  const mesLbl= meta ? `${MESES[meta.month]} ${meta.year}` : '—';
+  const dias  = meta ? [(meta.diasSab?'Sábados':''),(meta.diasDom?'Domingos':'')].filter(Boolean).join(' + ') || '—' : '—';
+  const fmtDate = raw.exportedAt
+    ? new Date(raw.exportedAt).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})
+    : '—';
+
+  // version warning
+  let versionAlert = '';
+  if(isLegacy || vCmp < 0){
+    versionAlert = `<div class="alert alert-amber" style="margin-bottom:10px">
+      <i class="ti ti-clock-exclamation"></i>
+      <div><strong style="display:block;margin-bottom:2px">Backup de versión anterior (${fileVersion})</strong>
+      Puede restaurarse, pero funciones nuevas podrían quedar vacías. La app actual es v${appVersion}.</div>
+    </div>`;
+  } else if(vCmp > 0){
+    versionAlert = `<div class="alert alert-red" style="margin-bottom:10px">
+      <i class="ti ti-alert-triangle"></i>
+      <div><strong style="display:block;margin-bottom:2px">Backup de versión más nueva (${fileVersion})</strong>
+      Este backup fue creado con una versión más reciente de la app. Algunos datos podrían no restaurarse correctamente.</div>
+    </div>`;
+  }
+
+  // content summary
+  const summary = `
+    <div class="card" style="margin-bottom:0">
+      <div class="card-title">Contenido del backup</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px 12px;font-size:13px">
+        <div style="color:var(--text3)">Exportado el</div><div>${fmtDate}</div>
+        <div style="color:var(--text3)">Versión app</div><div><span class="badge badge-gray">v${fileVersion}</span></div>
+        <div style="color:var(--text3)">Bandas</div><div><span class="badge badge-blue">${b}</span></div>
+        <div style="color:var(--text3)">Canciones</div><div><span class="badge badge-blue">${c}</span></div>
+        <div style="color:var(--text3)">Listas armadas</div><div><span class="badge badge-blue">${l}</span></div>
+        <div style="color:var(--text3)">Mes guardado</div><div>${mesLbl} <span class="badge badge-gray">${s} servicios</span></div>
+        <div style="color:var(--text3)">Días activos</div><div>${dias}</div>
+      </div>
+    </div>`;
+
+  const confirmBtn = document.getElementById('backup-confirm-btn');
+
+  if(mode === 'verify'){
+    document.getElementById('backup-modal-title').textContent = 'Verificar backup';
+    document.getElementById('backup-preview').innerHTML =
+      `<div class="alert alert-green" style="margin-bottom:10px"><i class="ti ti-shield-check"></i><div><strong>Backup válido</strong> — archivo legible y bien formado</div></div>`
+      + versionAlert + summary;
+    confirmBtn.style.display = 'none';
+    pendingImportData = null;
+  } else {
+    document.getElementById('backup-modal-title').textContent = 'Importar backup';
+    document.getElementById('backup-preview').innerHTML =
+      `<div class="alert alert-amber" style="margin-bottom:10px"><i class="ti ti-alert-triangle"></i>
+       <div><strong style="display:block;margin-bottom:2px">Esto reemplazará todos tus datos actuales</strong>
+       Los datos existentes se perderán. Exportá un backup primero si hace falta.</div></div>`
+      + versionAlert + summary;
+    confirmBtn.style.display = '';
+  }
+
+  document.getElementById('modal-backup').classList.add('open');
+}
+
+function confirmImport(){
+  if(!pendingImportData) return;
+  const raw  = pendingImportData;
+  const isLegacy = !raw.app;
+  const d    = isLegacy ? raw : raw.data;
+  const meta = isLegacy ? raw.mesActual : raw.data.mesActual;
+
+  if(d.bandas)    saveBandas(d.bandas);
+  if(d.canciones) saveCanciones(d.canciones);
+  if(d.listas)    saveListas(d.listas);
+  if(d.historial) saveHistorial(d.historial);
+  if(d.config)    localStorage.setItem('mm_config', JSON.stringify(d.config));
+  // clear autosave so imported mes state takes over
+  localStorage.removeItem('mm_mes_state');
+
+  if(meta){
+    calYM = {y: meta.year, m: meta.month};
+    monthServices = (meta.services || []).map(s => ({
+      ...s,
+      roles: s.roles || {},
+      songs: Object.fromEntries(SECCIONES.map(sec => [sec, s.songs?.[sec] || []]))
+    }));
+
+    const sabEl = document.getElementById('chk-sab');
+    const domEl = document.getElementById('chk-dom');
+    if(sabEl) sabEl.checked = meta.diasSab ?? true;
+    if(domEl) domEl.checked = meta.diasDom ?? false;
+
+    const vEl = document.getElementById('mes-versiculo');
+    const dEl = document.getElementById('mes-devocional');
+    if(vEl) vEl.value = meta.versiculo  || '';
+    if(dEl) dEl.value = meta.devocional || '';
+
+    const nWrap = document.getElementById('mes-nuevas');
+    if(nWrap){
+      nWrap.innerHTML = '';
+      (meta.nuevas || []).forEach(n => addNuevaMes(n.name, n.key, n.author));
+    }
+
+    renderCalMes();
+    renderServices();
+    document.getElementById('gen-wrap').style.display = monthServices.length ? 'block' : 'none';
+    checkAlerts();
+  }
+
+  closeModal('modal-backup');
+  pendingImportData = null;
+  showToast(`Restaurado: ${d.bandas?.length||0} bandas · ${d.canciones?.length||0} canciones · ${d.listas?.length||0} listas`, 'green');
+}
+
+// ─── Toast notification ───────────────────────
+function showToast(msg, type='green'){
+  const colors = {green:'var(--green-bg)',red:'var(--red-bg)',amber:'var(--amber-bg)'};
+  const borders = {green:'var(--green)',red:'var(--red)',amber:'var(--amber)'};
+  const text = {green:'var(--green)',red:'var(--red)',amber:'var(--amber)'};
+  const t = document.createElement('div');
+  t.style.cssText = `position:fixed;bottom:24px;right:24px;background:${colors[type]};border:1px solid ${borders[type]};color:${text[type]};padding:10px 16px;border-radius:8px;font-size:13px;font-weight:500;z-index:999;box-shadow:0 4px 16px rgba(0,0,0,.4);transition:opacity .3s`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),300)}, 3000);
+}
+
+// ═══════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+initCal();
+renderCalMes();
+// restore mes state if exists
+restoreMesState();
+// pre-load logo from config if stored
+(()=>{
+  const cfg=getConfig();
+  if(cfg.logo){
+    const prev=document.getElementById('cfg-logo-preview');
+    if(prev)prev.innerHTML=`<img src="${cfg.logo}" style="width:100%;height:100%;object-fit:contain;border-radius:50%">`;
+    const rm=document.getElementById('cfg-logo-remove');
+    if(rm)rm.style.display='';
+  }
+})();
+</script>
+</body>
+</html>
