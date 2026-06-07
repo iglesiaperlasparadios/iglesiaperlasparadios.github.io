@@ -203,13 +203,14 @@ select option { background: var(--bg3); }
     <span>Gestión de cronogramas</span>
   </div>
   <nav class="nav">
-    <div class="nav-item active" onclick="goTo('mes')"><i class="ti ti-calendar-month"></i> Mes completo</div>
-    <div class="nav-item" onclick="goTo('bandas')"><i class="ti ti-users"></i> Mis bandas</div>
-    <div class="nav-item" onclick="goTo('canciones')"><i class="ti ti-music"></i> Canciones</div>
-    <div class="nav-item" onclick="goTo('listas')"><i class="ti ti-playlist"></i> Listas armadas</div>
-    <div class="nav-item" onclick="goTo('participacion')"><i class="ti ti-chart-bar"></i> Participación</div>
-    <div class="nav-item" onclick="goTo('guion');renderGuion()"><i class="ti ti-book"></i> Guión</div>
-    <div class="nav-item" onclick="goTo('config')"><i class="ti ti-settings"></i> Configuración</div>
+    <div class="nav-item active" data-page="mes" onclick="goTo('mes')"><i class="ti ti-calendar-month"></i> Cronograma mensual</div>
+    <div class="nav-item" data-page="guion" onclick="goTo('guion')"><i class="ti ti-clipboard-list"></i> Coordinación</div>
+    <div class="nav-item" data-page="canciones" onclick="goTo('canciones')"><i class="ti ti-music"></i> Canciones</div>
+    <div class="nav-item" data-page="listas" onclick="goTo('listas')"><i class="ti ti-playlist"></i> Listas armadas</div>
+    <div class="nav-item" data-page="bandas" onclick="goTo('bandas')"><i class="ti ti-users"></i> Bandas</div>
+    <div class="nav-item" data-page="participacion" onclick="goTo('participacion')"><i class="ti ti-user-check"></i> Participación</div>
+    <div class="nav-item" data-page="estadisticas" onclick="goTo('estadisticas')"><i class="ti ti-chart-bar"></i> Estadísticas</div>
+    <div class="nav-item" data-page="config" onclick="goTo('config')"><i class="ti ti-settings"></i> Configuración</div>
   </nav>
   <div style="padding:12px 16px;border-top:1px solid var(--border)">
     <button class="btn btn-sm" style="width:100%;justify-content:center;margin-bottom:5px" onclick="exportBackup()"><i class="ti ti-download"></i> Exportar backup</button>
@@ -371,6 +372,13 @@ select option { background: var(--bg3); }
       <div style="font-size:11px;color:var(--text3);text-align:center">Guardá los datos para ver la previsualización</div>
     </div>
   </div>
+</div>
+
+<!-- ===== ESTADÍSTICAS ===== -->
+<div class="page" id="page-estadisticas">
+  <div class="page-title">Estadísticas</div>
+  <div class="page-sub">Análisis en tiempo real desde los datos guardados</div>
+  <div id="stats-content"></div>
 </div>
 
 <!-- ===== GUIÓN ===== -->
@@ -811,13 +819,15 @@ function restoreMesState(year, month){
 function goTo(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.getElementById('page-'+id).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(n=>{if(n.textContent.trim().toLowerCase().includes(id.slice(0,4)))n.classList.add('active')});
-  if(id==='bandas')renderBandas();
-  if(id==='canciones')renderCanciones();
-  if(id==='listas')renderListas();
-  if(id==='participacion')renderParticipacion();
-  if(id==='config'){loadConfigFields();renderConfigPreview();}
+  document.getElementById('page-'+id)?.classList.add('active');
+  document.querySelector(`.nav-item[data-page="${id}"]`)?.classList.add('active');
+  if(id==='bandas') renderBandas();
+  if(id==='canciones') renderCanciones();
+  if(id==='listas') renderListas();
+  if(id==='participacion') renderParticipacion();
+  if(id==='config'){ loadConfigFields(); renderConfigPreview(); }
+  if(id==='guion') renderGuion();
+  if(id==='estadisticas') renderEstadisticas();
 }
 
 // ═══════════════════════════════════════════════
@@ -2317,6 +2327,150 @@ function showToast(msg, type='green'){
 // ═══════════════════════════════════════════════
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+
+// ═══════════════════════════════════════════════
+// ESTADÍSTICAS
+// ═══════════════════════════════════════════════
+function renderEstadisticas(){
+  const el=document.getElementById('stats-content'); if(!el) return;
+
+  // Recopilar todos los servicios de todos los meses guardados
+  const allSvc=[];
+  Object.keys(localStorage).filter(k=>k.match(/^mm_mes_\d+_\d+$/)).forEach(k=>{
+    try{
+      const st=JSON.parse(localStorage.getItem(k));
+      if(!st?.services) return;
+      const totalInMonth=st.services.length;
+      st.services.forEach(s=>{
+        const songs=[];
+        SECCIONES.forEach(sec=>(s.songs?.[sec]||[]).forEach(sg=>songs.push({name:sg.name,key:sg.key||''})));
+        allSvc.push({year:st.year,month:st.month,date:new Date(st.year,st.month,1),roles:s.roles||{},songs,totalInMonth});
+      });
+    }catch{}
+  });
+  allSvc.sort((a,b)=>b.date-a.date);
+
+  if(!allSvc.length){
+    el.innerHTML='<div class="empty-state" style="margin-top:40px"><i class="ti ti-chart-dots"></i>Sin datos — planificá meses en Cronograma primero</div>';
+    return;
+  }
+
+  const range=document.getElementById('stats-range')?.value||'todo';
+  const now=new Date();
+  const filtered=allSvc.filter(s=>{
+    if(range==='mes') return s.year===now.getFullYear()&&s.month===now.getMonth();
+    if(range==='3m'){const cut=new Date(now.getFullYear(),now.getMonth()-2,1);return s.date>=cut;}
+    return true;
+  });
+
+  const fmtDate=d=>d?`${MESES[d.getMonth()].slice(0,3)} ${d.getFullYear()}`:'—';
+
+  // ── Sección 1: canciones más tocadas ────────
+  const songMap={};
+  filtered.forEach(s=>s.songs.forEach(sg=>{
+    const k=sg.name.toLowerCase();
+    if(!songMap[k]) songMap[k]={name:sg.name,key:sg.key,count:0,lastDate:null};
+    songMap[k].count++;
+    if(!songMap[k].lastDate||s.date>songMap[k].lastDate) songMap[k].lastDate=s.date;
+  }));
+  const songStats=Object.values(songMap).sort((a,b)=>b.count-a.count).slice(0,20);
+  const sec1=songStats.length
+    ?`<div style="display:flex;flex-direction:column;gap:5px">${songStats.map((s,i)=>{
+        const badge=s.count>=8?'badge-red':s.count>=4?'badge-amber':'badge-green';
+        return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg3);border-radius:7px;border:1px solid var(--border)">
+          <span style="font-size:11px;color:var(--text3);width:18px;text-align:right;flex-shrink:0">${i+1}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;color:var(--text)">${s.name}</div>
+            <div style="font-size:11px;color:var(--text3)">${s.key?s.key+' · ':''}Última: ${fmtDate(s.lastDate)}</div>
+          </div>
+          <span class="badge ${badge}">${s.count}×</span>
+        </div>`;
+      }).join('')}</div>`
+    :`<div style="font-size:13px;color:var(--text3)">Sin canciones en el rango seleccionado</div>`;
+
+  // ── Sección 2: músicos más activos ──────────
+  const musMap={};
+  filtered.forEach(s=>{
+    ROLE_IDS.forEach(([label,id])=>{
+      const name=(s.roles[id]||'').trim(); if(!name) return;
+      if(!musMap[name]) musMap[name]={name,roles:[],count:0,months:new Set()};
+      musMap[name].count++;
+      musMap[name].months.add(`${s.year}-${s.month}`);
+      if(!musMap[name].roles.includes(label)) musMap[name].roles.push(label);
+    });
+  });
+  const musStats=Object.values(musMap).sort((a,b)=>b.count-a.count);
+  const totalFiltered=filtered.length;
+  const sec2=musStats.length
+    ?`<div style="display:flex;flex-direction:column;gap:5px">${musStats.map((m,i)=>{
+        const overload=totalFiltered>2&&m.count>=totalFiltered;
+        return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg3);border-radius:7px;border:1px solid ${overload?'var(--red)':'var(--border)'}">
+          <span style="font-size:11px;color:var(--text3);width:18px;text-align:right;flex-shrink:0">${i+1}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;color:var(--text)">${m.name}${overload?` <i class="ti ti-alert-triangle" style="font-size:13px;color:var(--red)" title="Participó en todos los servicios del rango"></i>`:''}</div>
+            <div style="font-size:11px;color:var(--text3)">${m.roles.slice(0,3).join(', ')}</div>
+          </div>
+          <span class="badge ${overload?'badge-red':'badge-gray'}">${m.count} serv.</span>
+        </div>`;
+      }).join('')}</div>`
+    :`<div style="font-size:13px;color:var(--text3)">Sin datos de participación en el rango</div>`;
+
+  // ── Sección 3: tonalidades más usadas ───────
+  const keyMap={};
+  filtered.forEach(s=>s.songs.forEach(sg=>{
+    const k=(sg.key||'').trim()||'—';
+    keyMap[k]=(keyMap[k]||0)+1;
+  }));
+  const keyStats=Object.entries(keyMap).map(([k,v])=>({key:k,count:v})).sort((a,b)=>b.count-a.count);
+  const maxKey=keyStats[0]?.count||1;
+  const sec3=keyStats.length
+    ?`<div style="display:flex;flex-direction:column;gap:8px">${keyStats.map(k=>`
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:44px;font-size:12px;font-weight:700;color:var(--accent);text-align:right;flex-shrink:0">${k.key}</div>
+          <div style="flex:1;background:var(--bg3);border-radius:4px;height:20px;overflow:hidden">
+            <div style="height:100%;width:${Math.round(k.count/maxKey*100)}%;background:var(--accent);border-radius:4px;min-width:3px"></div>
+          </div>
+          <div style="width:24px;font-size:12px;color:var(--text3);flex-shrink:0">${k.count}</div>
+        </div>`).join('')}</div>`
+    :`<div style="font-size:13px;color:var(--text3)">Sin canciones con tonalidad registrada</div>`;
+
+  // ── Sección 4: no usadas en 60 días ─────────
+  const cut60=new Date(); cut60.setDate(cut60.getDate()-60);
+  const recent60Names=new Set(allSvc.filter(s=>s.date>=cut60).flatMap(s=>s.songs.map(sg=>sg.name.toLowerCase())));
+  const unused=getCanciones()
+    .filter(c=>!recent60Names.has(c.name.toLowerCase()))
+    .sort((a,b)=>a.name.localeCompare(b.name,'es',{sensitivity:'base'}));
+  const sec4=unused.length
+    ?`<div style="display:flex;flex-direction:column;gap:5px">${unused.map(c=>`
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg3);border-radius:7px;border:1px solid var(--border)">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;color:var(--text)">${c.name}</div>
+            <div style="font-size:11px;color:var(--text3)">${[c.key,c.author].filter(Boolean).join(' · ')}</div>
+          </div>
+          ${c.usosCount?`<span class="badge badge-gray" title="Veces usada en total">${c.usosCount}× hist.</span>`:`<span class="badge badge-gray">nunca usada</span>`}
+          <button class="btn btn-sm btn-icon" onclick="goTo('canciones');setTimeout(()=>openCancionModal('${c.id}'),100)" title="Editar canción"><i class="ti ti-edit"></i></button>
+        </div>`).join('')}</div>`
+    :`<div style="font-size:13px;color:var(--green)"><i class="ti ti-circle-check"></i> ¡Todas las canciones se usaron en los últimos 60 días!</div>`;
+
+  // ── Render final ─────────────────────────────
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+      <select id="stats-range" style="width:auto" onchange="renderEstadisticas()">
+        <option value="todo"${range==='todo'?' selected':''}>Todo el historial</option>
+        <option value="3m"${range==='3m'?' selected':''}>Últimos 3 meses</option>
+        <option value="mes"${range==='mes'?' selected':''}>Este mes</option>
+      </select>
+      <span style="font-size:12px;color:var(--text3)">${filtered.length} servicio${filtered.length!==1?'s':''} en el rango</span>
+    </div>
+    <div class="card"><div class="card-title">Canciones más tocadas</div>${sec1}</div>
+    <div class="card"><div class="card-title">Músicos más activos</div>${sec2}</div>
+    <div class="card"><div class="card-title">Tonalidades más usadas</div>${sec3}</div>
+    <div class="card">
+      <div class="card-title">Sin uso en los últimos 60 días</div>
+      <div class="page-sub" style="margin-bottom:12px;font-size:11px">Basado en todo el historial guardado · Filtro de rango no aplica</div>
+      ${sec4}
+    </div>`;
+}
 
 // ═══════════════════════════════════════════════
 // INIT
