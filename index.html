@@ -1451,9 +1451,18 @@ function _transposeText(text,n){
     return line.replace(/\b([A-G][#b]?)/g,m=>_transposeNote(m,n));
   }).join('\n');
 }
+const _CHORD_TOKEN=/^[A-G](#|b)?(m|maj|min|aug|dim|sus|add)?[0-9]*(\/[A-G](#|b)?)?$/;
+function _isChordLine(line){
+  const tokens=line.trim().split(/\s+/).filter(t=>t.length>0);
+  if(!tokens.length) return false;
+  return tokens.filter(t=>_CHORD_TOKEN.test(t)).length/tokens.length>0.6;
+}
+
 function transposeChordsBy(n){
   _syncCmSecciones();
-  _cmSecciones.forEach(s=>{s.acordes=_transposeText(s.acordes,n);});
+  _cmSecciones.forEach(s=>{
+    s.contenido=(s.contenido||'').split('\n').map(line=>_isChordLine(line)?_transposeText(line,n):line).join('\n');
+  });
   const keyEl=document.getElementById('cm-key');
   if(keyEl&&keyEl.value.trim()) keyEl.value=_transposeText(keyEl.value.trim(),n);
   renderCmSecciones();
@@ -1467,8 +1476,7 @@ const _SEC_TIPO_LABEL={intro:'Intro',estrofa:'Estrofa',coro:'Coro',puente:'Puent
 function _syncCmSecciones(){
   _cmSecciones=[...document.querySelectorAll('#cm-secciones-container .cm-sec-row')].map(row=>({
     tipo:row.querySelector('.cm-sec-tipo').value,
-    acordes:row.querySelector('.cm-sec-acordes').value,
-    letra:row.querySelector('.cm-sec-letra').value,
+    contenido:row.querySelector('.cm-sec-contenido').value,
   }));
 }
 
@@ -1488,18 +1496,11 @@ function renderCmSecciones(){
         <button class="btn btn-sm btn-icon" onclick="moveCmSeccion(${i},1)"${i===_cmSecciones.length-1?' disabled':''}><i class="ti ti-chevron-down"></i></button>
         <button class="btn btn-sm btn-icon btn-danger" onclick="removeCmSeccion(${i})"><i class="ti ti-x"></i></button>
       </div>
-      <div style="margin-bottom:6px">
-        <div style="font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:3px">Acordes</div>
-        <input class="cm-sec-acordes" value="${(s.acordes||'').replace(/"/g,'&quot;')}" placeholder="Am  F  C  G" style="font-family:monospace;font-size:12px;color:#e05252">
-      </div>
-      <div>
-        <div style="font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:3px">Letra</div>
-        <textarea class="cm-sec-letra" rows="4" placeholder="Letra de esta sección...">${(s.letra||'').replace(/</g,'&lt;')}</textarea>
-      </div>
+      <textarea class="cm-sec-contenido" rows="6" placeholder="Pegá acordes y letra juntos..." style="font-family:monospace;font-size:13px;line-height:1.6;white-space:pre">${(s.contenido||'').replace(/</g,'&lt;')}</textarea>
     </div>`).join('');
 }
 
-function addCmSeccion(){_syncCmSecciones();_cmSecciones.push({tipo:'estrofa',acordes:'',letra:''});renderCmSecciones();}
+function addCmSeccion(){_syncCmSecciones();_cmSecciones.push({tipo:'estrofa',contenido:''});renderCmSecciones();}
 function removeCmSeccion(idx){_syncCmSecciones();_cmSecciones.splice(idx,1);renderCmSecciones();}
 function moveCmSeccion(idx,dir){
   _syncCmSecciones();const ni=idx+dir;if(ni<0||ni>=_cmSecciones.length)return;
@@ -1508,27 +1509,46 @@ function moveCmSeccion(idx,dir){
 
 // ── Normalización y renderizado de secciones ──────
 function _getSecciones(c){
-  if(c.secciones?.length) return c.secciones;
-  if(c.lyrics||c.chords) return [{tipo:'estrofa',acordes:c.chords||'',letra:c.lyrics||''}];
+  if(c.secciones?.length) return c.secciones.map(s=>{
+    if(s.contenido!==undefined) return s;
+    // migrate old {acordes, letra} format
+    const parts=[];
+    if(s.acordes) parts.push(s.acordes);
+    if(s.letra) parts.push(s.letra);
+    return {tipo:s.tipo,contenido:parts.join('\n')};
+  });
+  if(c.lyrics||c.chords){
+    const parts=[];
+    if(c.chords) parts.push(c.chords);
+    if(c.lyrics) parts.push(c.lyrics);
+    return [{tipo:'estrofa',contenido:parts.join('\n')}];
+  }
   return [];
 }
 
 function _renderSeccionesHTML(secciones, chordsOnly=false, scale='normal'){
   const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
   if(!secciones.length) return '<div style="font-size:14px;color:#94a3b8;font-style:italic">Sin contenido cargado</div>';
-  const cSz=scale==='large'?'19px':'15px', lSz=scale==='large'?'22px':'17px';
+  const sz=scale==='large'?'20px':'15px';
   const totals={};secciones.forEach(s=>totals[s.tipo]=(totals[s.tipo]||0)+1);
   const counts={};
   return secciones.map(s=>{
     counts[s.tipo]=(counts[s.tipo]||0)+1;
     const label=(_SEC_TIPO_LABEL[s.tipo]||s.tipo)+(totals[s.tipo]>1?' '+counts[s.tipo]:'');
     const isChorus=s.tipo==='coro';
-    const lColor=isChorus?'#2563a8':'#111827';
-    const lStyle=`font-size:${lSz};color:${lColor};${isChorus?'font-style:italic;':''}line-height:1.85;white-space:pre-wrap`;
+    const lines=(s.contenido||'').split('\n');
+    const linesHTML=lines.map(line=>{
+      if(_isChordLine(line)){
+        return `<span style="display:block;font-family:monospace;white-space:pre;font-size:${sz};color:#dc2626;line-height:1.5">${esc(line)||'​'}</span>`;
+      }
+      if(chordsOnly) return '';
+      const lyricColor=isChorus?'#2563a8':'#111827';
+      const italic=isChorus?'font-style:italic;':'';
+      return `<span style="display:block;font-family:monospace;white-space:pre;font-size:${sz};color:${lyricColor};${italic}line-height:1.6">${esc(line)||'​'}</span>`;
+    }).join('');
     let h=`<div style="margin-bottom:28px">`;
     h+=`<div style="font-size:10px;font-weight:600;color:#94a3b8;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">[${label}]</div>`;
-    if(s.acordes) h+=`<div style="font-size:${cSz};color:#dc2626;font-family:monospace;white-space:pre-wrap;line-height:1.6;margin-bottom:${!chordsOnly&&s.letra?'5px':'0'}">${esc(s.acordes)}</div>`;
-    if(!chordsOnly&&s.letra) h+=`<div style="${lStyle}">${esc(s.letra)}</div>`;
+    h+=`<div>${linesHTML}</div>`;
     return h+`</div>`;
   }).join('');
 }
