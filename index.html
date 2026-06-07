@@ -1492,6 +1492,53 @@ function deleteCancion(id){
   renderCanciones();
 }
 
+function _buildCancionPrintHTML(c){
+  const W=800, PAD=36, color='#2563a8';
+  const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const badges=[
+    c.key?`<span style="background:rgba(255,255,255,.25);border-radius:5px;padding:3px 10px;font-size:13px;font-weight:700;color:#fff">${esc(c.key)}</span>`:'',
+    c.capo?`<span style="background:rgba(255,255,255,.15);border-radius:5px;padding:3px 9px;font-size:12px;color:rgba(255,255,255,.9)">${esc(c.capo)}</span>`:'',
+    c.author?`<span style="font-size:12px;color:rgba(255,255,255,.65);align-self:center">${esc(c.author)}</span>`:'',
+  ].filter(Boolean).join('');
+  let lyricsHTML='';
+  if(c.lyrics){
+    lyricsHTML=c.lyrics.split(/\n{2,}/).map((g,i)=>{
+      const chorus=i%2===1;
+      const st=chorus
+        ?'font-size:21px;color:#2563a8;font-style:italic;line-height:1.9;white-space:pre-wrap;padding-left:16px'
+        :'font-size:21px;color:#1e293b;line-height:1.9;white-space:pre-wrap';
+      return `<div style="margin-bottom:20px"><div style="${st}">${esc(g.trim())}</div></div>`;
+    }).join('');
+  }
+  const chordsHTML=c.chords?`<div style="margin-top:${lyricsHTML?'20px':'0'};padding:14px 18px;background:#f1f5f9;border-radius:8px;border-left:4px solid ${color}"><div style="font-size:10px;font-weight:700;color:${color};letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px">ACORDES</div><div style="font-size:19px;color:#1e293b;font-weight:700;font-family:monospace;white-space:pre-wrap;line-height:1.8;letter-spacing:.03em">${esc(c.chords)}</div></div>`:'';
+  const shadow='0 2px 10px rgba(15,23,42,.07),0 1px 3px rgba(15,23,42,.04)';
+  return `<div id="_cancion_print" style="width:${W}px;background:#f0f2f5;font-family:'Outfit',sans-serif;padding:${PAD}px">
+    <div style="background:#fff;border-radius:14px;border:1px solid #dbe5f0;overflow:hidden;box-shadow:${shadow}">
+      <div style="background:${color};padding:16px 22px">
+        <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,.65);letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px">CANCIÓN</div>
+        <div style="font-size:26px;font-weight:800;color:#fff;line-height:1.05">${esc(c.name)}</div>
+        ${badges?`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px">${badges}</div>`:''}
+      </div>
+      <div style="padding:22px 24px 28px">${lyricsHTML}${chordsHTML}</div>
+    </div>
+  </div>`;
+}
+
+async function printCancion(id){
+  const c=getCanciones().find(c=>c.id===id);
+  if(!c) return;
+  showToast('Generando imagen...','amber');
+  try{
+    const cv=await htmlToCanvas(_buildCancionPrintHTML(c),'_cancion_print');
+    const a=document.createElement('a');
+    a.href=cv.toDataURL('image/png');
+    a.download=(c.name.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,''))||'cancion';
+    a.download+='.png';
+    a.click();
+    showToast('Imagen descargada','green');
+  }catch(e){showToast('Error al generar imagen','red');console.error(e);}
+}
+
 function renderCanciones(){
   const q=(document.getElementById('search-canciones')?.value||'').toLowerCase();
   let songs=getCanciones()
@@ -1521,6 +1568,7 @@ function renderCanciones(){
         ${s.cats?.length?`<div class="tag-list" style="margin-top:4px">${s.cats.map(c=>`<span class="badge badge-gray" style="font-size:10px">${c}</span>`).join('')}</div>`:''}
       </div>
       <div class="btn-group">
+        ${(s.lyrics||s.chords)?`<button class="btn btn-sm btn-icon" onclick="printCancion('${s.id}')" title="Descargar PNG"><i class="ti ti-printer"></i></button>`:''}
         <button class="btn btn-sm btn-icon" onclick="openCancionModal('${s.id}')"><i class="ti ti-edit"></i></button>
         <button class="btn btn-sm btn-icon btn-danger" onclick="deleteCancion('${s.id}')"><i class="ti ti-trash"></i></button>
       </div>
