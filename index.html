@@ -2473,78 +2473,73 @@ function loadGuionFromList(date){ loadGuionByDate(date); closeModal('modal-carga
 
 const _GUION_W   = 900;
 const _GUION_PAD = 32;
+const _CANCION_COLORS = ['#2d7a50','#6b3fa0','#c05a1f'];
 
-const _GTYPES = {
-  texto:    {bg:'#dbeafe', border:'#bfdbfe'},
-  versiculo:{bg:'#ccfbf1', border:'#a7f3d0'},
-  oracion:  {bg:'#ede9fe', border:'#ddd6fe'},
-};
-const _CANCION_PASTELS = [
-  {bg:'#fef9c3', border:'#fde68a'},
-  {bg:'#dcfce7', border:'#a7f3d0'},
-  {bg:'#ede9fe', border:'#ddd6fe'},
-];
-
-function _guionCardWrap(bg, border, typeLabel, heading, bodyHTML){
-  return `<div style="background:${bg};border-radius:16px;border:1px solid ${border};overflow:hidden;box-shadow:0 1px 4px rgba(15,23,42,.05);margin-bottom:12px">
-    <div style="padding:13px 20px 11px">
-      <div style="font-size:10px;font-weight:600;color:#64748b;letter-spacing:.12em;text-transform:uppercase${heading?';margin-bottom:4px':''}">${typeLabel}</div>
-      ${heading?`<div style="font-size:15px;font-weight:600;color:#1e293b;line-height:1.25">${heading}</div>`:''}
-    </div>
-    <div style="height:1px;background:${border}"></div>
-    <div style="padding:14px 20px 16px">${bodyHTML}</div>
+// Card con header coloreado + cuerpo blanco (mismo estilo que cards de banda/mes)
+function _guionCard(color, headerHTML, bodyHTML){
+  const shadow='0 2px 10px rgba(15,23,42,.07),0 1px 3px rgba(15,23,42,.04)';
+  if(!color){
+    // sin header (texto sin etiqueta)
+    return `<div style="background:#fff;border-radius:14px;border:1px solid #dbe5f0;overflow:hidden;box-shadow:${shadow};margin-bottom:12px">
+      <div style="padding:16px 20px 18px">${bodyHTML}</div>
+    </div>`;
+  }
+  return `<div style="background:#fff;border-radius:14px;border:1px solid #dbe5f0;overflow:hidden;box-shadow:${shadow};margin-bottom:12px">
+    <div style="background:${color};padding:12px 18px">${headerHTML}</div>
+    <div style="padding:16px 20px 18px">${bodyHTML}</div>
   </div>`;
 }
 
+function _ghLabel(label){ return `<div style="font-size:10px;font-weight:600;color:rgba(255,255,255,.65);letter-spacing:.12em;text-transform:uppercase;margin-bottom:3px">${label}</div>`; }
+function _ghTitle(t){ return `<div style="font-size:16px;font-weight:600;color:#fff;line-height:1.2">${t}</div>`; }
+
 function buildGuionCardText(b){
-  const {bg,border}=_GTYPES.texto;
-  const body=`<div style="font-size:18px;color:#1e293b;line-height:1.82;white-space:pre-wrap">${b.content||''}</div>`;
-  return _guionCardWrap(bg, border, 'TEXTO', b.label||'', body);
+  if(!b.label){
+    return _guionCard(null, '', `<div style="font-size:18px;color:#1e293b;line-height:1.82;white-space:pre-wrap">${b.content||''}</div>`);
+  }
+  return _guionCard('#2563a8',
+    _ghLabel('TEXTO')+_ghTitle(b.label),
+    `<div style="font-size:18px;color:#1e293b;line-height:1.82;white-space:pre-wrap">${b.content||''}</div>`);
 }
 
 function buildGuionCardVersiculo(b){
-  const {bg,border}=_GTYPES.versiculo;
-  const body=`<div style="font-size:20px;color:#134e4a;line-height:1.72;font-style:italic">"${b.content||''}"</div>`;
-  return _guionCardWrap(bg, border, 'VERSÍCULO', b.reference||'', body);
+  return _guionCard('#0f766e',
+    _ghLabel('VERSÍCULO')+_ghTitle(b.reference||''),
+    `<div style="font-size:17px;font-weight:700;color:#dc2626;line-height:1.72">"${b.content||''}"</div>`);
 }
 
 function buildGuionCardOracion(b){
-  const {bg,border}=_GTYPES.oracion;
-  const body=`<div style="font-size:18px;color:#1e293b;line-height:1.82;white-space:pre-wrap">${b.content||''}</div>`;
-  return _guionCardWrap(bg, border, 'ORACIÓN', '', body);
+  return _guionCard('#6b3fa0',
+    _ghLabel('ORACIÓN'),
+    `<div style="font-size:18px;color:#1e293b;line-height:1.82;white-space:pre-wrap">${b.content||''}</div>`);
 }
 
 function buildGuionCardCancion(letra, idx){
-  const p=_CANCION_PASTELS[idx%_CANCION_PASTELS.length];
-  if(!letra) return `<div style="background:#f8fafc;border-radius:16px;border:1px dashed #dbe5f0;padding:20px;margin-bottom:12px;color:#94a3b8;font-style:italic">Canción no encontrada en biblioteca</div>`;
+  const color=_CANCION_COLORS[idx%_CANCION_COLORS.length];
+  if(!letra) return `<div style="background:#fff;border-radius:14px;border:1px dashed #dbe5f0;padding:20px;margin-bottom:12px;color:#94a3b8;font-style:italic">Canción no encontrada en biblioteca</div>`;
 
-  const badges=`<div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-top:7px">
-    ${letra.key?`<span style="background:rgba(0,0,0,.12);border-radius:6px;padding:3px 10px;font-size:13px;font-weight:700;color:#1e293b">${letra.key}</span>`:''}
-    ${letra.capo?`<span style="background:rgba(0,0,0,.07);border-radius:6px;padding:3px 9px;font-size:12px;color:#475569">${letra.capo}</span>`:''}
-    ${letra.author?`<span style="font-size:12px;color:#64748b">${letra.author}</span>`:''}
-  </div>`;
+  const badges=(letra.key||letra.capo)?`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px">
+    ${letra.key?`<span style="background:rgba(255,255,255,.25);border-radius:5px;padding:2px 9px;font-size:12px;font-weight:700;color:#fff">${letra.key}</span>`:''}
+    ${letra.capo?`<span style="background:rgba(255,255,255,.15);border-radius:5px;padding:2px 8px;font-size:11px;color:rgba(255,255,255,.88)">${letra.capo}</span>`:''}
+    ${letra.author?`<span style="font-size:11px;color:rgba(255,255,255,.6);align-self:center">${letra.author}</span>`:''}
+  </div>`:'';
+
+  const header=`${_ghLabel('CANCIÓN')}<div style="font-size:22px;font-weight:800;color:#fff;line-height:1.05">${letra.name}</div>${badges}`;
 
   let lyricsHTML='<div style="font-size:14px;color:#94a3b8;font-style:italic">Sin letra cargada</div>';
   if(letra.lyrics){
     const groups=letra.lyrics.split(/\n{2,}/);
     lyricsHTML=groups.map((g,i)=>{
-      const isChorus=i%2===1;
-      const st=isChorus?`font-style:italic;padding-left:16px;border-left:2px solid ${p.border}`:'';
-      return `<div style="margin-bottom:${i<groups.length-1?'16px':'0'};${st}"><div style="font-size:19px;color:#1e293b;line-height:1.9;white-space:pre-wrap">${g.trim()}</div></div>`;
+      const chorus=i%2===1;
+      return `<div style="margin-bottom:${i<groups.length-1?'16px':'0'}${chorus?';padding-left:16px;color:#374151':''}">
+        <div style="font-size:19px;color:${chorus?'#374151':'#1e293b'};line-height:1.9;white-space:pre-wrap">${g.trim()}</div>
+      </div>`;
     }).join('');
   }
 
-  const chordsHTML=letra.chords?`<div style="margin-top:16px;padding:11px 14px;background:rgba(0,0,0,.07);border-radius:9px"><div style="font-size:9px;font-weight:600;color:#64748b;letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px">ACORDES</div><div style="font-size:15px;color:#334155;font-weight:600;font-family:monospace;white-space:pre-wrap;line-height:1.7">${letra.chords}</div></div>`:'';
+  const chordsHTML=letra.chords?`<div style="margin-top:14px;padding:7px 12px;background:#f1f5f9;border-radius:6px"><div style="font-size:15px;color:#334155;font-weight:600;font-family:monospace;white-space:pre-wrap;line-height:1.65">${letra.chords}</div></div>`:'';
 
-  return `<div style="background:${p.bg};border-radius:16px;border:1px solid ${p.border};overflow:hidden;box-shadow:0 1px 4px rgba(15,23,42,.05);margin-bottom:12px">
-    <div style="padding:13px 20px 12px">
-      <div style="font-size:10px;font-weight:600;color:#64748b;letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px">CANCIÓN</div>
-      <div style="font-size:23px;font-weight:800;color:#1e293b;line-height:1.05">${letra.name}</div>
-      ${badges}
-    </div>
-    <div style="height:1px;background:${p.border}"></div>
-    <div style="padding:16px 20px 18px">${lyricsHTML}${chordsHTML}</div>
-  </div>`;
+  return _guionCard(color, header, lyricsHTML+chordsHTML);
 }
 
 function buildGuionHTML(){
@@ -2567,8 +2562,8 @@ function buildGuionHTML(){
   const fechaLabel=fecha?_fmtGuionDate(fecha):'';
   const headerText=[fechaLabel,titulo].filter(Boolean).join(' — ');
 
-  return `<div id="_guion_render" style="width:${_GUION_W}px;background:#f8fafc;font-family:'Outfit',sans-serif;padding:0">
-    <div style="padding:14px ${_GUION_PAD}px 12px;border-bottom:1px solid #e2e8f0;background:#ffffff">
+  return `<div id="_guion_render" style="width:${_GUION_W}px;background:#f0f2f5;font-family:'Outfit',sans-serif;padding:0">
+    <div style="padding:14px ${_GUION_PAD}px 12px;border-bottom:1px solid #dbe5f0;background:#ffffff">
       <div style="font-size:11px;font-weight:600;color:#64748b;letter-spacing:.1em;text-transform:uppercase">${headerText||'Guión del domingo'}</div>
     </div>
     <div style="padding:14px ${_GUION_PAD}px 36px">${cardsHTML}</div>
