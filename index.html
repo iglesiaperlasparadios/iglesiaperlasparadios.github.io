@@ -173,6 +173,10 @@ select option { background: var(--bg3); }
 .chip { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); color: var(--text3); background: transparent; transition: all .15s; }
 .chip:hover { border-color: var(--text2); color: var(--text2); }
 .chip.active { border-color: var(--accent); color: var(--accent); background: rgba(56,139,253,.1); }
+.modal-tabs { display: flex; border-bottom: 1px solid var(--border); margin: -4px -20px 14px; padding: 0 20px; }
+.modal-tab { background: none; border: none; border-bottom: 2px solid transparent; color: var(--text2); font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 500; padding: 8px 14px; cursor: pointer; margin-bottom: -1px; transition: all .15s; }
+.modal-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.modal-tab:hover { color: var(--text); }
 
 /* WHATSAPP PREVIEW */
 .wa-preview { background: #0d1f12; border: 1px solid #1a3a22; border-radius: 10px; padding: 14px; font-size: 13px; line-height: 1.7; color: #e8f5e9; white-space: pre-wrap; font-family: 'Outfit', monospace; max-height: 320px; overflow-y: auto; }
@@ -389,7 +393,7 @@ select option { background: var(--bg3); }
     </div>
     <div class="btn-group" style="margin-top:8px">
       <button class="btn btn-sm" onclick="openCargarGuion()"><i class="ti ti-folder-open"></i> Cargar anterior</button>
-      <button class="btn btn-sm" onclick="openGestionarLetras()"><i class="ti ti-music"></i> Gestionar canciones</button>
+      <button class="btn btn-sm" onclick="goTo('canciones')"><i class="ti ti-music"></i> Gestionar canciones</button>
     </div>
   </div>
 
@@ -454,31 +458,74 @@ select option { background: var(--bg3); }
 
 <!-- Modal Canción -->
 <div class="modal-overlay" id="modal-cancion">
-  <div class="modal">
+  <div class="modal" style="width:640px">
     <div class="modal-title">
       <span id="cancion-modal-title">Nueva canción</span>
       <button class="btn btn-sm btn-icon" onclick="closeModal('modal-cancion')"><i class="ti ti-x"></i></button>
     </div>
-    <div class="row2">
-      <div class="field"><label>Nombre</label><input id="cm-name" placeholder="nombre de la canción"></div>
-      <div class="field"><label>Tonalidad iglesia</label><input id="cm-key" placeholder="ej: G"></div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" id="cm-tab-btn-info" onclick="switchCancionTab('info')">Info</button>
+      <button class="modal-tab" id="cm-tab-btn-letra" onclick="switchCancionTab('letra')">Letra &amp; Acordes</button>
     </div>
-    <div class="row2">
-      <div class="field"><label>Tonalidad original</label><input id="cm-key-orig" placeholder="ej: B"></div>
-      <div class="field"><label>Artista / Autor</label><input id="cm-author" placeholder="ej: Marcos Brunet"></div>
+    <!-- Tab Info -->
+    <div id="cm-tab-info">
+      <div class="row2">
+        <div class="field"><label>Nombre</label><input id="cm-name" placeholder="nombre de la canción"></div>
+        <div class="field"><label>Tonalidad iglesia</label><input id="cm-key" placeholder="ej: G"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Tonalidad original</label><input id="cm-key-orig" placeholder="ej: B"></div>
+        <div class="field"><label>Artista / Autor</label><input id="cm-author" placeholder="ej: Marcos Brunet"></div>
+      </div>
+      <div class="field"><label>Nota de ejecución</label><input id="cm-note" placeholder="ej: Capo 4 en shape E si es en G"></div>
+      <div class="field"><label>Link YouTube</label><input id="cm-youtube" placeholder="https://youtube.com/..."></div>
+      <div class="field">
+        <label>Categorías espirituales</label>
+        <div class="chip-group" id="cm-cats" style="margin-top:6px"></div>
+      </div>
+      <div class="field" style="display:flex;align-items:center;gap:8px;margin-top:4px">
+        <input type="checkbox" id="cm-nueva" style="width:auto;height:auto">
+        <label for="cm-nueva" style="text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer">Marcar como canción nueva</label>
+      </div>
     </div>
-    <div class="field"><label>Nota de ejecución</label><input id="cm-note" placeholder="ej: Capo 4 en shape E si es en G"></div>
-    <div class="field"><label>Link YouTube</label><input id="cm-youtube" placeholder="https://youtube.com/..."></div>
-    <div class="field">
-      <label>Categorías espirituales</label>
-      <div class="chip-group" id="cm-cats" style="margin-top:6px"></div>
-    </div>
-    <div class="field" style="display:flex;align-items:center;gap:8px;margin-top:4px">
-      <input type="checkbox" id="cm-nueva" style="width:auto;height:auto">
-      <label for="cm-nueva" style="text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer">Marcar como canción nueva</label>
+    <!-- Tab Letra & Acordes -->
+    <div id="cm-tab-letra" style="display:none">
+      <div class="field"><label>Capo</label><input id="cm-capo" placeholder="ej: CAPO 2do traste / forma Em"></div>
+      <div class="field"><label>Letra completa</label>
+        <textarea id="cm-lyrics" rows="10" placeholder="Pegá la letra completa aquí...&#10;&#10;Separar estrofas y coros con una línea en blanco."></textarea>
+      </div>
+      <div class="field">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <label style="margin-bottom:0">Acordes / Progresión</label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:11px;color:var(--text3)">Transponer:</span>
+            <button class="btn btn-sm btn-icon" onclick="transposeChordsBy(-1)" title="-1 semitono"><i class="ti ti-minus"></i></button>
+            <button class="btn btn-sm btn-icon" onclick="transposeChordsBy(1)" title="+1 semitono"><i class="ti ti-plus"></i></button>
+          </div>
+        </div>
+        <textarea id="cm-chords" rows="5" placeholder="ej: [VERSO]&#10;Am  F  C  G&#10;&#10;[CORO]&#10;F  C  G  Am"></textarea>
+      </div>
+      <div class="field" style="display:flex;align-items:center;gap:8px;margin-top:4px">
+        <input type="checkbox" id="cm-chords-only" style="width:auto;height:auto">
+        <label for="cm-chords-only" style="text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer">Solo acordes en el guión (ocultar letra en la imagen)</label>
+      </div>
     </div>
     <div class="btn-group" style="margin-top:16px">
       <button class="btn btn-primary btn-full" onclick="saveCancion()"><i class="ti ti-device-floppy"></i> Guardar canción</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Vista Canción (lectura rápida) -->
+<div class="modal-overlay" id="modal-cancion-view">
+  <div class="modal" style="width:560px">
+    <div class="modal-title">
+      <span id="cv-title">—</span>
+      <button class="btn btn-sm btn-icon" onclick="closeModal('modal-cancion-view')"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="cv-body"></div>
+    <div class="btn-group" style="margin-top:14px">
+      <button class="btn btn-sm" onclick="closeModal('modal-cancion-view');openCancionModal(_cvCurrentId)"><i class="ti ti-edit"></i> Editar</button>
     </div>
   </div>
 </div>
@@ -596,7 +643,7 @@ select option { background: var(--bg3); }
     </div>
     <div class="song-picker-list" id="letra-picker-list" style="max-height:320px"></div>
     <div style="margin-top:8px">
-      <button class="btn btn-sm" onclick="closeModal('modal-letra-picker');openLetraModal()"><i class="ti ti-plus"></i> Nueva canción</button>
+      <button class="btn btn-sm" onclick="closeModal('modal-letra-picker');openCancionModal()"><i class="ti ti-plus"></i> Nueva canción</button>
     </div>
     <div class="btn-group" style="margin-top:10px">
       <button class="btn btn-primary btn-full" onclick="confirmLetraPicker()"><i class="ti ti-check"></i> Agregar al guión</button>
@@ -918,7 +965,7 @@ function renderSongItem(si,sec,idx,sg){
   return `<div class="song-item" id="sitem-${si}-${sec}-${idx}">
     <div style="flex:1">
       <div style="display:flex;align-items:center;gap:6px">
-        <span class="song-item-name">${sg.name}</span>
+        <span class="song-item-name" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px" data-name="${sg.name.replace(/"/g,'&quot;')}" onclick="openCancionViewByName(this.dataset.name)">${sg.name}</span>
         <span class="song-item-key">${sg.key||''}</span>
         ${sg.nueva?`<span class="badge badge-green" style="font-size:10px">Nueva</span>`:''}
       </div>
@@ -1199,13 +1246,16 @@ function togglePickerSong(id){
 
 function confirmPicker(){
   const canciones=getCanciones();
+  let usosChanged=false;
   pickerSelected.forEach(id=>{
     const c=canciones.find(c=>c.id===id);
     if(c&&pickerSI!==null){
       if(!monthServices[pickerSI].songs[pickerSec])monthServices[pickerSI].songs[pickerSec]=[];
       monthServices[pickerSI].songs[pickerSec].push({id:c.id,name:c.name,key:c.key,nueva:c.nueva,note:c.playNote||''});
+      c.usosCount=(c.usosCount||0)+1; usosChanged=true;
     }
   });
+  if(usosChanged) saveCanciones(canciones);
   refreshSongsSection(pickerSI);
   closeModal('modal-picker');
   saveMesState();
@@ -1344,9 +1394,11 @@ let catFilter='';
 function openCancionModal(id=null){
   editingCancionId=id;
   document.getElementById('cancion-modal-title').textContent=id?'Editar canción':'Nueva canción';
-  const fields=['cm-name','cm-key','cm-key-orig','cm-author','cm-note','cm-youtube'];
-  fields.forEach(f=>document.getElementById(f).value='');
+  switchCancionTab('info');
+  ['cm-name','cm-key','cm-key-orig','cm-author','cm-note','cm-youtube','cm-capo','cm-lyrics','cm-chords']
+    .forEach(f=>{const el=document.getElementById(f);if(el)el.value='';});
   document.getElementById('cm-nueva').checked=false;
+  document.getElementById('cm-chords-only').checked=false;
   if(id){
     const c=getCanciones().find(c=>c.id===id);
     if(c){
@@ -1357,9 +1409,13 @@ function openCancionModal(id=null){
       document.getElementById('cm-note').value=c.playNote||'';
       document.getElementById('cm-youtube').value=c.youtube||'';
       document.getElementById('cm-nueva').checked=!!c.nueva;
+      document.getElementById('cm-capo').value=c.capo||'';
+      document.getElementById('cm-lyrics').value=c.lyrics||'';
+      document.getElementById('cm-chords').value=c.chords||'';
+      document.getElementById('cm-chords-only').checked=!!c.chordsOnly;
     }
   }
-  renderCmCats(id?getCanciones().find(c=>c.id===id)?.cats||[]:[]); 
+  renderCmCats(id?getCanciones().find(c=>c.id===id)?.cats||[]:[]);
   document.getElementById('modal-cancion').classList.add('open');
 }
 
@@ -1370,6 +1426,29 @@ function renderCmCats(selected=[]){
 
 function getSelectedCats(){
   return[...document.getElementById('cm-cats').querySelectorAll('.chip.active')].map(c=>c.textContent);
+}
+
+function switchCancionTab(tab){
+  ['info','letra'].forEach(t=>{
+    document.getElementById('cm-tab-'+t).style.display=t===tab?'':'none';
+    document.getElementById('cm-tab-btn-'+t).classList.toggle('active',t===tab);
+  });
+}
+
+const _NOTES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const _FLATS={Db:'C#',Eb:'D#',Fb:'E',Gb:'F#',Ab:'G#',Bb:'A#',Cb:'B'};
+function _transposeNote(note,n){const norm=_FLATS[note]||note;const idx=_NOTES.indexOf(norm);return idx===-1?note:_NOTES[(idx+n+12)%12];}
+function _transposeText(text,n){
+  return text.split('\n').map(line=>{
+    if(line.trim().startsWith('[')) return line;
+    return line.replace(/\b([A-G][#b]?)/g,m=>_transposeNote(m,n));
+  }).join('\n');
+}
+function transposeChordsBy(n){
+  const ta=document.getElementById('cm-chords');
+  if(ta) ta.value=_transposeText(ta.value,n);
+  const keyEl=document.getElementById('cm-key');
+  if(keyEl&&keyEl.value.trim()) keyEl.value=_transposeText(keyEl.value.trim(),n);
 }
 
 function saveCancion(){
@@ -1384,6 +1463,7 @@ function saveCancion(){
       return;
     }
   }
+  const existing=editingCancionId?canciones.find(cc=>cc.id===editingCancionId):null;
   const c={
     id:editingCancionId||Date.now().toString(),
     name, key:document.getElementById('cm-key').value.trim(),
@@ -1392,7 +1472,12 @@ function saveCancion(){
     playNote:document.getElementById('cm-note').value.trim(),
     youtube:document.getElementById('cm-youtube').value.trim(),
     nueva:document.getElementById('cm-nueva').checked,
-    cats:getSelectedCats()
+    cats:getSelectedCats(),
+    capo:document.getElementById('cm-capo').value.trim(),
+    lyrics:document.getElementById('cm-lyrics').value.trim(),
+    chords:document.getElementById('cm-chords').value.trim(),
+    chordsOnly:document.getElementById('cm-chords-only').checked,
+    usosCount:existing?.usosCount||0
   };
   if(editingCancionId){const idx=canciones.findIndex(cc=>cc.id===editingCancionId);if(idx>=0)canciones[idx]=c;else canciones.push(c);}
   else canciones.push(c);
@@ -1423,6 +1508,8 @@ function renderCanciones(){
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
           <span class="song-lib-name">${s.name}</span>
           ${s.nueva?`<span class="badge badge-green">Nueva</span>`:''}
+          ${s.chords||s.lyrics?`<span class="badge badge-blue" style="font-size:10px"><i class="ti ti-music" style="font-size:10px"></i> acordes</span>`:''}
+          ${s.usosCount?`<span class="badge badge-gray" style="font-size:10px">${s.usosCount}×</span>`:''}
           ${s.youtube?`<a href="${s.youtube}" target="_blank" style="color:var(--text3);font-size:14px"><i class="ti ti-brand-youtube"></i></a>`:''}
         </div>
         <div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text3)">
@@ -2125,6 +2212,46 @@ document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click
 // ═══════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════
+// ── Migrar mm_letras → mm_canciones (se ejecuta una sola vez) ──────────────
+(function _migrateLegacyLetras(){
+  const raw=localStorage.getItem('mm_letras'); if(!raw) return;
+  try{
+    const letras=JSON.parse(raw); if(!letras?.length){localStorage.removeItem('mm_letras');return;}
+    const canciones=getCanciones();
+    const idRemap={};
+    letras.forEach(l=>{
+      const ci=canciones.findIndex(c=>c.name.toLowerCase()===l.name.toLowerCase());
+      if(ci>=0){
+        const c=canciones[ci];
+        if(l.lyrics&&!c.lyrics) c.lyrics=l.lyrics;
+        if(l.chords&&!c.chords) c.chords=l.chords;
+        if(l.capo&&!c.capo) c.capo=l.capo;
+        if(l.author&&!c.author) c.author=l.author;
+        if(c.id!==l.id) idRemap[l.id]=c.id;
+      } else {
+        canciones.push({id:l.id,name:l.name,key:l.key||'',keyOrig:'',author:l.author||'',
+          playNote:'',youtube:'',nueva:false,cats:[],
+          capo:l.capo||'',lyrics:l.lyrics||'',chords:l.chords||'',chordsOnly:false,usosCount:0});
+      }
+    });
+    saveCanciones(canciones);
+    if(Object.keys(idRemap).length){
+      Object.keys(localStorage).filter(k=>k.startsWith('mm_guion_')).forEach(k=>{
+        try{
+          const g=JSON.parse(localStorage.getItem(k));
+          if(g?.blocks){
+            let ch=false;
+            g.blocks.forEach(b=>{if(b.type==='cancion'&&idRemap[b.songId]){b.songId=idRemap[b.songId];ch=true;}});
+            if(ch) localStorage.setItem(k,JSON.stringify(g));
+          }
+        }catch{}
+      });
+    }
+    localStorage.removeItem('mm_letras');
+    console.log('[migración] mm_letras → mm_canciones completada');
+  }catch(e){console.error('[migración] error',e);}
+})();
+
 initCal();
 renderCalMes();
 // restore mes state if exists
@@ -2145,8 +2272,8 @@ restoreMesState();
 // ═══════════════════════════════════════════════
 
 // ── Data ──────────────────────────────────────
-function getLetras(){ return db('letras'); }
-function saveLetras(v){ dbSet('letras', v); }
+function getLetras(){ return getCanciones(); }
+function saveLetras(v){ saveCanciones(v); }
 
 // ── State ─────────────────────────────────────
 let guionBlocks = [];
@@ -2357,7 +2484,10 @@ function openLetraModal(id=null){
 function saveLetra(){
   const name=document.getElementById('ltr-name').value.trim();
   if(!name){ showToast('El nombre es obligatorio','amber'); return; }
+  const canciones=getCanciones();
+  const existing=_editingLetraId?canciones.find(c=>c.id===_editingLetraId):null;
   const letra={
+    ...(existing||{}),
     id:_editingLetraId||Date.now().toString(), name,
     key:document.getElementById('ltr-key').value.trim(),
     capo:document.getElementById('ltr-capo').value.trim(),
@@ -2365,10 +2495,9 @@ function saveLetra(){
     lyrics:document.getElementById('ltr-lyrics').value.trim(),
     chords:document.getElementById('ltr-chords').value.trim(),
   };
-  const letras=getLetras();
-  if(_editingLetraId){ const i=letras.findIndex(l=>l.id===_editingLetraId); if(i>=0) letras[i]=letra; else letras.push(letra); }
-  else letras.push(letra);
-  saveLetras(letras);
+  if(_editingLetraId){ const i=canciones.findIndex(l=>l.id===_editingLetraId); if(i>=0) canciones[i]=letra; else canciones.push(letra); }
+  else canciones.push(letra);
+  saveCanciones(canciones);
   closeModal('modal-letra');
   renderLetrasList();
   showToast('Canción guardada','green');
@@ -2398,8 +2527,38 @@ function renderLetrasList(){
 }
 
 function openGestionarLetras(){
-  renderLetrasList();
-  document.getElementById('modal-gestionar-letras').classList.add('open');
+  goTo('canciones');
+}
+
+// ── Vista rápida canción (desde Mes) ─────────────
+let _cvCurrentId=null;
+
+function openCancionView(id){
+  const c=getCanciones().find(c=>c.id===id);
+  if(!c) return;
+  _cvCurrentId=id;
+  document.getElementById('cv-title').textContent=c.name;
+  let html='';
+  const infoItems=[];
+  if(c.key) infoItems.push(`<span>Tono: <strong style="color:var(--accent)">${c.key}</strong></span>`);
+  if(c.keyOrig) infoItems.push(`<span>Original: <strong>${c.keyOrig}</strong></span>`);
+  if(c.capo) infoItems.push(`<span>${c.capo}</span>`);
+  if(c.author) infoItems.push(`<span style="color:var(--text3)">${c.author}</span>`);
+  if(infoItems.length) html+=`<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:13px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)">${infoItems.join('')}</div>`;
+  if(c.playNote) html+=`<div style="font-size:12px;color:var(--text3);font-style:italic;margin-bottom:12px">${c.playNote}</div>`;
+  if(c.chords){
+    html+=`<div><div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Acordes</div><pre style="font-family:monospace;font-size:14px;color:var(--text);background:var(--bg3);padding:12px;border-radius:6px;white-space:pre-wrap;overflow-x:auto;margin:0;line-height:1.7">${c.chords.replace(/</g,'&lt;')}</pre></div>`;
+  } else {
+    html+=`<div style="font-size:13px;color:var(--text3);font-style:italic">Sin acordes cargados — editá la canción para agregarlos.</div>`;
+  }
+  document.getElementById('cv-body').innerHTML=html;
+  document.getElementById('modal-cancion-view').classList.add('open');
+}
+
+function openCancionViewByName(name){
+  const c=getCanciones().find(c=>c.name.toLowerCase()===name.toLowerCase());
+  if(c) openCancionView(c.id);
+  else showToast('Canción no encontrada en biblioteca','amber');
 }
 
 // ── Letra picker ──────────────────────────────
@@ -2430,6 +2589,8 @@ function _selectLetra(id){ _letraPickerSelected=id; renderLetraPicker(); }
 function confirmLetraPicker(){
   if(!_letraPickerSelected){ showToast('Elegí una canción','amber'); return; }
   const block={type:'cancion', id:Date.now().toString(), songId:_letraPickerSelected};
+  const canciones=getCanciones();const ci=canciones.findIndex(c=>c.id===_letraPickerSelected);
+  if(ci>=0){canciones[ci].usosCount=(canciones[ci].usosCount||0)+1;saveCanciones(canciones);}
   if(_letraPickerTargetIdx!==undefined&&_letraPickerTargetIdx!==null){
     block.id=guionBlocks[_letraPickerTargetIdx].id;
     guionBlocks[_letraPickerTargetIdx]=block;
@@ -2526,8 +2687,10 @@ function buildGuionCardCancion(letra, idx){
 
   const header=`${_ghLabel('CANCIÓN')}<div style="font-size:22px;font-weight:800;color:#fff;line-height:1.05">${letra.name}</div>${badges}`;
 
-  let lyricsHTML='<div style="font-size:14px;color:#94a3b8;font-style:italic">Sin letra cargada</div>';
-  if(letra.lyrics){
+  let lyricsHTML='';
+  if(letra.chordsOnly){
+    // no lyrics in image — show only chords block
+  } else if(letra.lyrics){
     const groups=letra.lyrics.split(/\n{2,}/);
     lyricsHTML=groups.map((g,i)=>{
       const chorus=i%2===1;
@@ -2536,6 +2699,8 @@ function buildGuionCardCancion(letra, idx){
         :'font-size:22px;color:#1e293b;line-height:1.9;white-space:pre-wrap';
       return `<div style="margin-bottom:${i<groups.length-1?'18px':'0'}"><div style="${style}">${g.trim()}</div></div>`;
     }).join('');
+  } else {
+    lyricsHTML='<div style="font-size:14px;color:#94a3b8;font-style:italic">Sin letra cargada</div>';
   }
 
   const chordsHTML=letra.chords?`<div style="margin-top:18px;padding:10px 16px;background:#f1f5f9;border-radius:8px;border-left:4px solid ${color}"><div style="font-size:11px;font-weight:700;color:${color};letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">ACORDES</div><div style="font-size:20px;color:#1e293b;font-weight:700;font-family:monospace;white-space:pre-wrap;line-height:1.75;letter-spacing:.03em">${letra.chords}</div></div>`:'';
