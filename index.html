@@ -2473,7 +2473,7 @@ function loadGuionFromList(date){ loadGuionByDate(date); closeModal('modal-carga
 
 const _GUION_W   = 900;
 const _GUION_PAD = 32;
-const _CANCION_COLORS = ['#2d7a50','#6b3fa0','#c05a1f'];
+const _CANCION_COLORS = ['#2563a8','#1d4ed8','#1e40af'];
 
 // Card con header coloreado + cuerpo blanco (mismo estilo que cards de banda/mes)
 function _guionCard(color, headerHTML, bodyHTML){
@@ -2497,19 +2497,19 @@ function buildGuionCardText(b){
   if(!b.label){
     return _guionCard(null, '', `<div style="font-size:24px;color:#1e293b;line-height:1.8;white-space:pre-wrap">${b.content||''}</div>`);
   }
-  return _guionCard('#2563a8',
-    _ghLabel('TEXTO')+_ghTitle(b.label),
+  return _guionCard('#2d7a50',
+    _ghLabel('COMENTARIO')+_ghTitle(b.label),
     `<div style="font-size:24px;color:#1e293b;line-height:1.8;white-space:pre-wrap">${b.content||''}</div>`);
 }
 
 function buildGuionCardVersiculo(b){
-  return _guionCard('#0f766e',
+  return _guionCard('#b91c1c',
     _ghLabel('VERSÍCULO')+_ghTitle(b.reference||''),
     `<div style="font-size:22px;font-weight:500;color:#dc2626;line-height:1.75">"${b.content||''}"</div>`);
 }
 
 function buildGuionCardOracion(b){
-  return _guionCard('#6b3fa0',
+  return _guionCard('#c05a1f',
     _ghLabel('ORACIÓN'),
     `<div style="font-size:24px;color:#1e293b;line-height:1.8;white-space:pre-wrap">${b.content||''}</div>`);
 }
@@ -2538,7 +2538,7 @@ function buildGuionCardCancion(letra, idx){
     }).join('');
   }
 
-  const chordsHTML=letra.chords?`<div style="margin-top:16px;padding:8px 14px;background:#f1f5f9;border-radius:6px"><div style="font-size:17px;color:#334155;font-weight:600;font-family:monospace;white-space:pre-wrap;line-height:1.65">${letra.chords}</div></div>`:'';
+  const chordsHTML=letra.chords?`<div style="margin-top:18px;padding:10px 16px;background:#f1f5f9;border-radius:8px;border-left:4px solid ${color}"><div style="font-size:11px;font-weight:700;color:${color};letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">ACORDES</div><div style="font-size:20px;color:#1e293b;font-weight:700;font-family:monospace;white-space:pre-wrap;line-height:1.75;letter-spacing:.03em">${letra.chords}</div></div>`:'';
 
   return _guionCard(color, header, lyricsHTML+chordsHTML);
 }
