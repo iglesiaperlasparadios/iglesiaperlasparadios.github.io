@@ -1526,7 +1526,7 @@ function _getSecciones(c){
   return [];
 }
 
-function _renderSeccionesHTML(secciones, chordsOnly=false, scale='normal'){
+function _renderSeccionesHTML(secciones, chordsOnly=false, scale='normal', printFonts=false){
   const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
   if(!secciones.length) return '<div style="font-size:14px;color:#94a3b8;font-style:italic">Sin contenido cargado</div>';
   const sz=scale==='large'?'20px':'15px';
@@ -1544,7 +1544,8 @@ function _renderSeccionesHTML(secciones, chordsOnly=false, scale='normal'){
       if(chordsOnly) return '';
       const lyricColor=isChorus?'#2563a8':'#111827';
       const italic=isChorus?'font-style:italic;':'';
-      return `<span style="display:block;font-family:monospace;white-space:pre;font-size:${sz};color:${lyricColor};${italic}line-height:1.6">${esc(line)||'​'}</span>`;
+      const lyricFont=printFonts?`font-family:'Outfit',sans-serif;white-space:pre-wrap`:'font-family:monospace;white-space:pre';
+      return `<span style="display:block;${lyricFont};font-size:${sz};color:${lyricColor};${italic}line-height:1.6">${esc(line)||'​'}</span>`;
     }).join('');
     let h=`<div style="margin-bottom:28px">`;
     h+=`<div style="font-size:10px;font-weight:600;color:#94a3b8;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">[${label}]</div>`;
@@ -1594,24 +1595,17 @@ function deleteCancion(id){
 }
 
 function _buildCancionPrintHTML(c){
-  const W=800, PAD=36, color='#2563a8';
+  const W=800, PAD=40;
   const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
-  const badges=[
-    c.key?`<span style="background:rgba(255,255,255,.25);border-radius:5px;padding:3px 10px;font-size:13px;font-weight:700;color:#fff">${esc(c.key)}</span>`:'',
-    c.capo?`<span style="background:rgba(255,255,255,.15);border-radius:5px;padding:3px 9px;font-size:12px;color:rgba(255,255,255,.9)">${esc(c.capo)}</span>`:'',
-    c.author?`<span style="font-size:12px;color:rgba(255,255,255,.65);align-self:center">${esc(c.author)}</span>`:'',
-  ].filter(Boolean).join('');
   const secciones=_getSecciones(c);
-  const shadow='0 2px 10px rgba(15,23,42,.07),0 1px 3px rgba(15,23,42,.04)';
+  const keyBadge=c.key?`<span style="background:#e5e7eb;color:#374151;border-radius:5px;padding:2px 10px;font-size:13px;font-weight:600;margin-left:10px;vertical-align:middle;white-space:nowrap">${esc(c.key)}</span>`:'';
+  const capoLine=c.capo?`<div style="font-size:12px;color:#6b7280;margin-top:5px">${esc(c.capo)}</div>`:'';
   return `<div id="_cancion_print" style="width:${W}px;background:#fff;font-family:'Outfit',sans-serif;padding:${PAD}px">
-    <div style="background:#fff;border-radius:14px;border:1px solid #dbe5f0;overflow:hidden;box-shadow:${shadow}">
-      <div style="background:${color};padding:18px 24px">
-        <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,.65);letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px">CANCIÓN</div>
-        <div style="font-size:26px;font-weight:800;color:#fff;line-height:1.05">${esc(c.name)}</div>
-        ${badges?`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px">${badges}</div>`:''}
-      </div>
-      <div style="padding:24px 28px 32px">${_renderSeccionesHTML(secciones,false,'normal')}</div>
+    <div style="margin-bottom:28px;padding-bottom:16px;border-bottom:1px solid #e5e7eb">
+      <div style="font-size:28px;font-weight:700;color:#111827;line-height:1.15">${esc(c.name)}${keyBadge}</div>
+      ${capoLine}
     </div>
+    ${_renderSeccionesHTML(secciones,false,'normal',true)}
   </div>`;
 }
 
