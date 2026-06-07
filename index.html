@@ -204,6 +204,7 @@ select option { background: var(--bg3); }
     <div class="nav-item" onclick="goTo('canciones')"><i class="ti ti-music"></i> Canciones</div>
     <div class="nav-item" onclick="goTo('listas')"><i class="ti ti-playlist"></i> Listas armadas</div>
     <div class="nav-item" onclick="goTo('participacion')"><i class="ti ti-chart-bar"></i> Participación</div>
+    <div class="nav-item" onclick="goTo('guion');renderGuion()"><i class="ti ti-book"></i> Guión</div>
     <div class="nav-item" onclick="goTo('config')"><i class="ti ti-settings"></i> Configuración</div>
   </nav>
   <div style="padding:12px 16px;border-top:1px solid var(--border)">
@@ -368,6 +369,55 @@ select option { background: var(--bg3); }
   </div>
 </div>
 
+<!-- ===== GUIÓN ===== -->
+<div class="page" id="page-guion">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+    <div class="page-title">Guión del domingo</div>
+    <span id="guion-save-status" style="font-size:11px;color:var(--text3)"></span>
+  </div>
+  <div class="page-sub">Armá el orden del tiempo de adoración y generá la imagen para el iPad</div>
+
+  <div class="card">
+    <div class="card-title">Configuración</div>
+    <div class="row2">
+      <div class="field"><label>Fecha del servicio</label>
+        <input type="date" id="guion-fecha" onchange="autoSaveGuion()">
+      </div>
+      <div class="field"><label>Tema / Título (opcional)</label>
+        <input id="guion-titulo" placeholder="ej: Un Dios poderoso que libera" oninput="autoSaveGuion()">
+      </div>
+    </div>
+    <div class="btn-group" style="margin-top:8px">
+      <button class="btn btn-sm" onclick="openCargarGuion()"><i class="ti ti-folder-open"></i> Cargar anterior</button>
+      <button class="btn btn-sm" onclick="openGestionarLetras()"><i class="ti ti-music"></i> Gestionar canciones</button>
+    </div>
+  </div>
+
+  <div id="guion-blocks-wrap"></div>
+
+  <div class="card">
+    <div class="card-title">Agregar bloque</div>
+    <div class="btn-group">
+      <button class="btn btn-sm" onclick="addGuionBlock('texto')" style="border-color:#2563a8;color:#2563a8"><i class="ti ti-text-size"></i> Texto</button>
+      <button class="btn btn-sm" onclick="addGuionBlock('cancion')" style="border-color:#c05a1f;color:#c05a1f"><i class="ti ti-music"></i> Canción</button>
+      <button class="btn btn-sm" onclick="addGuionBlock('versiculo')" style="border-color:#1a7070;color:#1a7070"><i class="ti ti-book"></i> Versículo</button>
+      <button class="btn btn-sm" onclick="addGuionBlock('oracion')" style="border-color:#6b3fa0;color:#6b3fa0"><i class="ti ti-hands-praying"></i> Oración</button>
+    </div>
+  </div>
+
+  <div id="guion-gen-wrap" style="display:none">
+    <div id="guion-prog-wrap" style="display:none">
+      <div class="prog-bar"><div class="prog-fill" id="guion-prog-fill" style="width:0%"></div></div>
+      <div style="font-size:12px;color:var(--text3);text-align:center;margin-top:4px" id="guion-prog-label">Preparando...</div>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-success" style="flex:1" onclick="generateGuionPNG()"><i class="ti ti-photo-down"></i> Generar imagen</button>
+      <button class="btn" onclick="previewGuionPNG()"><i class="ti ti-eye"></i> Vista previa</button>
+    </div>
+    <div id="guion-preview-wrap" style="display:none" class="canvas-preview"><canvas id="guion-cv-preview"></canvas></div>
+  </div>
+</div>
+
 </div><!-- /main -->
 </div><!-- /shell -->
 
@@ -491,6 +541,91 @@ select option { background: var(--bg3); }
     <div class="btn-group" style="margin-top:12px">
       <button class="btn btn-success btn-full" onclick="copyWa()"><i class="ti ti-copy"></i> Copiar mensaje</button>
     </div>
+  </div>
+</div>
+
+<!-- Modal Letra (canción con letra completa) -->
+<div class="modal-overlay" id="modal-letra">
+  <div class="modal" style="width:600px">
+    <div class="modal-title">
+      <span id="letra-modal-title">Nueva canción</span>
+      <button class="btn btn-sm btn-icon" onclick="closeModal('modal-letra')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Nombre</label><input id="ltr-name" placeholder="Nombre de la canción"></div>
+      <div class="field"><label>Tonalidad</label><input id="ltr-key" placeholder="ej: F#m"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Capo</label><input id="ltr-capo" placeholder="ej: CAPO 2do T / Em"></div>
+      <div class="field"><label>Artista / Autor</label><input id="ltr-author" placeholder="ej: Marcos Brunet"></div>
+    </div>
+    <div class="field"><label>Letra completa</label>
+      <textarea id="ltr-lyrics" rows="12" placeholder="Pegá la letra completa aquí..."></textarea>
+    </div>
+    <div class="field"><label>Acordes / Progresión</label>
+      <textarea id="ltr-chords" rows="3" placeholder="ej: Em G Bm D / C Em D"></textarea>
+    </div>
+    <div class="btn-group" style="margin-top:12px">
+      <button class="btn btn-primary btn-full" onclick="saveLetra()"><i class="ti ti-device-floppy"></i> Guardar canción</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Gestionar Letras -->
+<div class="modal-overlay" id="modal-gestionar-letras">
+  <div class="modal" style="width:560px">
+    <div class="modal-title">
+      <span>Biblioteca de letras</span>
+      <button class="btn btn-sm btn-icon" onclick="closeModal('modal-gestionar-letras')"><i class="ti ti-x"></i></button>
+    </div>
+    <button class="btn btn-primary btn-sm" style="margin-bottom:12px" onclick="openLetraModal()"><i class="ti ti-plus"></i> Nueva canción</button>
+    <div id="gestionar-letras-list"></div>
+  </div>
+</div>
+
+<!-- Modal Letra Picker -->
+<div class="modal-overlay" id="modal-letra-picker">
+  <div class="modal">
+    <div class="modal-title">
+      <span>Elegir canción</span>
+      <button class="btn btn-sm btn-icon" onclick="closeModal('modal-letra-picker')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="search-input" style="margin-bottom:8px">
+      <i class="ti ti-search"></i>
+      <input id="letra-picker-search" placeholder="Buscar..." oninput="renderLetraPicker()">
+    </div>
+    <div class="song-picker-list" id="letra-picker-list" style="max-height:320px"></div>
+    <div style="margin-top:8px">
+      <button class="btn btn-sm" onclick="closeModal('modal-letra-picker');openLetraModal()"><i class="ti ti-plus"></i> Nueva canción</button>
+    </div>
+    <div class="btn-group" style="margin-top:10px">
+      <button class="btn btn-primary btn-full" onclick="confirmLetraPicker()"><i class="ti ti-check"></i> Agregar al guión</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Bloque (texto / versículo / oración) -->
+<div class="modal-overlay" id="modal-bloque">
+  <div class="modal" style="width:560px">
+    <div class="modal-title">
+      <span id="bloque-modal-title">Editar bloque</span>
+      <button class="btn btn-sm btn-icon" onclick="closeModal('modal-bloque')"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="bloque-modal-body"></div>
+    <div class="btn-group" style="margin-top:12px">
+      <button class="btn btn-primary btn-full" onclick="saveBlockFromModal()"><i class="ti ti-device-floppy"></i> Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Cargar Guión -->
+<div class="modal-overlay" id="modal-cargar-guion">
+  <div class="modal" style="width:460px">
+    <div class="modal-title">
+      <span>Cargar guión anterior</span>
+      <button class="btn btn-sm btn-icon" onclick="closeModal('modal-cargar-guion')"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="cargar-guion-list"></div>
   </div>
 </div>
 
@@ -2004,6 +2139,454 @@ restoreMesState();
     if(rm)rm.style.display='';
   }
 })();
+
+// ═══════════════════════════════════════════════
+// GUIÓN DEL DOMINGO
+// ═══════════════════════════════════════════════
+
+// ── Data ──────────────────────────────────────
+function getLetras(){ return db('letras'); }
+function saveLetras(v){ dbSet('letras', v); }
+
+// ── State ─────────────────────────────────────
+let guionBlocks = [];
+let _guionSaveTimer = null;
+let _editingLetraId = null;
+let _editingBlockIdx = null;
+let _letraPickerTargetIdx = undefined;
+let _letraPickerSelected = null;
+
+// ── Key & autosave ────────────────────────────
+function _guionDateVal(){ const el=document.getElementById('guion-fecha'); return el?el.value:''; }
+function _guionKey(d){ return 'mm_guion_'+(d||_guionDateVal()); }
+
+function autoSaveGuion(){
+  clearTimeout(_guionSaveTimer);
+  _guionSaveTimer = setTimeout(_doSaveGuion, 800);
+  const el=document.getElementById('guion-save-status');
+  if(el) el.innerHTML='<i class="ti ti-circle" style="font-size:9px;color:var(--amber)"></i> Sin guardar';
+}
+
+function _doSaveGuion(){
+  const date=_guionDateVal(); if(!date) return;
+  try{
+    localStorage.setItem(_guionKey(date), JSON.stringify({
+      date,
+      title: document.getElementById('guion-titulo')?.value.trim()||'',
+      blocks: guionBlocks.map(b=>({...b}))
+    }));
+    const el=document.getElementById('guion-save-status');
+    if(el){ const now=new Date(); const t=now.getHours()+':'+String(now.getMinutes()).padStart(2,'0'); el.innerHTML='<i class="ti ti-circle-check" style="font-size:9px;color:var(--green)"></i> Guardado '+t; }
+  }catch(e){}
+}
+
+function getSavedGuionList(){
+  return Object.keys(localStorage)
+    .filter(k=>k.match(/^mm_guion_\d{4}-\d{2}-\d{2}$/))
+    .map(k=>{ try{ return JSON.parse(localStorage.getItem(k)); }catch{ return null; } })
+    .filter(Boolean)
+    .sort((a,b)=>b.date.localeCompare(a.date));
+}
+
+function loadGuionByDate(date){
+  const raw=localStorage.getItem(_guionKey(date)); if(!raw) return false;
+  try{
+    const state=JSON.parse(raw);
+    guionBlocks=(state.blocks||[]).map(b=>({...b}));
+    const fechaEl=document.getElementById('guion-fecha');
+    const tituloEl=document.getElementById('guion-titulo');
+    if(fechaEl) fechaEl.value=state.date||'';
+    if(tituloEl) tituloEl.value=state.title||'';
+    renderGuionBlocksUI();
+    _updateGuionGenWrap();
+    const el=document.getElementById('guion-save-status');
+    if(el){ const now=new Date(); const t=now.getHours()+':'+String(now.getMinutes()).padStart(2,'0'); el.innerHTML='<i class="ti ti-circle-check" style="font-size:9px;color:var(--green)"></i> Restaurado '+t; }
+    return true;
+  }catch{ return false; }
+}
+
+// ── Init ──────────────────────────────────────
+function renderGuion(){
+  if(!_guionDateVal()){
+    const list=getSavedGuionList();
+    if(list.length){ loadGuionByDate(list[0].date); return; }
+    // default to next Sunday
+    const d=new Date(); const dow=d.getDay();
+    d.setDate(d.getDate()+(dow===0?0:7-dow));
+    const el=document.getElementById('guion-fecha');
+    if(el) el.value=d.toISOString().split('T')[0];
+  }
+  renderGuionBlocksUI();
+  _updateGuionGenWrap();
+}
+
+function _updateGuionGenWrap(){
+  const wrap=document.getElementById('guion-gen-wrap');
+  if(wrap) wrap.style.display=guionBlocks.length?'block':'none';
+}
+
+// ── Block rendering ───────────────────────────
+const _BTYPE_LABEL={texto:'TEXTO',cancion:'CANCIÓN',versiculo:'VERSÍCULO',oracion:'ORACIÓN'};
+const _BTYPE_COLOR={texto:'#2563a8',versiculo:'#1a7070',oracion:'#6b3fa0'};
+
+function _blockAccent(b, idx){
+  if(b.type==='cancion'){
+    let ci=0; for(let i=0;i<idx;i++) if(guionBlocks[i].type==='cancion') ci++;
+    return DOMINGO_COLORS[ci%DOMINGO_COLORS.length];
+  }
+  return _BTYPE_COLOR[b.type]||'#888';
+}
+
+function _blockHeading(b){
+  if(b.type==='texto') return b.label||'Texto';
+  if(b.type==='versiculo') return b.reference||'Versículo';
+  if(b.type==='oracion') return 'Oración';
+  if(b.type==='cancion'){ const c=getLetras().find(l=>l.id===b.songId); return c?c.name:'(canción no encontrada)'; }
+  return b.type;
+}
+
+function _blockPreviewText(b){
+  if(b.type==='cancion'){
+    const c=getLetras().find(l=>l.id===b.songId);
+    if(!c) return '<span style="color:var(--text3);font-style:italic">No encontrada en biblioteca</span>';
+    return `<span style="font-size:12px;color:var(--text3)">${c.key||''}${c.capo?' · '+c.capo:''}</span>`;
+  }
+  const t=b.content||''; return `<span style="font-size:12px;color:var(--text2)">${t.substring(0,120).replace(/\n/g,' ')}${t.length>120?'…':''}</span>`;
+}
+
+function renderGuionBlocksUI(){
+  const wrap=document.getElementById('guion-blocks-wrap'); if(!wrap) return;
+  if(!guionBlocks.length){
+    wrap.innerHTML='<div class="empty-state" style="margin:8px 0"><i class="ti ti-layout-list"></i>Agregá bloques para armar el guión</div>';
+    return;
+  }
+  wrap.innerHTML=guionBlocks.map((b,idx)=>{
+    const color=_blockAccent(b,idx);
+    return `<div class="card" style="border-left:4px solid ${color};margin-bottom:8px;padding:10px 14px">
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+            <span style="font-size:10px;font-weight:700;color:${color};letter-spacing:.08em;text-transform:uppercase">${_BTYPE_LABEL[b.type]||b.type}</span>
+            <span style="font-size:13px;font-weight:600;color:var(--text)">${_blockHeading(b)}</span>
+          </div>
+          <div>${_blockPreviewText(b)}</div>
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0">
+          <button class="btn btn-sm btn-icon" onclick="moveGuionBlock(${idx},-1)"${idx===0?' disabled':''}><i class="ti ti-chevron-up"></i></button>
+          <button class="btn btn-sm btn-icon" onclick="moveGuionBlock(${idx},1)"${idx===guionBlocks.length-1?' disabled':''}><i class="ti ti-chevron-down"></i></button>
+          <button class="btn btn-sm btn-icon" onclick="openEditGuionBlock(${idx})"><i class="ti ti-edit"></i></button>
+          <button class="btn btn-sm btn-icon btn-danger" onclick="deleteGuionBlock(${idx})"><i class="ti ti-trash"></i></button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Block CRUD ────────────────────────────────
+function addGuionBlock(type){
+  if(type==='cancion'){ _letraPickerTargetIdx=undefined; openLetraPicker(); return; }
+  _editingBlockIdx=null;
+  openBloqueModal(type, null);
+}
+
+function moveGuionBlock(idx, dir){
+  const ni=idx+dir; if(ni<0||ni>=guionBlocks.length) return;
+  [guionBlocks[idx],guionBlocks[ni]]=[guionBlocks[ni],guionBlocks[idx]];
+  renderGuionBlocksUI(); autoSaveGuion();
+}
+
+function deleteGuionBlock(idx){
+  if(!confirm('¿Eliminar este bloque?')) return;
+  guionBlocks.splice(idx,1);
+  renderGuionBlocksUI(); _updateGuionGenWrap(); autoSaveGuion();
+}
+
+function openEditGuionBlock(idx){
+  const b=guionBlocks[idx]; if(!b) return;
+  if(b.type==='cancion'){ _letraPickerTargetIdx=idx; _letraPickerSelected=b.songId; openLetraPicker(); }
+  else { _editingBlockIdx=idx; openBloqueModal(b.type, b); }
+}
+
+// ── Bloque modal ──────────────────────────────
+function openBloqueModal(type, b){
+  const titles={texto:'Texto',versiculo:'Versículo',oracion:'Oración'};
+  document.getElementById('bloque-modal-title').textContent=(_editingBlockIdx!==null?'Editar ':'Nuevo ')+(titles[type]||type);
+  let body='<input type="hidden" id="bm-type" value="'+type+'">';
+  if(type==='texto'){
+    body+=`<div class="field"><label>Etiqueta</label><input id="bm-label" placeholder="ej: Introducción, Conexión, Cierre..." value="${b?.label||''}"></div>
+    <div class="field"><label>Contenido</label><textarea id="bm-content" rows="8" placeholder="Texto de introducción, conexión, etc...">${b?.content||''}</textarea></div>`;
+  } else if(type==='versiculo'){
+    body+=`<div class="field"><label>Referencia</label><input id="bm-reference" placeholder="ej: Juan 8:36" value="${b?.reference||''}"></div>
+    <div class="field"><label>Texto del versículo</label><textarea id="bm-content" rows="5" placeholder="Texto bíblico...">${b?.content||''}</textarea></div>`;
+  } else if(type==='oracion'){
+    body+=`<div class="field"><label>Texto de la oración</label><textarea id="bm-content" rows="10" placeholder="Texto de la oración...">${b?.content||''}</textarea></div>`;
+  }
+  document.getElementById('bloque-modal-body').innerHTML=body;
+  document.getElementById('modal-bloque').classList.add('open');
+}
+
+function saveBlockFromModal(){
+  const type=document.getElementById('bm-type')?.value; if(!type) return;
+  const block={type, id:(_editingBlockIdx!==null?guionBlocks[_editingBlockIdx].id:null)||Date.now().toString()};
+  if(type==='texto'){ block.label=document.getElementById('bm-label')?.value.trim()||'Introducción'; block.content=document.getElementById('bm-content')?.value||''; }
+  else if(type==='versiculo'){ block.reference=document.getElementById('bm-reference')?.value.trim()||''; block.content=document.getElementById('bm-content')?.value||''; }
+  else if(type==='oracion'){ block.content=document.getElementById('bm-content')?.value||''; }
+  if(_editingBlockIdx!==null) guionBlocks[_editingBlockIdx]=block; else guionBlocks.push(block);
+  closeModal('modal-bloque'); renderGuionBlocksUI(); _updateGuionGenWrap(); autoSaveGuion();
+}
+
+// ── Biblioteca de letras ──────────────────────
+function openLetraModal(id=null){
+  _editingLetraId=id;
+  document.getElementById('letra-modal-title').textContent=id?'Editar canción':'Nueva canción';
+  ['ltr-name','ltr-key','ltr-capo','ltr-author','ltr-lyrics','ltr-chords'].forEach(f=>{ const el=document.getElementById(f); if(el) el.value=''; });
+  if(id){
+    const l=getLetras().find(l=>l.id===id);
+    if(l){
+      document.getElementById('ltr-name').value=l.name||'';
+      document.getElementById('ltr-key').value=l.key||'';
+      document.getElementById('ltr-capo').value=l.capo||'';
+      document.getElementById('ltr-author').value=l.author||'';
+      document.getElementById('ltr-lyrics').value=l.lyrics||'';
+      document.getElementById('ltr-chords').value=l.chords||'';
+    }
+  }
+  document.getElementById('modal-letra').classList.add('open');
+}
+
+function saveLetra(){
+  const name=document.getElementById('ltr-name').value.trim();
+  if(!name){ showToast('El nombre es obligatorio','amber'); return; }
+  const letra={
+    id:_editingLetraId||Date.now().toString(), name,
+    key:document.getElementById('ltr-key').value.trim(),
+    capo:document.getElementById('ltr-capo').value.trim(),
+    author:document.getElementById('ltr-author').value.trim(),
+    lyrics:document.getElementById('ltr-lyrics').value.trim(),
+    chords:document.getElementById('ltr-chords').value.trim(),
+  };
+  const letras=getLetras();
+  if(_editingLetraId){ const i=letras.findIndex(l=>l.id===_editingLetraId); if(i>=0) letras[i]=letra; else letras.push(letra); }
+  else letras.push(letra);
+  saveLetras(letras);
+  closeModal('modal-letra');
+  renderLetrasList();
+  showToast('Canción guardada','green');
+}
+
+function deleteLetra(id){
+  if(!confirm('¿Eliminar esta canción de la biblioteca?')) return;
+  saveLetras(getLetras().filter(l=>l.id!==id));
+  renderLetrasList();
+}
+
+function renderLetrasList(){
+  const letras=getLetras();
+  const el=document.getElementById('gestionar-letras-list'); if(!el) return;
+  if(!letras.length){ el.innerHTML='<div class="empty-state"><i class="ti ti-music-off"></i>No hay canciones en la biblioteca</div>'; return; }
+  el.innerHTML=letras.map(l=>`
+    <div class="song-lib-item">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">${l.name}</div>
+        <div style="font-size:11px;color:var(--text3)">${l.key||''}${l.capo?' · '+l.capo:''}${l.author?' · '+l.author:''}</div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-sm btn-icon" onclick="openLetraModal('${l.id}')"><i class="ti ti-edit"></i></button>
+        <button class="btn btn-sm btn-icon btn-danger" onclick="deleteLetra('${l.id}')"><i class="ti ti-trash"></i></button>
+      </div>
+    </div>`).join('');
+}
+
+function openGestionarLetras(){
+  renderLetrasList();
+  document.getElementById('modal-gestionar-letras').classList.add('open');
+}
+
+// ── Letra picker ──────────────────────────────
+function openLetraPicker(){
+  if(_letraPickerSelected===null||_letraPickerSelected===undefined) _letraPickerSelected=null;
+  document.getElementById('letra-picker-search').value='';
+  renderLetraPicker();
+  document.getElementById('modal-letra-picker').classList.add('open');
+}
+
+function renderLetraPicker(){
+  const q=(document.getElementById('letra-picker-search')?.value||'').toLowerCase();
+  const letras=getLetras().filter(l=>!q||l.name.toLowerCase().includes(q));
+  const el=document.getElementById('letra-picker-list');
+  if(!letras.length){ el.innerHTML='<div class="empty-state"><i class="ti ti-music-off"></i>No hay canciones — agregá una primero</div>'; return; }
+  el.innerHTML=letras.map(l=>`
+    <div class="sp-item${_letraPickerSelected===l.id?' selected':''}" onclick="_selectLetra('${l.id}')">
+      <div class="sp-check">${_letraPickerSelected===l.id?'<i class="ti ti-check" style="font-size:11px;color:#fff"></i>':''}</div>
+      <div style="flex:1;min-width:0">
+        <div class="sp-name">${l.name}</div>
+        <div style="font-size:11px;color:var(--text3)">${l.key||''}${l.capo?' · '+l.capo:''}</div>
+      </div>
+    </div>`).join('');
+}
+
+function _selectLetra(id){ _letraPickerSelected=id; renderLetraPicker(); }
+
+function confirmLetraPicker(){
+  if(!_letraPickerSelected){ showToast('Elegí una canción','amber'); return; }
+  const block={type:'cancion', id:Date.now().toString(), songId:_letraPickerSelected};
+  if(_letraPickerTargetIdx!==undefined&&_letraPickerTargetIdx!==null){
+    block.id=guionBlocks[_letraPickerTargetIdx].id;
+    guionBlocks[_letraPickerTargetIdx]=block;
+  } else {
+    guionBlocks.push(block);
+  }
+  closeModal('modal-letra-picker');
+  renderGuionBlocksUI(); _updateGuionGenWrap(); autoSaveGuion();
+}
+
+// ── Cargar guión anterior ─────────────────────
+function openCargarGuion(){
+  const list=getSavedGuionList();
+  const el=document.getElementById('cargar-guion-list');
+  if(!list.length){ el.innerHTML='<div class="empty-state"><i class="ti ti-calendar-off"></i>No hay guiones guardados</div>'; }
+  else { el.innerHTML=list.map(g=>`
+    <div class="song-lib-item" style="cursor:pointer" onclick="loadGuionFromList('${g.date}')">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;color:var(--text)">${_fmtGuionDate(g.date)}</div>
+        ${g.title?`<div style="font-size:11px;color:var(--text3)">${g.title}</div>`:''}
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">${g.blocks?.length||0} bloques</div>
+      </div>
+      <i class="ti ti-chevron-right" style="color:var(--text3)"></i>
+    </div>`).join(''); }
+  document.getElementById('modal-cargar-guion').classList.add('open');
+}
+
+function _fmtGuionDate(d){
+  if(!d) return '—';
+  const [y,m,day]=d.split('-');
+  const dow=new Date(d).getDay();
+  const dias=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  return `${dias[dow]} ${parseInt(day)} de ${MESES[parseInt(m)-1]} ${y}`;
+}
+
+function loadGuionFromList(date){ loadGuionByDate(date); closeModal('modal-cargar-guion'); showToast('Guión cargado','green'); }
+
+// ═══════════════════════════════════════════════
+// IMAGEN — Guión
+// ═══════════════════════════════════════════════
+
+const _GUION_W   = 900;
+const _GUION_PAD = 36;
+const _GCOL = { texto:'#2563a8', versiculo:'#1a7070', oracion:'#6b3fa0' };
+const _GSOFT= { texto:'#eef4ff', versiculo:'#edfafa', oracion:'#f5f0ff', cancion:'#f8f9fc' };
+
+function _guionCardWrap(color, soft, header, body){
+  return `<div style="background:#fff;border-radius:16px;border:1px solid #dbe5f0;overflow:hidden;box-shadow:0 2px 12px rgba(15,23,42,.07),0 1px 3px rgba(15,23,42,.04);margin-bottom:20px">
+    <div style="background:${color};padding:16px 22px">${header}</div>
+    <div style="padding:20px 24px;background:${soft}">${body}</div>
+  </div>`;
+}
+
+function _gHeader(typeLabel, heading){
+  return `<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.6);letter-spacing:.14em;text-transform:uppercase;margin-bottom:4px">${typeLabel}</div>
+  <div style="font-size:22px;font-weight:700;color:#fff;line-height:1.15">${heading}</div>`;
+}
+
+function buildGuionCardText(b){
+  return _guionCardWrap(_GCOL.texto, _GSOFT.texto,
+    _gHeader('TEXTO', b.label||'Texto'),
+    `<div style="font-size:18px;color:#172235;line-height:1.8;white-space:pre-wrap">${b.content||''}</div>`);
+}
+
+function buildGuionCardVersiculo(b){
+  return _guionCardWrap(_GCOL.versiculo, _GSOFT.versiculo,
+    _gHeader('VERSÍCULO', b.reference||'Versículo'),
+    `<div style="font-size:20px;color:#172235;line-height:1.72;font-style:italic">"${b.content||''}"</div>`);
+}
+
+function buildGuionCardOracion(b){
+  return _guionCardWrap(_GCOL.oracion, _GSOFT.oracion,
+    _gHeader('ORACIÓN', 'Oración'),
+    `<div style="font-size:18px;color:#172235;line-height:1.8;white-space:pre-wrap">${b.content||''}</div>`);
+}
+
+function buildGuionCardCancion(letra, color){
+  if(!letra) return `<div style="background:#fff;border-radius:16px;border:1px dashed #dbe5f0;padding:20px;margin-bottom:20px;color:#aaa;font-style:italic">Canción no encontrada en biblioteca</div>`;
+  const header=`<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.6);letter-spacing:.14em;text-transform:uppercase;margin-bottom:5px">CANCIÓN</div>
+    <div style="font-size:28px;font-weight:800;color:#fff;line-height:1.05;margin-bottom:10px">${letra.name}</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      ${letra.key?`<span style="background:rgba(255,255,255,.22);border-radius:8px;padding:4px 14px;font-size:16px;font-weight:700;color:#fff">${letra.key}</span>`:''}
+      ${letra.capo?`<span style="background:rgba(255,255,255,.14);border-radius:8px;padding:4px 12px;font-size:14px;color:rgba(255,255,255,.9)">${letra.capo}</span>`:''}
+      ${letra.author?`<span style="font-size:13px;color:rgba(255,255,255,.65)">${letra.author}</span>`:''}
+    </div>`;
+  const lyricsHTML=letra.lyrics?`<div style="font-size:19px;color:#172235;line-height:1.9;white-space:pre-wrap;font-family:'Outfit',sans-serif">${letra.lyrics}</div>`:'<div style="font-size:14px;color:#aaa;font-style:italic">Sin letra cargada</div>';
+  const chordsHTML=letra.chords?`<div style="margin-top:18px;padding-top:14px;border-top:1px solid ${color}22"><div style="font-size:10px;font-weight:700;color:${color};letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">ACORDES</div><div style="font-size:16px;color:${color};font-weight:600;font-family:monospace;white-space:pre-wrap;line-height:1.7">${letra.chords}</div></div>`:'';
+  return _guionCardWrap(color, _GSOFT.cancion, header, lyricsHTML+chordsHTML);
+}
+
+function buildGuionHTML(){
+  const letras=getLetras();
+  const fecha=_guionDateVal();
+  const titulo=document.getElementById('guion-titulo')?.value.trim()||'';
+  const accent='#2563a8';
+  let cancionIdx=0;
+
+  const cardsHTML=guionBlocks.map(b=>{
+    if(b.type==='texto') return buildGuionCardText(b);
+    if(b.type==='versiculo') return buildGuionCardVersiculo(b);
+    if(b.type==='oracion') return buildGuionCardOracion(b);
+    if(b.type==='cancion'){
+      const letra=letras.find(l=>l.id===b.songId);
+      const col=DOMINGO_COLORS[cancionIdx++%DOMINGO_COLORS.length];
+      return buildGuionCardCancion(letra, col);
+    }
+    return '';
+  }).join('');
+
+  const fechaLabel=fecha?_fmtGuionDate(fecha):'';
+
+  return `<div id="_guion_render" style="width:${_GUION_W}px;background:#f0f2f5;font-family:'Outfit',sans-serif;padding:0">
+    <div style="background:#ffffff;padding:30px ${_GUION_PAD}px 26px;border-bottom:3px solid ${accent}">
+      <div style="font-size:11px;font-weight:700;color:${accent};letter-spacing:.14em;text-transform:uppercase;margin-bottom:7px">Guión · ${fechaLabel}</div>
+      <div style="font-size:${titulo?'38px':'28px'};font-weight:800;color:#172235;line-height:1.1;font-family:'Fraunces',serif">${titulo||'Tiempo de adoración'}</div>
+    </div>
+    <div style="padding:24px ${_GUION_PAD}px 40px">${cardsHTML}</div>
+  </div>`;
+}
+
+async function generateGuionPNG(){
+  if(!guionBlocks.length){ showToast('Agregá bloques primero','amber'); return; }
+  const btn=document.querySelector('#guion-gen-wrap .btn-success');
+  const fill=document.getElementById('guion-prog-fill');
+  const lbl=document.getElementById('guion-prog-label');
+  if(btn) btn.disabled=true;
+  document.getElementById('guion-prog-wrap').style.display='block';
+  lbl.textContent='Generando imagen...'; fill.style.width='20%';
+  try{
+    const cv=await htmlToCanvas(buildGuionHTML(),'_guion_render');
+    fill.style.width='90%'; lbl.textContent='Descargando...';
+    const a=document.createElement('a');
+    a.href=cv.toDataURL('image/png');
+    a.download=`guion-${(_guionDateVal()||'domingo').replace(/-/g,'')}.png`;
+    a.click();
+    fill.style.width='100%'; lbl.textContent='¡Listo!';
+    showToast('Imagen descargada','green');
+  }catch(e){ showToast('Error al generar imagen','red'); console.error(e); lbl.textContent='Error'; }
+  if(btn) btn.disabled=false;
+}
+
+async function previewGuionPNG(){
+  if(!guionBlocks.length){ showToast('Agregá bloques primero','amber'); return; }
+  const btns=document.querySelectorAll('#guion-gen-wrap button');
+  btns.forEach(b=>b.disabled=true);
+  showToast('Generando vista previa...','amber');
+  try{
+    const cv=await htmlToCanvas(buildGuionHTML(),'_guion_render');
+    const out=document.getElementById('guion-cv-preview');
+    out.width=cv.width; out.height=cv.height;
+    out.getContext('2d').drawImage(cv,0,0);
+    out.style.width='100%'; out.style.height='auto';
+    document.getElementById('guion-preview-wrap').style.display='block';
+    showToast('Vista previa lista','green');
+  }catch(e){ showToast('Error al generar','red'); console.error(e); }
+  btns.forEach(b=>b.disabled=false);
+}
 </script>
 </body>
 </html>

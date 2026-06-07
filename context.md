@@ -35,9 +35,22 @@ Repositorio: https://github.com/bosioinmobiliaria-lang/ministerio-alabanza
 
 ---
 
+### Sesión 2 (2026-06-07)
+- **Nueva pestaña "Guión"** — implementación completa sin tocar código existente.
+  - Biblioteca de letras (`mm_letras`): canciones con letra completa, tono, capo, autor, acordes. CRUD con modal.
+  - Constructor del guión (`mm_guion_YYYY-MM-DD`): secuencia de bloques con tipos texto/canción/versículo/oración.
+  - Reordenar bloques con botones ↑↓.
+  - Múltiples guiones por fecha; carga automática del más reciente al entrar.
+  - Autosave con debounce 800ms, mismo patrón que la pestaña "Mes".
+  - Generación de imagen PNG ~900px ancho optimizada para iPad vertical.
+  - Tarjetas por tipo: texto→azul, canción→DOMINGO_COLORS ciclando, versículo→teal, oración→violeta.
+  - Letra de canciones con `white-space:pre-wrap`, mínimo 19px, acordes en monospace.
+
 ## Pendientes / ideas
 
 - [ ] Agregar `.gitignore` para excluir `.DS_Store` y otros archivos de macOS.
+- [ ] Incluir `mm_letras` y `mm_guion_*` en el sistema de backup/restore.
+- [ ] Opción de duplicar un guión existente como punto de partida.
 - [ ] Evaluar si agregar un footer opcional de nuevo (configurable desde la sección Configuración).
 - [ ] Posibilidad de exportar imagen por servicio individual (además del mes completo).
 - [ ] Vista previa en tiempo real del header de la imagen al editar Configuración.
