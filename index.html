@@ -2328,7 +2328,7 @@ function openBloqueModal(type, b){
 function saveBlockFromModal(){
   const type=document.getElementById('bm-type')?.value; if(!type) return;
   const block={type, id:(_editingBlockIdx!==null?guionBlocks[_editingBlockIdx].id:null)||Date.now().toString()};
-  if(type==='texto'){ block.label=document.getElementById('bm-label')?.value.trim()||'Introducción'; block.content=document.getElementById('bm-content')?.value||''; }
+  if(type==='texto'){ block.label=document.getElementById('bm-label')?.value.trim()||''; block.content=document.getElementById('bm-content')?.value||''; }
   else if(type==='versiculo'){ block.reference=document.getElementById('bm-reference')?.value.trim()||''; block.content=document.getElementById('bm-content')?.value||''; }
   else if(type==='oracion'){ block.content=document.getElementById('bm-content')?.value||''; }
   if(_editingBlockIdx!==null) guionBlocks[_editingBlockIdx]=block; else guionBlocks.push(block);
@@ -2491,27 +2491,27 @@ function _guionCard(color, headerHTML, bodyHTML){
 }
 
 function _ghLabel(label){ return `<div style="font-size:10px;font-weight:600;color:rgba(255,255,255,.65);letter-spacing:.12em;text-transform:uppercase;margin-bottom:3px">${label}</div>`; }
-function _ghTitle(t){ return `<div style="font-size:16px;font-weight:600;color:#fff;line-height:1.2">${t}</div>`; }
+function _ghTitle(t){ return `<div style="font-size:18px;font-weight:600;color:#fff;line-height:1.2">${t}</div>`; }
 
 function buildGuionCardText(b){
   if(!b.label){
-    return _guionCard(null, '', `<div style="font-size:18px;color:#1e293b;line-height:1.82;white-space:pre-wrap">${b.content||''}</div>`);
+    return _guionCard(null, '', `<div style="font-size:24px;color:#1e293b;line-height:1.8;white-space:pre-wrap">${b.content||''}</div>`);
   }
   return _guionCard('#2563a8',
     _ghLabel('TEXTO')+_ghTitle(b.label),
-    `<div style="font-size:18px;color:#1e293b;line-height:1.82;white-space:pre-wrap">${b.content||''}</div>`);
+    `<div style="font-size:24px;color:#1e293b;line-height:1.8;white-space:pre-wrap">${b.content||''}</div>`);
 }
 
 function buildGuionCardVersiculo(b){
   return _guionCard('#0f766e',
     _ghLabel('VERSÍCULO')+_ghTitle(b.reference||''),
-    `<div style="font-size:17px;font-weight:700;color:#dc2626;line-height:1.72">"${b.content||''}"</div>`);
+    `<div style="font-size:22px;font-weight:500;color:#dc2626;line-height:1.75">"${b.content||''}"</div>`);
 }
 
 function buildGuionCardOracion(b){
   return _guionCard('#6b3fa0',
     _ghLabel('ORACIÓN'),
-    `<div style="font-size:18px;color:#1e293b;line-height:1.82;white-space:pre-wrap">${b.content||''}</div>`);
+    `<div style="font-size:24px;color:#1e293b;line-height:1.8;white-space:pre-wrap">${b.content||''}</div>`);
 }
 
 function buildGuionCardCancion(letra, idx){
@@ -2531,13 +2531,14 @@ function buildGuionCardCancion(letra, idx){
     const groups=letra.lyrics.split(/\n{2,}/);
     lyricsHTML=groups.map((g,i)=>{
       const chorus=i%2===1;
-      return `<div style="margin-bottom:${i<groups.length-1?'16px':'0'}${chorus?';padding-left:16px;color:#374151':''}">
-        <div style="font-size:19px;color:${chorus?'#374151':'#1e293b'};line-height:1.9;white-space:pre-wrap">${g.trim()}</div>
-      </div>`;
+      const style=chorus
+        ?'font-size:22px;color:#2563a8;font-style:italic;line-height:1.9;white-space:pre-wrap;padding-left:16px'
+        :'font-size:22px;color:#1e293b;line-height:1.9;white-space:pre-wrap';
+      return `<div style="margin-bottom:${i<groups.length-1?'18px':'0'}"><div style="${style}">${g.trim()}</div></div>`;
     }).join('');
   }
 
-  const chordsHTML=letra.chords?`<div style="margin-top:14px;padding:7px 12px;background:#f1f5f9;border-radius:6px"><div style="font-size:15px;color:#334155;font-weight:600;font-family:monospace;white-space:pre-wrap;line-height:1.65">${letra.chords}</div></div>`:'';
+  const chordsHTML=letra.chords?`<div style="margin-top:16px;padding:8px 14px;background:#f1f5f9;border-radius:6px"><div style="font-size:17px;color:#334155;font-weight:600;font-family:monospace;white-space:pre-wrap;line-height:1.65">${letra.chords}</div></div>`:'';
 
   return _guionCard(color, header, lyricsHTML+chordsHTML);
 }
