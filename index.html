@@ -2201,6 +2201,11 @@ function exportBackup(){
     )
   }));
 
+  const guiones = Object.keys(localStorage)
+    .filter(k=>k.match(/^mm_guion_\d{4}-\d{2}-\d{2}$/))
+    .map(k=>{ try{ return JSON.parse(localStorage.getItem(k)); }catch{ return null; } })
+    .filter(Boolean);
+
   const backup = {
     app: 'ministerio-musica',
     version: APP_VERSION,
@@ -2211,6 +2216,7 @@ function exportBackup(){
       bandas:    getBandas(),
       canciones: getCanciones(),
       listas:    getListas(),
+      guiones,
       mesActual: {
         year:      calYM.y,
         month:     calYM.m,
@@ -2289,6 +2295,7 @@ function showBackupModal(raw, mode){
   const b     = d.bandas?.length    || 0;
   const c     = d.canciones?.length || 0;
   const l     = d.listas?.length    || 0;
+  const g     = d.guiones?.length   || 0;
   const s     = meta?.services?.length || 0;
   const mesLbl= meta ? `${MESES[meta.month]} ${meta.year}` : '—';
   const dias  = meta ? [(meta.diasSab?'Sábados':''),(meta.diasDom?'Domingos':'')].filter(Boolean).join(' + ') || '—' : '—';
@@ -2322,6 +2329,7 @@ function showBackupModal(raw, mode){
         <div style="color:var(--text3)">Bandas</div><div><span class="badge badge-blue">${b}</span></div>
         <div style="color:var(--text3)">Canciones</div><div><span class="badge badge-blue">${c}</span></div>
         <div style="color:var(--text3)">Listas armadas</div><div><span class="badge badge-blue">${l}</span></div>
+        <div style="color:var(--text3)">Guiones</div><div><span class="badge badge-blue">${g}</span></div>
         <div style="color:var(--text3)">Mes guardado</div><div>${mesLbl} <span class="badge badge-gray">${s} servicios</span></div>
         <div style="color:var(--text3)">Días activos</div><div>${dias}</div>
       </div>
@@ -2361,6 +2369,9 @@ function confirmImport(){
   if(d.listas)    saveListas(d.listas);
   if(d.historial) saveHistorial(d.historial);
   if(d.config)    localStorage.setItem('mm_config', JSON.stringify(d.config));
+  if(d.guiones?.length){
+    d.guiones.forEach(g=>{ if(g?.date) localStorage.setItem('mm_guion_'+g.date, JSON.stringify(g)); });
+  }
   // clear autosave so imported mes state takes over
   localStorage.removeItem('mm_mes_state');
 
