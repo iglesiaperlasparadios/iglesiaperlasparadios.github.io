@@ -1232,7 +1232,7 @@ function renderPickerCats(){
 
 function renderPicker(){
   const q=document.getElementById('picker-search').value.toLowerCase();
-  let songs=getCanciones().filter(s=>(!q||s.name.toLowerCase().includes(q))&&(!pickerCatFilter||s.cats?.includes(pickerCatFilter)));
+  let songs=getCanciones().filter(s=>(!q||s.name.toLowerCase().includes(q))&&(!pickerCatFilter||s.cats?.includes(pickerCatFilter))).sort((a,b)=>a.name.localeCompare(b.name,'es',{sensitivity:'base'}));
   const list=document.getElementById('picker-list');
   if(!songs.length){list.innerHTML='<div class="empty-state"><i class="ti ti-music-off"></i>Sin canciones</div>';return;}
   list.innerHTML=songs.map(s=>`
@@ -2921,7 +2921,7 @@ function openLetraPicker(){
 
 function renderLetraPicker(){
   const q=(document.getElementById('letra-picker-search')?.value||'').toLowerCase();
-  const letras=getLetras().filter(l=>!q||l.name.toLowerCase().includes(q));
+  const letras=getLetras().filter(l=>!q||l.name.toLowerCase().includes(q)).sort((a,b)=>a.name.localeCompare(b.name,'es',{sensitivity:'base'}));
   const el=document.getElementById('letra-picker-list');
   if(!letras.length){ el.innerHTML='<div class="empty-state"><i class="ti ti-music-off"></i>No hay canciones — agregá una primero</div>'; return; }
   el.innerHTML=letras.map(l=>`
