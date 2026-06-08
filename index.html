@@ -1532,28 +1532,51 @@ function _renderSeccionesHTML(secciones, chordsOnly=false, scale='normal', print
   const sz=scale==='large'?'20px':'15px';
   const totals={};secciones.forEach(s=>totals[s.tipo]=(totals[s.tipo]||0)+1);
   const counts={};
-  return secciones.map(s=>{
+  return secciones.map((s,si)=>{
     counts[s.tipo]=(counts[s.tipo]||0)+1;
     const label=(_SEC_TIPO_LABEL[s.tipo]||s.tipo)+(totals[s.tipo]>1?' '+counts[s.tipo]:'');
     const isChorus=s.tipo==='coro';
     const lines=(s.contenido||'').split('\n');
-    const linesHTML=lines.map(line=>{
-      if(_isChordLine(line)){
-        const chordSz=printFonts?'16px':sz;
-        return `<span style="display:block;font-family:'Courier New',monospace;white-space:pre;font-size:${chordSz};color:#dc2626;line-height:1.5">${esc(line)||'​'}</span>`;
+    let linesHTML, secStyle, labelStyle;
+
+    if(printFonts){
+      // chord color/style differs for chorus vs other sections
+      const chordColor=isChorus?'#ea580c':'#dc2626';
+      const chordItalic=isChorus?'font-style:italic;':'';
+      // group lines into pairs: each group starts at a chord line (or leading lyrics)
+      const groups=[];let cur=[];
+      for(const line of lines){
+        if(_isChordLine(line)){if(cur.length)groups.push(cur);cur=[line];}
+        else cur.push(line);
       }
-      if(chordsOnly) return '';
-      const lyricColor=isChorus?'#2563a8':'#111827';
-      const italic=isChorus?'font-style:italic;':'';
-      if(printFonts){
-        return `<span style="display:block;font-family:'Courier New',monospace;white-space:pre;font-size:18px;color:${lyricColor};${italic}line-height:1.6">${esc(line)||'​'}</span>`;
-      }
-      return `<span style="display:block;font-family:monospace;white-space:pre;font-size:${sz};color:${lyricColor};${italic}line-height:1.6">${esc(line)||'​'}</span>`;
-    }).join('');
-    let h=`<div style="margin-bottom:28px">`;
-    h+=`<div style="font-size:10px;font-weight:600;color:#94a3b8;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">[${label}]</div>`;
-    h+=`<div>${linesHTML}</div>`;
-    return h+`</div>`;
+      if(cur.length)groups.push(cur);
+
+      linesHTML=groups.map(grp=>{
+        if(grp.every(l=>!l.trim())) return '<div style="height:8px"></div>';
+        const inner=grp.map(line=>{
+          if(_isChordLine(line))
+            return `<span style="display:block;font-family:'Courier New',monospace;white-space:pre;font-size:20px;font-weight:700;color:${chordColor};${chordItalic}line-height:1.2">${esc(line)}</span>`;
+          if(chordsOnly) return '';
+          if(!line.trim()) return '<div style="height:4px"></div>';
+          return `<span style="display:block;font-family:'Courier New',monospace;white-space:pre;font-size:20px;font-weight:400;color:#111827;line-height:1.2">${esc(line)}</span>`;
+        }).join('');
+        return `<div style="margin-bottom:4px">${inner}</div>`;
+      }).join('');
+      secStyle=`margin-top:${si===0?'0':'28px'}`;
+      labelStyle='font-size:11px;font-weight:600;color:#9ca3af;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px';
+    } else {
+      linesHTML=lines.map(line=>{
+        if(_isChordLine(line))
+          return `<span style="display:block;font-family:monospace;white-space:pre;font-size:${sz};color:#dc2626;line-height:1.5">${esc(line)||'​'}</span>`;
+        if(chordsOnly) return '';
+        const lyricColor=isChorus?'#2563a8':'#111827';
+        const italic=isChorus?'font-style:italic;':'';
+        return `<span style="display:block;font-family:monospace;white-space:pre;font-size:${sz};color:${lyricColor};${italic}line-height:1.6">${esc(line)||'​'}</span>`;
+      }).join('');
+      secStyle='margin-bottom:28px';
+      labelStyle='font-size:10px;font-weight:600;color:#94a3b8;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px';
+    }
+    return `<div style="${secStyle}"><div style="${labelStyle}">[${label}]</div><div>${linesHTML}</div></div>`;
   }).join('');
 }
 
