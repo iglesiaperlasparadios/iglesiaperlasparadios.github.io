@@ -1539,14 +1539,14 @@ function _renderSeccionesHTML(secciones, chordsOnly=false, scale='normal', print
     const lines=(s.contenido||'').split('\n');
     const linesHTML=lines.map(line=>{
       if(_isChordLine(line)){
-        const chordSz=printFonts?'15px':sz;
+        const chordSz=printFonts?'16px':sz;
         return `<span style="display:block;font-family:'Courier New',monospace;white-space:pre;font-size:${chordSz};color:#dc2626;line-height:1.5">${esc(line)||'​'}</span>`;
       }
       if(chordsOnly) return '';
       const lyricColor=isChorus?'#2563a8':'#111827';
       const italic=isChorus?'font-style:italic;':'';
       if(printFonts){
-        return `<span style="display:block;font-family:'Courier New',monospace;white-space:pre;font-size:16px;color:${lyricColor};${italic}line-height:1.6">${esc(line)||'​'}</span>`;
+        return `<span style="display:block;font-family:'Courier New',monospace;white-space:pre;font-size:18px;color:${lyricColor};${italic}line-height:1.6">${esc(line)||'​'}</span>`;
       }
       return `<span style="display:block;font-family:monospace;white-space:pre;font-size:${sz};color:${lyricColor};${italic}line-height:1.6">${esc(line)||'​'}</span>`;
     }).join('');
@@ -1597,19 +1597,42 @@ function deleteCancion(id){
   renderCanciones();
 }
 
-function _buildCancionPrintHTML(c){
-  const W=800, PAD=40;
+function _measureSectionH(s){
+  const tmp=document.createElement('div');
+  tmp.style.cssText='position:fixed;left:-9999px;top:0;width:698px;visibility:hidden;overflow:auto';
+  tmp.innerHTML=_renderSeccionesHTML([s],false,'normal',true);
+  document.body.appendChild(tmp);
+  const h=tmp.offsetHeight;
+  document.body.removeChild(tmp);
+  return h;
+}
+
+function _paginateSecciones(secciones, p1H, pNH){
+  const pages=[];
+  let cur=[], curH=0;
+  for(const s of secciones){
+    const h=_measureSectionH(s);
+    const avail=pages.length===0?p1H:pNH;
+    if(cur.length>0&&curH+h>avail){pages.push(cur);cur=[s];curH=h;}
+    else{cur.push(s);curH+=h;}
+  }
+  if(cur.length) pages.push(cur);
+  return pages;
+}
+
+function _buildCancionPageHTML(c, secciones, pageNum, totalPages){
+  const W=794, PAD=48;
   const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
-  const secciones=_getSecciones(c);
-  const keyBadge=c.key?`<span style="background:#e5e7eb;color:#374151;border-radius:5px;padding:2px 10px;font-size:13px;font-weight:600;margin-left:10px;vertical-align:middle;white-space:nowrap">${esc(c.key)}</span>`:'';
-  const capoLine=c.capo?`<div style="font-size:12px;color:#6b7280;margin-top:5px">${esc(c.capo)}</div>`:'';
-  return `<div id="_cancion_print" style="width:${W}px;background:#fff;font-family:'Outfit',sans-serif;padding:${PAD}px">
-    <div style="margin-bottom:28px;padding-bottom:16px;border-bottom:1px solid #e5e7eb">
-      <div style="font-size:28px;font-weight:700;color:#111827;line-height:1.15">${esc(c.name)}${keyBadge}</div>
-      ${capoLine}
-    </div>
-    ${_renderSeccionesHTML(secciones,false,'normal',true)}
-  </div>`;
+  let header;
+  if(pageNum===1){
+    const keyBadge=c.key?`<span style="background:#e5e7eb;color:#374151;border-radius:5px;padding:2px 10px;font-size:13px;font-weight:600;margin-left:10px;vertical-align:middle;white-space:nowrap">${esc(c.key)}</span>`:'';
+    const capoLine=c.capo?`<div style="font-size:12px;color:#6b7280;margin-top:4px">${esc(c.capo)}</div>`:'';
+    const pgLabel=totalPages>1?`<div style="font-size:11px;color:#9ca3af;text-align:right;margin-bottom:2px">1/${totalPages}</div>`:'';
+    header=`<div style="margin-bottom:24px;padding-bottom:14px;border-bottom:1px solid #e5e7eb">${pgLabel}<div style="font-size:28px;font-weight:700;color:#111827;line-height:1.15">${esc(c.name)}${keyBadge}</div>${capoLine}</div>`;
+  } else {
+    header=`<div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #e5e7eb;padding-bottom:8px;margin-bottom:20px"><span style="font-size:12px;color:#9ca3af">${esc(c.name)}</span><span style="font-size:12px;color:#9ca3af">${pageNum}/${totalPages}</span></div>`;
+  }
+  return `<div id="_cancion_print" style="width:${W}px;height:1123px;background:#fff;font-family:'Outfit',sans-serif;padding:${PAD}px;box-sizing:border-box;overflow:hidden">${header}${_renderSeccionesHTML(secciones,false,'normal',true)}</div>`;
 }
 
 async function printCancion(id){
@@ -1617,13 +1640,26 @@ async function printCancion(id){
   if(!c) return;
   showToast('Generando imagen...','amber');
   try{
-    const cv=await htmlToCanvas(_buildCancionPrintHTML(c),'_cancion_print');
-    const a=document.createElement('a');
-    a.href=cv.toDataURL('image/png');
-    a.download=(c.name.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,''))||'cancion';
-    a.download+='.png';
-    a.click();
-    showToast('Imagen descargada','green');
+    const secciones=_getSecciones(c);
+    if(!secciones.length){showToast('Sin contenido para imprimir','amber');return;}
+    // available content height: 1123 - 48*2 = 1027px, minus header estimate
+    const p1H=c.capo?920:942, pNH=975;
+    const pages=_paginateSecciones(secciones,p1H,pNH);
+    const N=pages.length;
+    const canvases=[];
+    for(let i=0;i<N;i++){
+      canvases.push(await htmlToCanvas(_buildCancionPageHTML(c,pages[i],i+1,N),'_cancion_print',{backgroundColor:'#ffffff',height:1123}));
+    }
+    const base=(c.name.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,''))||'cancion';
+    if(N===1){
+      const a=document.createElement('a');a.href=canvases[0].toDataURL('image/png');a.download=base+'.png';a.click();
+    } else {
+      const zip=new JSZip();
+      canvases.forEach((cv,i)=>zip.file(`${base}-p${i+1}.png`,cv.toDataURL('image/png').split(',')[1],{base64:true}));
+      const blob=await zip.generateAsync({type:'blob'});
+      const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=base+'.zip';a.click();
+    }
+    showToast(N===1?'PNG descargado':`${N} páginas — ZIP descargado`,'green');
   }catch(e){showToast('Error al generar imagen','red');console.error(e);}
 }
 
@@ -2035,7 +2071,7 @@ function buildMonthHTML(services, opts={}){
 }
 
 // ── html → canvas ──────────────────────────────
-async function htmlToCanvas(html, targetId='_month_render'){
+async function htmlToCanvas(html, targetId='_month_render', extraOpts={}){
   let container=document.getElementById('_render_container');
   if(!container){
     container=document.createElement('div');
@@ -2052,6 +2088,7 @@ async function htmlToCanvas(html, targetId='_month_render'){
     scale:2.5, useCORS:true, allowTaint:true,
     backgroundColor:'#f2f4f7', logging:false,
     width:el.offsetWidth, windowWidth:el.offsetWidth+200,
+    ...extraOpts
   });
   container.innerHTML='';
   return canvas;
