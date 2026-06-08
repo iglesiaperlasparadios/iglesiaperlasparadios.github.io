@@ -1539,13 +1539,16 @@ function _renderSeccionesHTML(secciones, chordsOnly=false, scale='normal', print
     const lines=(s.contenido||'').split('\n');
     const linesHTML=lines.map(line=>{
       if(_isChordLine(line)){
-        return `<span style="display:block;font-family:monospace;white-space:pre;font-size:${sz};color:#dc2626;line-height:1.5">${esc(line)||'​'}</span>`;
+        const chordSz=printFonts?'15px':sz;
+        return `<span style="display:block;font-family:'Courier New',monospace;white-space:pre;font-size:${chordSz};color:#dc2626;line-height:1.5">${esc(line)||'​'}</span>`;
       }
       if(chordsOnly) return '';
       const lyricColor=isChorus?'#2563a8':'#111827';
       const italic=isChorus?'font-style:italic;':'';
-      const lyricFont=printFonts?`font-family:'Outfit',sans-serif;white-space:pre-wrap`:'font-family:monospace;white-space:pre';
-      return `<span style="display:block;${lyricFont};font-size:${sz};color:${lyricColor};${italic}line-height:1.6">${esc(line)||'​'}</span>`;
+      if(printFonts){
+        return `<span style="display:block;font-family:'Courier New',monospace;white-space:pre;font-size:16px;color:${lyricColor};${italic}line-height:1.6">${esc(line)||'​'}</span>`;
+      }
+      return `<span style="display:block;font-family:monospace;white-space:pre;font-size:${sz};color:${lyricColor};${italic}line-height:1.6">${esc(line)||'​'}</span>`;
     }).join('');
     let h=`<div style="margin-bottom:28px">`;
     h+=`<div style="font-size:10px;font-weight:600;color:#94a3b8;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">[${label}]</div>`;
