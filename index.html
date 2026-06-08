@@ -1540,9 +1540,8 @@ function _renderSeccionesHTML(secciones, chordsOnly=false, scale='normal', print
     let linesHTML, secStyle, labelStyle;
 
     if(printFonts){
-      // chord color/style differs for chorus vs other sections
-      const chordColor='#dc2626';
-      const lyricColor=isChorus?'#2563a8':'#111827';
+      const lyricColor=isChorus?'#2563a8':'#000000';
+      const lyricItalic=isChorus?'font-style:italic;':'font-style:normal;';
       // group lines into pairs: each group starts at a chord line (or leading lyrics)
       const groups=[];let cur=[];
       for(const line of lines){
@@ -1555,10 +1554,10 @@ function _renderSeccionesHTML(secciones, chordsOnly=false, scale='normal', print
         if(grp.every(l=>!l.trim())) return '<div style="height:8px"></div>';
         const inner=grp.map(line=>{
           if(_isChordLine(line))
-            return `<span style="display:block;font-family:'Courier New',monospace;white-space:pre;font-size:20px;font-weight:700;font-style:normal;color:${chordColor};line-height:1.2">${esc(line)}</span>`;
+            return `<span style="display:block;font-family:'Courier New',monospace;white-space:pre;font-size:22px;font-weight:700;font-style:normal;color:#ea580c;line-height:1.2">${esc(line)}</span>`;
           if(chordsOnly) return '';
           if(!line.trim()) return '<div style="height:4px"></div>';
-          return `<span style="display:block;font-family:'Courier New',monospace;white-space:pre;font-size:20px;font-weight:500;font-style:normal;color:${lyricColor};line-height:1.2">${esc(line)}</span>`;
+          return `<span style="display:block;font-family:'Courier New',monospace;white-space:pre;font-size:22px;font-weight:500;${lyricItalic}color:${lyricColor};line-height:1.2">${esc(line)}</span>`;
         }).join('');
         return `<div style="margin-bottom:4px">${inner}</div>`;
       }).join('');
