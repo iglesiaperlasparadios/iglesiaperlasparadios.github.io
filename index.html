@@ -1565,16 +1565,29 @@ function _renderSeccionesHTML(secciones, chordsOnly=false, scale='normal', print
       secStyle=`margin-top:${si===0?'0':'28px'}`;
       labelStyle='font-size:11px;font-weight:600;color:#9ca3af;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px';
     } else {
-      linesHTML=lines.map(line=>{
-        if(_isChordLine(line))
-          return `<span style="display:block;font-family:monospace;white-space:pre;font-size:${sz};color:#dc2626;line-height:1.5">${esc(line)||'​'}</span>`;
-        if(chordsOnly) return '';
-        const lyricColor=isChorus?'#2563a8':'#111827';
-        const italic=isChorus?'font-style:italic;':'';
-        return `<span style="display:block;font-family:monospace;white-space:pre;font-size:${sz};color:${lyricColor};${italic}line-height:1.6">${esc(line)||'​'}</span>`;
+      const chordColor=isChorus?'#ea580c':'#dc2626';
+      const chordItalic=isChorus?'font-style:italic;':'';
+      const groups=[];let cur=[];
+      for(const line of lines){
+        if(_isChordLine(line)){if(cur.length)groups.push(cur);cur=[line];}
+        else cur.push(line);
+      }
+      if(cur.length)groups.push(cur);
+      linesHTML=groups.map(grp=>{
+        if(grp.every(l=>!l.trim())) return '<div style="height:8px"></div>';
+        const inner=grp.map(line=>{
+          if(_isChordLine(line))
+            return `<span style="display:block;font-family:monospace;white-space:pre;font-size:${sz};font-weight:700;color:${chordColor};${chordItalic}line-height:1.2">${esc(line)}</span>`;
+          if(chordsOnly) return '';
+          if(!line.trim()) return '<div style="height:4px"></div>';
+          const lyricColor=isChorus?'#2563a8':'#111827';
+          const italic=isChorus?'font-style:italic;':'';
+          return `<span style="display:block;font-family:monospace;white-space:pre;font-size:${sz};color:${lyricColor};${italic}line-height:1.2">${esc(line)}</span>`;
+        }).join('');
+        return `<div style="margin-bottom:4px">${inner}</div>`;
       }).join('');
-      secStyle='margin-bottom:28px';
-      labelStyle='font-size:10px;font-weight:600;color:#94a3b8;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px';
+      secStyle=`margin-top:${si===0?'0':'28px'}`;
+      labelStyle='font-size:11px;font-weight:600;color:#94a3b8;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px';
     }
     return `<div style="${secStyle}"><div style="${labelStyle}">[${label}]</div><div>${linesHTML}</div></div>`;
   }).join('');
