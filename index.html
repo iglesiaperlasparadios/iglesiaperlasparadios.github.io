@@ -2959,17 +2959,31 @@ function buildProgramaHTML(){
       </div>${items}</div>`;
   }
 
-  // PROGRAMA (desde bloques del guión)
+  // PROGRAMA (desde bloques del guión) — canciones agrupadas, eventos protagonistas
   let programaHTML='';
-  const blockItems=guionBlocks.map(b=>{
+  const _renderSongGroup=songs=>`<div style="display:flex;gap:8px;align-items:flex-start;padding:2px 0 10px 2px">
+    <span style="font-size:12px;flex-shrink:0;margin-top:2px;opacity:.55">🎵</span>
+    <div>${songs.map(n=>`<div style="font-size:13px;color:#6b7280;line-height:1.7">• ${esc(n)}</div>`).join('')}</div>
+  </div>`;
+
+  // Agrupar bloques: canciones consecutivas → un bloque de lista
+  const grouped=[];
+  let i=0;
+  while(i<guionBlocks.length){
+    const b=guionBlocks[i];
     if(b.type==='cancion'){
-      const c=canciones.find(c=>c.id===b.songId); if(!c) return '';
-      return `<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:#f8f9fc;border-radius:10px;border:1px solid #e5e9f0;margin-bottom:6px;box-shadow:${shadow}">
-        <span style="font-size:15px">🎵</span>
-        <span style="font-size:16px;font-weight:700;color:#1e293b">${esc(c.name)}</span>
-        ${c.key?`<span style="background:${accent};color:#fff;border-radius:4px;padding:2px 9px;font-size:14px;font-weight:700;margin-left:4px">${esc(c.key)}</span>`:''}
-      </div>`;
-    }
+      const names=[];
+      while(i<guionBlocks.length&&guionBlocks[i].type==='cancion'){
+        const c=canciones.find(c=>c.id===guionBlocks[i].songId);
+        if(c) names.push(c.name);
+        i++;
+      }
+      if(names.length) grouped.push({_songGroup:true,names});
+    } else { grouped.push(b); i++; }
+  }
+
+  const blockItems=grouped.map(b=>{
+    if(b._songGroup) return _renderSongGroup(b.names);
     if(b.type==='evento'){
       const et=_EVENTO_TIPOS.find(e=>e.value===b.eventType)||_EVENTO_TIPOS[0];
       return `<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:${et.bg};border-radius:10px;border:1px solid ${et.border}44;border-left:4px solid ${et.border};margin-bottom:6px">
@@ -2977,7 +2991,7 @@ function buildProgramaHTML(){
         <div style="font-family:'Fraunces',Georgia,serif;font-size:17px;font-weight:700;color:#1e293b">${esc(et.label)}${b.detail?` — ${esc(b.detail)}`:''}</div>
       </div>`;
     }
-    if(b.type==='texto') return ''; // notas internas, no van en el programa público
+    if(b.type==='texto') return '';
     if(b.type==='versiculo'){
       const txt=(b.content||'').substring(0,120);
       return `<div style="display:flex;gap:10px;padding:9px 14px;background:#fff;border-radius:10px;border:1px solid #e5e9f0;margin-bottom:6px;box-shadow:${shadow}">
@@ -2995,22 +3009,13 @@ function buildProgramaHTML(){
     return '';
   }).filter(h=>h);
 
-  // Si no hay bloques, mostrar canciones del cronograma
+  // Fallback: sin bloques → canciones del cronograma en lista compacta
   if(!blockItems.length&&svc){
-    const songRows=SECCIONES.flatMap(sec=>{
-      const songs=svc.songs?.[sec]||[]; if(!songs.length) return [];
-      const isMain=sec==='principales';
-      const sepLabel=!isMain?`<div style="font-size:10px;font-weight:700;color:${accent};letter-spacing:.12em;text-transform:uppercase;margin:12px 0 6px;padding-left:4px">${SEC_LABEL[sec]||sec}</div>`:'';
-      return [sepLabel,...songs.map(sg=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:#f8f9fc;border-radius:10px;border:1px solid #e5e9f0;margin-bottom:6px;box-shadow:${shadow}">
-        <span style="font-size:15px">🎵</span>
-        <span style="font-size:16px;font-weight:700;color:#1e293b">${esc(sg.name)}</span>
-        ${sg.key?`<span style="background:${accent};color:#fff;border-radius:4px;padding:2px 9px;font-size:14px;font-weight:700;margin-left:4px">${esc(sg.key)}</span>`:''}
-      </div>`)];
-    });
-    if(songRows.length) blockItems.push(...songRows.filter(h=>h));
+    const allSongs=SECCIONES.flatMap(sec=>svc.songs?.[sec]||[]);
+    if(allSongs.length) blockItems.push(_renderSongGroup(allSongs.map(sg=>sg.name)));
   }
 
-  if(blockItems.length) programaHTML=`<div>
+  if(blockItems.length) programaHTML=`<div style="margin-bottom:26px">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
       <span style="font-size:15px">📋</span>
       <span style="font-size:12px;font-weight:700;color:${accent};letter-spacing:.1em;text-transform:uppercase">Programa</span>
