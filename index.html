@@ -2927,11 +2927,10 @@ function buildProgramaHTML(){
   const shadow='0 2px 10px rgba(15,23,42,.07),0 1px 3px rgba(15,23,42,.04)';
 
   // HEADER
-  const header=`<div style="margin-bottom:28px;padding-bottom:18px;border-bottom:3px solid ${accent}">
+  const header=`<div style="margin-bottom:28px">
     ${cfg.iglesia?`<div style="font-size:11px;font-weight:700;color:${IMG_MUTED};letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px">${esc(cfg.iglesia)}</div>`:''}
     <div style="font-size:13px;font-weight:600;color:${accent};letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">Programa del domingo</div>
     <div style="font-size:30px;font-weight:700;color:#1e293b;line-height:1.15">${esc(dateStr)}</div>
-    ${svc?.label?`<div style="font-size:14px;color:${IMG_MUTED};margin-top:5px">${esc(svc.label)}</div>`:''}
   </div>`;
 
   // EQUIPO
@@ -2954,8 +2953,8 @@ function buildProgramaHTML(){
       </div>`).join('')+`</div>`;
     if(items) equipoHTML=`<div style="margin-bottom:26px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-        <span style="font-size:15px">👥</span>
-        <span style="font-size:12px;font-weight:700;color:${accent};letter-spacing:.1em;text-transform:uppercase">Equipo</span>
+        <span style="font-size:15px">🎸</span>
+        <span style="font-size:12px;font-weight:700;color:${accent};letter-spacing:.1em;text-transform:uppercase">Banda</span>
         <div style="height:1px;background:${accent};opacity:.2;flex:1"></div>
       </div>${items}</div>`;
   }
@@ -2965,10 +2964,10 @@ function buildProgramaHTML(){
   const blockItems=guionBlocks.map(b=>{
     if(b.type==='cancion'){
       const c=canciones.find(c=>c.id===b.songId); if(!c) return '';
-      return `<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:#fff;border-radius:10px;border:1px solid #e5e9f0;margin-bottom:6px;box-shadow:${shadow}">
+      return `<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:#f8f9fc;border-radius:10px;border:1px solid #e5e9f0;margin-bottom:6px;box-shadow:${shadow}">
         <span style="font-size:15px">🎵</span>
         <span style="font-size:16px;font-weight:700;color:#1e293b">${esc(c.name)}</span>
-        ${c.key?`<span style="background:${accentLight};color:${accent};border-radius:4px;padding:1px 8px;font-size:11px;font-weight:700;margin-left:2px">${esc(c.key)}</span>`:''}
+        ${c.key?`<span style="background:${accent};color:#fff;border-radius:4px;padding:2px 9px;font-size:14px;font-weight:700;margin-left:4px">${esc(c.key)}</span>`:''}
       </div>`;
     }
     if(b.type==='evento'){
@@ -3002,10 +3001,10 @@ function buildProgramaHTML(){
       const songs=svc.songs?.[sec]||[]; if(!songs.length) return [];
       const isMain=sec==='principales';
       const sepLabel=!isMain?`<div style="font-size:10px;font-weight:700;color:${accent};letter-spacing:.12em;text-transform:uppercase;margin:12px 0 6px;padding-left:4px">${SEC_LABEL[sec]||sec}</div>`:'';
-      return [sepLabel,...songs.map(sg=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:#fff;border-radius:10px;border:1px solid #e5e9f0;margin-bottom:6px;box-shadow:${shadow}">
+      return [sepLabel,...songs.map(sg=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:#f8f9fc;border-radius:10px;border:1px solid #e5e9f0;margin-bottom:6px;box-shadow:${shadow}">
         <span style="font-size:15px">🎵</span>
         <span style="font-size:16px;font-weight:700;color:#1e293b">${esc(sg.name)}</span>
-        ${sg.key?`<span style="background:${accentLight};color:${accent};border-radius:4px;padding:1px 8px;font-size:11px;font-weight:700;margin-left:2px">${esc(sg.key)}</span>`:''}
+        ${sg.key?`<span style="background:${accent};color:#fff;border-radius:4px;padding:2px 9px;font-size:14px;font-weight:700;margin-left:4px">${esc(sg.key)}</span>`:''}
       </div>`)];
     });
     if(songRows.length) blockItems.push(...songRows.filter(h=>h));
@@ -3018,7 +3017,7 @@ function buildProgramaHTML(){
       <div style="height:1px;background:${accent};opacity:.2;flex:1"></div>
     </div>${blockItems.join('')}</div>`;
 
-  return `<div id="_programa_render" style="width:${W}px;background:#f9f8f6;font-family:'Outfit',sans-serif;padding:${PAD}px;box-sizing:border-box">${header}${equipoHTML}${programaHTML}</div>`;
+  return `<div id="_programa_render" style="width:${W}px;background:#f9f8f6;font-family:'Outfit',sans-serif;padding:${PAD}px;box-sizing:border-box">${header}${programaHTML}${equipoHTML}</div>`;
 }
 
 function openProgramaModal(){
