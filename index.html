@@ -383,51 +383,66 @@ select option { background: var(--bg3); }
 
 <!-- ===== GUIÓN ===== -->
 <div class="page" id="page-guion">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-    <div class="page-title">Guión del domingo</div>
-    <span id="guion-save-status" style="font-size:11px;color:var(--text3)"></span>
-  </div>
-  <div class="page-sub">Armá el orden del tiempo de adoración y generá la imagen para el iPad</div>
 
-  <div class="card">
-    <div class="card-title">Configuración</div>
-    <div class="row2">
-      <div class="field"><label>Fecha del servicio</label>
-        <input type="date" id="guion-fecha" onchange="autoSaveGuion()">
+  <!-- ── Landing ─────────────────────────────── -->
+  <div id="guion-landing">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="page-title">Coordinación</div>
+      <button class="btn btn-primary btn-sm" onclick="newGuion()"><i class="ti ti-plus"></i> Nuevo</button>
+    </div>
+    <div class="page-sub">Armá el orden del tiempo de adoración</div>
+    <div id="guion-landing-list" style="margin-top:12px"></div>
+  </div>
+
+  <!-- ── Editor ──────────────────────────────── -->
+  <div id="guion-editor" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <button class="btn btn-sm" onclick="backToGuionLanding()"><i class="ti ti-chevron-left"></i> Guiones</button>
+      <span id="guion-save-status" style="font-size:11px;color:var(--text3)"></span>
+    </div>
+
+    <div id="guion-service-info" style="display:none;background:var(--bg2);border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:var(--text2);gap:10px;align-items:center"></div>
+
+    <div class="card">
+      <div class="card-title">Servicio</div>
+      <div class="row2">
+        <div class="field"><label>Fecha del servicio</label>
+          <input type="date" id="guion-fecha" onchange="onGuionDateChange()">
+        </div>
+        <div class="field"><label>Tema / Título (opcional)</label>
+          <input id="guion-titulo" placeholder="ej: Un Dios poderoso que libera" oninput="autoSaveGuion()">
+        </div>
       </div>
-      <div class="field"><label>Tema / Título (opcional)</label>
-        <input id="guion-titulo" placeholder="ej: Un Dios poderoso que libera" oninput="autoSaveGuion()">
+      <div id="guion-import-wrap" style="display:none;margin-top:8px">
+        <button class="btn btn-sm" onclick="importFromCronograma()" style="border-color:#2563a8;color:#2563a8"><i class="ti ti-table-import"></i> Importar canciones del cronograma</button>
       </div>
     </div>
-    <div class="btn-group" style="margin-top:8px">
-      <button class="btn btn-sm" onclick="openCargarGuion()"><i class="ti ti-folder-open"></i> Cargar anterior</button>
-      <button class="btn btn-sm" onclick="goTo('canciones')"><i class="ti ti-music"></i> Gestionar canciones</button>
+
+    <div id="guion-blocks-wrap"></div>
+
+    <div class="card">
+      <div class="card-title">Agregar bloque</div>
+      <div class="btn-group">
+        <button class="btn btn-sm" onclick="addGuionBlock('texto')" style="border-color:#2563a8;color:#2563a8"><i class="ti ti-text-size"></i> Texto</button>
+        <button class="btn btn-sm" onclick="addGuionBlock('cancion')" style="border-color:#c05a1f;color:#c05a1f"><i class="ti ti-music"></i> Canción</button>
+        <button class="btn btn-sm" onclick="addGuionBlock('versiculo')" style="border-color:#1a7070;color:#1a7070"><i class="ti ti-book"></i> Versículo</button>
+        <button class="btn btn-sm" onclick="addGuionBlock('oracion')" style="border-color:#6b3fa0;color:#6b3fa0"><i class="ti ti-hands-praying"></i> Oración</button>
+      </div>
+    </div>
+
+    <div id="guion-gen-wrap" style="display:none">
+      <div id="guion-prog-wrap" style="display:none">
+        <div class="prog-bar"><div class="prog-fill" id="guion-prog-fill" style="width:0%"></div></div>
+        <div style="font-size:12px;color:var(--text3);text-align:center;margin-top:4px" id="guion-prog-label">Preparando...</div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-success" style="flex:1" onclick="generateGuionPNG()"><i class="ti ti-photo-down"></i> Generar imagen</button>
+        <button class="btn" onclick="previewGuionPNG()"><i class="ti ti-eye"></i> Vista previa</button>
+      </div>
+      <div id="guion-preview-wrap" style="display:none" class="canvas-preview"><canvas id="guion-cv-preview"></canvas></div>
     </div>
   </div>
 
-  <div id="guion-blocks-wrap"></div>
-
-  <div class="card">
-    <div class="card-title">Agregar bloque</div>
-    <div class="btn-group">
-      <button class="btn btn-sm" onclick="addGuionBlock('texto')" style="border-color:#2563a8;color:#2563a8"><i class="ti ti-text-size"></i> Texto</button>
-      <button class="btn btn-sm" onclick="addGuionBlock('cancion')" style="border-color:#c05a1f;color:#c05a1f"><i class="ti ti-music"></i> Canción</button>
-      <button class="btn btn-sm" onclick="addGuionBlock('versiculo')" style="border-color:#1a7070;color:#1a7070"><i class="ti ti-book"></i> Versículo</button>
-      <button class="btn btn-sm" onclick="addGuionBlock('oracion')" style="border-color:#6b3fa0;color:#6b3fa0"><i class="ti ti-hands-praying"></i> Oración</button>
-    </div>
-  </div>
-
-  <div id="guion-gen-wrap" style="display:none">
-    <div id="guion-prog-wrap" style="display:none">
-      <div class="prog-bar"><div class="prog-fill" id="guion-prog-fill" style="width:0%"></div></div>
-      <div style="font-size:12px;color:var(--text3);text-align:center;margin-top:4px" id="guion-prog-label">Preparando...</div>
-    </div>
-    <div class="btn-group">
-      <button class="btn btn-success" style="flex:1" onclick="generateGuionPNG()"><i class="ti ti-photo-down"></i> Generar imagen</button>
-      <button class="btn" onclick="previewGuionPNG()"><i class="ti ti-eye"></i> Vista previa</button>
-    </div>
-    <div id="guion-preview-wrap" style="display:none" class="canvas-preview"><canvas id="guion-cv-preview"></canvas></div>
-  </div>
 </div>
 
 </div><!-- /main -->
@@ -670,15 +685,6 @@ select option { background: var(--bg3); }
 </div>
 
 <!-- Modal Cargar Guión -->
-<div class="modal-overlay" id="modal-cargar-guion">
-  <div class="modal" style="width:460px">
-    <div class="modal-title">
-      <span>Cargar guión anterior</span>
-      <button class="btn btn-sm btn-icon" onclick="closeModal('modal-cargar-guion')"><i class="ti ti-x"></i></button>
-    </div>
-    <div id="cargar-guion-list"></div>
-  </div>
-</div>
 
 <script>
 // ═══════════════════════════════════════════════
@@ -705,6 +711,24 @@ function getListas(){return db('listas')}
 function saveListas(v){dbSet('listas',v)}
 function getHistorial(){return db('historial')}
 function saveHistorial(v){dbSet('historial',v)}
+function getGuiones(){return db('guiones')}
+function saveGuiones(v){dbSet('guiones',v)}
+// migrate mm_guion_YYYY-MM-DD → mm_guiones
+(function _migrateGuionesStorage(){
+  const oldKeys=Object.keys(localStorage).filter(k=>k.match(/^mm_guion_\d{4}-\d{2}-\d{2}$/));
+  if(!oldKeys.length) return;
+  const existing=getGuiones();
+  const existingDates=new Set(existing.map(g=>g.date));
+  const migrated=[...existing];
+  oldKeys.forEach(k=>{
+    try{
+      const g=JSON.parse(localStorage.getItem(k));
+      if(g?.date&&!existingDates.has(g.date)){migrated.push({id:g.date,date:g.date,title:g.title||'',blocks:g.blocks||[]});existingDates.add(g.date);}
+      localStorage.removeItem(k);
+    }catch{}
+  });
+  saveGuiones(migrated);
+})();
 
 // ── Autosave del mes ──────────────────────────
 let _saveTimer = null;
@@ -2201,10 +2225,7 @@ function exportBackup(){
     )
   }));
 
-  const guiones = Object.keys(localStorage)
-    .filter(k=>k.match(/^mm_guion_\d{4}-\d{2}-\d{2}$/))
-    .map(k=>{ try{ return JSON.parse(localStorage.getItem(k)); }catch{ return null; } })
-    .filter(Boolean);
+  const guiones = getGuiones();
 
   const backup = {
     app: 'ministerio-musica',
@@ -2369,8 +2390,8 @@ function confirmImport(){
   if(d.listas)    saveListas(d.listas);
   if(d.historial) saveHistorial(d.historial);
   if(d.config)    localStorage.setItem('mm_config', JSON.stringify(d.config));
-  if(d.guiones?.length){
-    d.guiones.forEach(g=>{ if(g?.date) localStorage.setItem('mm_guion_'+g.date, JSON.stringify(g)); });
+  if(d.guiones){
+    saveGuiones(d.guiones.map(g=>({id:g.id||g.date,date:g.date||'',title:g.title||'',blocks:g.blocks||[]})));
   }
   // clear autosave so imported mes state takes over
   localStorage.removeItem('mm_mes_state');
@@ -2640,6 +2661,7 @@ function saveLetras(v){ saveCanciones(v); }
 
 // ── State ─────────────────────────────────────
 let guionBlocks = [];
+let _currentGuionId = null;
 let _guionSaveTimer = null;
 let _editingLetraId = null;
 let _editingBlockIdx = null;
@@ -2648,66 +2670,172 @@ let _letraPickerSelected = null;
 
 // ── Key & autosave ────────────────────────────
 function _guionDateVal(){ const el=document.getElementById('guion-fecha'); return el?el.value:''; }
-function _guionKey(d){ return 'mm_guion_'+(d||_guionDateVal()); }
 
 function autoSaveGuion(){
   clearTimeout(_guionSaveTimer);
-  _guionSaveTimer = setTimeout(_doSaveGuion, 800);
+  _guionSaveTimer=setTimeout(_doSaveGuion,800);
   const el=document.getElementById('guion-save-status');
   if(el) el.innerHTML='<i class="ti ti-circle" style="font-size:9px;color:var(--amber)"></i> Sin guardar';
 }
 
 function _doSaveGuion(){
-  const date=_guionDateVal(); if(!date) return;
+  if(!_currentGuionId) return;
+  const date=_guionDateVal();
+  const title=document.getElementById('guion-titulo')?.value.trim()||'';
   try{
-    localStorage.setItem(_guionKey(date), JSON.stringify({
-      date,
-      title: document.getElementById('guion-titulo')?.value.trim()||'',
-      blocks: guionBlocks.map(b=>({...b}))
-    }));
+    const all=getGuiones();
+    const idx=all.findIndex(g=>g.id===_currentGuionId);
+    const entry={id:_currentGuionId,date,title,blocks:guionBlocks.map(b=>({...b}))};
+    if(idx>=0) all[idx]=entry; else all.push(entry);
+    saveGuiones(all);
     const el=document.getElementById('guion-save-status');
     if(el){ const now=new Date(); const t=now.getHours()+':'+String(now.getMinutes()).padStart(2,'0'); el.innerHTML='<i class="ti ti-circle-check" style="font-size:9px;color:var(--green)"></i> Guardado '+t; }
   }catch(e){}
 }
 
 function getSavedGuionList(){
-  return Object.keys(localStorage)
-    .filter(k=>k.match(/^mm_guion_\d{4}-\d{2}-\d{2}$/))
-    .map(k=>{ try{ return JSON.parse(localStorage.getItem(k)); }catch{ return null; } })
-    .filter(Boolean)
-    .sort((a,b)=>b.date.localeCompare(a.date));
+  return getGuiones().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
 }
 
 function loadGuionByDate(date){
-  const raw=localStorage.getItem(_guionKey(date)); if(!raw) return false;
+  const g=getGuiones().find(g=>g.date===date);
+  if(!g) return false;
+  openGuion(g.id); return true;
+}
+
+// ── Navigation ────────────────────────────────
+function _showGuionEditor(){
+  document.getElementById('guion-landing').style.display='none';
+  document.getElementById('guion-editor').style.display='';
+}
+
+function backToGuionLanding(){
+  _currentGuionId=null; guionBlocks=[];
+  document.getElementById('guion-editor').style.display='none';
+  document.getElementById('guion-landing').style.display='';
+  renderGuionLanding();
+}
+
+function newGuion(){
+  _currentGuionId=Date.now().toString(); guionBlocks=[];
+  const fechaEl=document.getElementById('guion-fecha');
+  const tituloEl=document.getElementById('guion-titulo');
+  if(fechaEl) fechaEl.value=''; if(tituloEl) tituloEl.value='';
+  _showGuionEditor(); renderGuionBlocksUI(); _updateGuionGenWrap();
+  _updateGuionImportBtn(); _updateGuionServiceInfo();
+}
+
+function openGuion(id){
+  const g=getGuiones().find(g=>g.id===id); if(!g) return;
+  _currentGuionId=id; guionBlocks=(g.blocks||[]).map(b=>({...b}));
+  const fechaEl=document.getElementById('guion-fecha');
+  const tituloEl=document.getElementById('guion-titulo');
+  if(fechaEl) fechaEl.value=g.date||''; if(tituloEl) tituloEl.value=g.title||'';
+  _showGuionEditor(); renderGuionBlocksUI(); _updateGuionGenWrap();
+  _updateGuionImportBtn(); _updateGuionServiceInfo();
+}
+
+function duplicateGuion(id){
+  const g=getGuiones().find(g=>g.id===id); if(!g) return;
+  const newId=Date.now().toString();
+  const copy={id:newId,date:'',title:g.title?'Copia — '+g.title:'',blocks:g.blocks.map(b=>({...b}))};
+  const all=getGuiones(); all.push(copy); saveGuiones(all);
+  openGuion(newId); showToast('Guión duplicado — asigná una nueva fecha','amber');
+}
+
+function deleteGuion(id){
+  if(!confirm('¿Eliminar este guión?')) return;
+  saveGuiones(getGuiones().filter(g=>g.id!==id));
+  renderGuionLanding(); showToast('Guión eliminado','green');
+}
+
+// ── Landing ───────────────────────────────────
+function renderGuionLanding(){
+  const list=getSavedGuionList();
+  const el=document.getElementById('guion-landing-list'); if(!el) return;
+  if(!list.length){ el.innerHTML='<div class="empty-state"><i class="ti ti-clipboard-off"></i>No hay guiones guardados. Creá uno nuevo.</div>'; return; }
+  el.innerHTML=list.map(g=>{
+    const svc=_findServiceForDate(g.date);
+    const coordina=svc?.roles?.coordina||'';
+    return `<div class="card" style="margin-bottom:8px;padding:12px 16px">
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:600;color:var(--text)">${g.date?_fmtGuionDate(g.date):'Sin fecha'}</div>
+          ${g.title?`<div style="font-size:12px;color:var(--text3);margin-top:2px">${g.title}</div>`:''}
+          <div style="font-size:11px;color:var(--text3);margin-top:4px;display:flex;gap:10px;flex-wrap:wrap">
+            <span><i class="ti ti-layout-list" style="font-size:10px"></i> ${g.blocks?.length||0} bloques</span>
+            ${coordina?`<span><i class="ti ti-user" style="font-size:10px"></i> ${coordina}</span>`:''}
+          </div>
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0">
+          <button class="btn btn-primary btn-sm" onclick="openGuion('${g.id}')">Abrir</button>
+          <button class="btn btn-sm" onclick="duplicateGuion('${g.id}')" title="Duplicar"><i class="ti ti-copy"></i></button>
+          <button class="btn btn-sm btn-danger" onclick="deleteGuion('${g.id}')" title="Eliminar"><i class="ti ti-trash"></i></button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Cronograma integration ────────────────────
+function _findServiceForDate(date){
+  if(!date) return null;
+  const parts=date.split('-');
+  const y=parseInt(parts[0]),m=parseInt(parts[1])-1,d=parseInt(parts[2]);
   try{
-    const state=JSON.parse(raw);
-    guionBlocks=(state.blocks||[]).map(b=>({...b}));
-    const fechaEl=document.getElementById('guion-fecha');
-    const tituloEl=document.getElementById('guion-titulo');
-    if(fechaEl) fechaEl.value=state.date||'';
-    if(tituloEl) tituloEl.value=state.title||'';
-    renderGuionBlocksUI();
-    _updateGuionGenWrap();
-    const el=document.getElementById('guion-save-status');
-    if(el){ const now=new Date(); const t=now.getHours()+':'+String(now.getMinutes()).padStart(2,'0'); el.innerHTML='<i class="ti ti-circle-check" style="font-size:9px;color:var(--green)"></i> Restaurado '+t; }
-    return true;
-  }catch{ return false; }
+    const state=JSON.parse(localStorage.getItem('mm_mes_'+y+'_'+m)||'{}');
+    return (state.services||[]).find(s=>s.day===d&&s.month===m&&s.year===y)||null;
+  }catch{ return null; }
+}
+
+function _updateGuionImportBtn(){
+  const svc=_findServiceForDate(_guionDateVal());
+  const hasSongs=svc&&SECCIONES.some(sec=>(svc.songs?.[sec]||[]).length>0);
+  const wrap=document.getElementById('guion-import-wrap');
+  if(wrap) wrap.style.display=hasSongs?'':'none';
+}
+
+function _updateGuionServiceInfo(){
+  const svc=_findServiceForDate(_guionDateVal());
+  const el=document.getElementById('guion-service-info'); if(!el) return;
+  if(!svc){el.style.display='none';return;}
+  const coordina=svc.roles?.coordina||'';
+  el.style.display='flex';
+  el.innerHTML=`<i class="ti ti-calendar-event" style="color:var(--text3);font-size:14px"></i><span>${svc.label}</span>${coordina?`<span style="margin-left:6px"><i class="ti ti-user" style="color:var(--text3);font-size:14px"></i> ${coordina}</span>`:''}`;
+}
+
+function onGuionDateChange(){
+  autoSaveGuion(); _updateGuionImportBtn(); _updateGuionServiceInfo();
+}
+
+function importFromCronograma(){
+  const svc=_findServiceForDate(_guionDateVal());
+  if(!svc){showToast('No hay servicio en esa fecha','amber');return;}
+  if(guionBlocks.length&&!confirm('Este guión ya tiene contenido.\n¿Reemplazar con las canciones del cronograma?')) return;
+  const canciones=getCanciones(), newBlocks=[];
+  [{sec:'principales',label:null},{sec:'cena',label:'SANTA CENA'},{sec:'ofrenda',label:'OFRENDA'},{sec:'intervalo',label:'INTERVALO'},{sec:'final',label:'FINAL'}]
+    .forEach(({sec,label})=>{
+      const songs=svc.songs?.[sec]||[]; if(!songs.length) return;
+      if(label) newBlocks.push({type:'texto',id:Date.now().toString()+Math.random().toString(36).slice(2),label:'',content:label});
+      songs.forEach(sg=>{
+        const c=canciones.find(c=>c.id===sg.id)||(sg.name?canciones.find(c=>c.name===sg.name):null);
+        if(c) newBlocks.push({type:'cancion',id:Date.now().toString()+Math.random().toString(36).slice(2),songId:c.id});
+      });
+    });
+  guionBlocks=newBlocks; renderGuionBlocksUI(); _updateGuionGenWrap(); autoSaveGuion();
+  showToast(newBlocks.filter(b=>b.type==='cancion').length+' canciones importadas del cronograma','green');
 }
 
 // ── Init ──────────────────────────────────────
 function renderGuion(){
-  if(!_guionDateVal()){
-    const list=getSavedGuionList();
-    if(list.length){ loadGuionByDate(list[0].date); return; }
-    // default to next Sunday
-    const d=new Date(); const dow=d.getDay();
-    d.setDate(d.getDate()+(dow===0?0:7-dow));
-    const el=document.getElementById('guion-fecha');
-    if(el) el.value=d.toISOString().split('T')[0];
+  if(_currentGuionId){
+    _showGuionEditor(); renderGuionBlocksUI(); _updateGuionGenWrap();
+    _updateGuionImportBtn(); _updateGuionServiceInfo();
+  } else {
+    document.getElementById('guion-editor').style.display='none';
+    document.getElementById('guion-landing').style.display='';
+    renderGuionLanding();
   }
-  renderGuionBlocksUI();
-  _updateGuionGenWrap();
 }
 
 function _updateGuionGenWrap(){
@@ -2961,23 +3089,6 @@ function confirmLetraPicker(){
   renderGuionBlocksUI(); _updateGuionGenWrap(); autoSaveGuion();
 }
 
-// ── Cargar guión anterior ─────────────────────
-function openCargarGuion(){
-  const list=getSavedGuionList();
-  const el=document.getElementById('cargar-guion-list');
-  if(!list.length){ el.innerHTML='<div class="empty-state"><i class="ti ti-calendar-off"></i>No hay guiones guardados</div>'; }
-  else { el.innerHTML=list.map(g=>`
-    <div class="song-lib-item" style="cursor:pointer" onclick="loadGuionFromList('${g.date}')">
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:600;color:var(--text)">${_fmtGuionDate(g.date)}</div>
-        ${g.title?`<div style="font-size:11px;color:var(--text3)">${g.title}</div>`:''}
-        <div style="font-size:11px;color:var(--text3);margin-top:2px">${g.blocks?.length||0} bloques</div>
-      </div>
-      <i class="ti ti-chevron-right" style="color:var(--text3)"></i>
-    </div>`).join(''); }
-  document.getElementById('modal-cargar-guion').classList.add('open');
-}
-
 function _fmtGuionDate(d){
   if(!d) return '—';
   const [y,m,day]=d.split('-');
@@ -2986,7 +3097,6 @@ function _fmtGuionDate(d){
   return `${dias[dow]} ${parseInt(day)} de ${MESES[parseInt(m)-1]} ${y}`;
 }
 
-function loadGuionFromList(date){ loadGuionByDate(date); closeModal('modal-cargar-guion'); showToast('Guión cargado','green'); }
 
 // ═══════════════════════════════════════════════
 // IMAGEN — Guión
