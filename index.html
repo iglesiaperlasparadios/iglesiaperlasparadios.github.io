@@ -3488,14 +3488,14 @@ async function printGuionContinuo(){
   btns.forEach(b=>b.disabled=true);
   showToast('Generando PDF continuo...','amber');
   try{
-    const canvas=await htmlToCanvas(buildGuionHTML(),'_guion_render',{scale:1.5});
+    const canvas=await htmlToCanvas(buildGuionHTML(),'_guion_render',{scale:2});
     const {jsPDF}=window.jspdf;
-    const SCALE=1.5, MM=25.4/96;
+    const SCALE=2, MM=25.4/96;
     const imgW=canvas.width/SCALE*MM;
     const imgH=canvas.height/SCALE*MM;
     const margin=10;
     const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:[imgW+margin*2,imgH+margin*2]});
-    pdf.addImage(canvas.toDataURL('image/jpeg',0.85),'JPEG',margin,margin,imgW,imgH);
+    pdf.addImage(canvas.toDataURL('image/jpeg',0.75),'JPEG',margin,margin,imgW,imgH);
     pdf.save(`guion-${(_guionDateVal()||'domingo').replace(/-/g,'')}.pdf`);
     showToast('PDF descargado','green');
   }catch(e){ showToast('Error al generar PDF','red'); console.error(e); }
