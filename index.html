@@ -1519,8 +1519,8 @@ function transposeChordsBy(n){
 
 // ── Editor de secciones ───────────────────────────
 let _cmSecciones=[];
-const _SEC_TIPOS=['intro','estrofa','coro','puente','outro','interludio'];
-const _SEC_TIPO_LABEL={intro:'Intro',estrofa:'Estrofa',coro:'Coro',puente:'Puente',outro:'Outro',interludio:'Interludio'};
+const _SEC_TIPOS=['intro','estrofa','coro','puente','outro','interludio','final'];
+const _SEC_TIPO_LABEL={intro:'Intro',estrofa:'Estrofa',coro:'Coro',puente:'Puente',outro:'Outro',interludio:'Interludio',final:'Final'};
 
 function _syncCmSecciones(){
   _cmSecciones=[...document.querySelectorAll('#cm-secciones-container .cm-sec-row')].map(row=>({
