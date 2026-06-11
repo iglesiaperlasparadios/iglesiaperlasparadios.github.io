@@ -2799,7 +2799,7 @@ function newGuion(){
   const tituloEl=document.getElementById('guion-titulo');
   if(fechaEl) fechaEl.value=''; if(tituloEl) tituloEl.value='';
   _showGuionEditor(); renderGuionBlocksUI(); _updateGuionGenWrap();
-  _updateGuionImportBtn(); _updateGuionServiceInfo();
+  _updateGuionImportBtn(); _updateGuionServiceInfo(); _updateProgramaBtn();
 }
 
 function openGuion(id){
@@ -2809,7 +2809,7 @@ function openGuion(id){
   const tituloEl=document.getElementById('guion-titulo');
   if(fechaEl) fechaEl.value=g.date||''; if(tituloEl) tituloEl.value=g.title||'';
   _showGuionEditor(); renderGuionBlocksUI(); _updateGuionGenWrap();
-  _updateGuionImportBtn(); _updateGuionServiceInfo();
+  _updateGuionImportBtn(); _updateGuionServiceInfo(); _updateProgramaBtn();
 }
 
 function duplicateGuion(id){
