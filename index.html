@@ -442,6 +442,7 @@ select option { background: var(--bg3); }
       <div class="btn-group">
         <button class="btn btn-success" style="flex:1" onclick="generateGuionPNG()"><i class="ti ti-photo-down"></i> Generar imagen</button>
         <button class="btn" onclick="previewGuionPNG()"><i class="ti ti-eye"></i> Vista previa</button>
+        <button class="btn" onclick="printGuionPDF()"><i class="ti ti-file-type-pdf"></i> PDF</button>
       </div>
       <div id="guion-preview-wrap" style="display:none" class="canvas-preview"><canvas id="guion-cv-preview"></canvas></div>
     </div>
@@ -3486,6 +3487,29 @@ async function generateGuionPNG(){
     showToast('Imagen descargada','green');
   }catch(e){ showToast('Error al generar imagen','red'); console.error(e); lbl.textContent='Error'; }
   if(btn) btn.disabled=false;
+}
+
+function printGuionPDF(){
+  if(!guionBlocks.length){ showToast('Agregá bloques primero','amber'); return; }
+  const fecha=_guionDateVal()||'domingo';
+  const html=buildGuionHTML();
+  const win=window.open('','_blank','width=960,height=800');
+  if(!win){ showToast('Bloqueado por el navegador — permitir ventanas emergentes para este sitio','amber'); return; }
+  win.document.write(`<!DOCTYPE html>
+<html><head>
+<meta charset="UTF-8">
+<title>Guión ${fecha}</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,700&display=swap" rel="stylesheet">
+<style>
+  @page { margin:15mm; size:A4 portrait; }
+  *{ -webkit-print-color-adjust:exact!important; print-color-adjust:exact!important; box-sizing:border-box; }
+  body{ margin:0; padding:0; background:#fff; font-family:'Outfit',sans-serif; }
+  #_guion_render{ width:100%!important; min-width:unset!important; }
+</style>
+</head><body>${html}
+<script>window.onload=function(){ setTimeout(function(){ window.print(); },600); };<\/script>
+</body></html>`);
+  win.document.close();
 }
 
 async function previewGuionPNG(){
