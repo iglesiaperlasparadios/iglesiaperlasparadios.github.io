@@ -2973,19 +2973,10 @@ function buildProgramaHTML(){
       const et=_EVENTO_TIPOS.find(e=>e.value===b.eventType)||_EVENTO_TIPOS[0];
       return `<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:${et.bg};border-radius:10px;border:1px solid ${et.border}44;border-left:4px solid ${et.border};margin-bottom:6px">
         <span style="font-size:18px">${et.emoji}</span>
-        <div><div style="font-family:'Fraunces',Georgia,serif;font-size:17px;font-weight:700;color:#1e293b">${esc(et.label)}</div>
-        ${b.detail?`<div style="font-size:13px;color:${IMG_MUTED};margin-top:1px">${esc(b.detail)}</div>`:''}</div>
+        <div style="font-family:'Fraunces',Georgia,serif;font-size:17px;font-weight:700;color:#1e293b">${esc(et.label)}${b.detail?` — ${esc(b.detail)}`:''}</div>
       </div>`;
     }
-    if(b.type==='texto'&&(b.label||b.content)){
-      const bg=b.bgColor&&b.bgColor!=='#ffffff'?b.bgColor:'#f8fafc';
-      const line1=(b.content||'').split('\n')[0];
-      const prev=line1.substring(0,90)+(line1.length>90?'…':'');
-      return `<div style="padding:8px 14px;background:${bg};border-radius:10px;border:1px solid #e0e7ef;margin-bottom:6px">
-        ${b.label?`<div style="font-size:10px;font-weight:700;color:${IMG_MUTED};text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px">${esc(b.label)}</div>`:''}
-        ${prev?`<div style="font-size:14px;color:#374151">${esc(prev)}</div>`:''}
-      </div>`;
-    }
+    if(b.type==='texto') return ''; // notas internas, no van en el programa público
     if(b.type==='versiculo'){
       const txt=(b.content||'').substring(0,120);
       return `<div style="display:flex;gap:10px;padding:9px 14px;background:#fff;border-radius:10px;border:1px solid #e5e9f0;margin-bottom:6px;box-shadow:${shadow}">
@@ -3072,7 +3063,7 @@ function _updateGuionGenWrap(){
 // ── Block rendering ───────────────────────────
 const _BTYPE_LABEL={texto:'TEXTO',cancion:'CANCIÓN',versiculo:'VERSÍCULO',oracion:'ORACIÓN',evento:'EVENTO'};
 const _EVENTO_TIPOS=[
-  {value:'ofrenda',    emoji:'🎁', label:'Ofrenda',         bg:'#fef9c3', border:'#ca8a04'},
+  {value:'ofrenda',    emoji:'🙌', label:'Ofrenda',         bg:'#fef9c3', border:'#ca8a04'},
   {value:'santa-cena', emoji:'🍞', label:'Santa Cena',      bg:'#f0fdf4', border:'#16a34a'},
   {value:'predicacion',emoji:'📖', label:'Predicación',     bg:'#eff6ff', border:'#2563eb'},
   {value:'oracion-g',  emoji:'🙏', label:'Oración general', bg:'#faf5ff', border:'#9333ea'},
