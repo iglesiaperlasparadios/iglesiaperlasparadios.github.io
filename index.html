@@ -427,6 +427,7 @@ select option { background: var(--bg3); }
         <button class="btn btn-sm" onclick="addGuionBlock('cancion')" style="border-color:#c05a1f;color:#c05a1f"><i class="ti ti-music"></i> Canción</button>
         <button class="btn btn-sm" onclick="addGuionBlock('versiculo')" style="border-color:#1a7070;color:#1a7070"><i class="ti ti-book"></i> Versículo</button>
         <button class="btn btn-sm" onclick="addGuionBlock('oracion')" style="border-color:#6b3fa0;color:#6b3fa0"><i class="ti ti-hands-praying"></i> Oración</button>
+        <button class="btn btn-sm" onclick="addGuionBlock('evento')" style="border-color:#a16207;color:#a16207">🎯 Evento</button>
       </div>
     </div>
 
@@ -2903,13 +2904,26 @@ function _updateGuionGenWrap(){
 }
 
 // ── Block rendering ───────────────────────────
-const _BTYPE_LABEL={texto:'TEXTO',cancion:'CANCIÓN',versiculo:'VERSÍCULO',oracion:'ORACIÓN'};
-const _BTYPE_COLOR={texto:'#2563a8',versiculo:'#1a7070',oracion:'#6b3fa0'};
+const _BTYPE_LABEL={texto:'TEXTO',cancion:'CANCIÓN',versiculo:'VERSÍCULO',oracion:'ORACIÓN',evento:'EVENTO'};
+const _EVENTO_TIPOS=[
+  {value:'ofrenda',    emoji:'🎁', label:'Ofrenda',         bg:'#fef9c3', border:'#ca8a04'},
+  {value:'santa-cena', emoji:'🍞', label:'Santa Cena',      bg:'#f0fdf4', border:'#16a34a'},
+  {value:'predicacion',emoji:'📖', label:'Predicación',     bg:'#eff6ff', border:'#2563eb'},
+  {value:'oracion-g',  emoji:'🙏', label:'Oración general', bg:'#faf5ff', border:'#9333ea'},
+  {value:'bienvenida', emoji:'👋', label:'Bienvenida',      bg:'#fff7ed', border:'#ea580c'},
+  {value:'anuncio',    emoji:'📢', label:'Anuncio',         bg:'#f0f9ff', border:'#0284c7'},
+  {value:'altar',      emoji:'✝️', label:'Altar / Llamado', bg:'#fdf4ff', border:'#a21caf'},
+];
+const _BTYPE_COLOR={texto:'#2563a8',versiculo:'#1a7070',oracion:'#6b3fa0',evento:'#a16207'};
 
 function _blockAccent(b, idx){
   if(b.type==='cancion'){
     let ci=0; for(let i=0;i<idx;i++) if(guionBlocks[i].type==='cancion') ci++;
     return DOMINGO_COLORS[ci%DOMINGO_COLORS.length];
+  }
+  if(b.type==='evento'){
+    const et=_EVENTO_TIPOS.find(e=>e.value===b.eventType);
+    return et?et.border:'#a16207';
   }
   return _BTYPE_COLOR[b.type]||'#888';
 }
@@ -2919,6 +2933,7 @@ function _blockHeading(b){
   if(b.type==='versiculo') return b.reference||'Versículo';
   if(b.type==='oracion') return 'Oración';
   if(b.type==='cancion'){ const c=getLetras().find(l=>l.id===b.songId); return c?c.name:'(canción no encontrada)'; }
+  if(b.type==='evento'){ const et=_EVENTO_TIPOS.find(e=>e.value===b.eventType); return et?et.emoji+' '+et.label:'Evento'; }
   return b.type;
 }
 
@@ -2928,6 +2943,7 @@ function _blockPreviewText(b){
     if(!c) return '<span style="color:var(--text3);font-style:italic">No encontrada en biblioteca</span>';
     return `<span style="font-size:12px;color:var(--text3)">${c.key||''}${c.capo?' · '+c.capo:''}</span>`;
   }
+  if(b.type==='evento') return `<span style="font-size:12px;color:var(--text3)">${b.detail||''}</span>`;
   const t=b.content||''; return `<span style="font-size:12px;color:var(--text2)">${t.substring(0,120).replace(/\n/g,' ')}${t.length>120?'…':''}</span>`;
 }
 
@@ -2986,7 +3002,7 @@ function openEditGuionBlock(idx){
 
 // ── Bloque modal ──────────────────────────────
 function openBloqueModal(type, b){
-  const titles={texto:'Texto',versiculo:'Versículo',oracion:'Oración'};
+  const titles={texto:'Texto',versiculo:'Versículo',oracion:'Oración',evento:'Evento'};
   document.getElementById('bloque-modal-title').textContent=(_editingBlockIdx!==null?'Editar ':'Nuevo ')+(titles[type]||type);
   let body='<input type="hidden" id="bm-type" value="'+type+'">';
   if(type==='texto'){
@@ -2997,6 +3013,10 @@ function openBloqueModal(type, b){
     <div class="field"><label>Texto del versículo</label><textarea id="bm-content" rows="5" placeholder="Texto bíblico...">${b?.content||''}</textarea></div>`;
   } else if(type==='oracion'){
     body+=`<div class="field"><label>Texto de la oración</label><textarea id="bm-content" rows="10" placeholder="Texto de la oración...">${b?.content||''}</textarea></div>`;
+  } else if(type==='evento'){
+    const opts=_EVENTO_TIPOS.map(e=>`<option value="${e.value}"${b?.eventType===e.value?' selected':''}>${e.emoji} ${e.label}</option>`).join('');
+    body+=`<div class="field"><label>Tipo de evento</label><select id="bm-event-type">${opts}</select></div>
+    <div class="field"><label>Detalle <span style="font-weight:400;color:var(--text3)">(quién lo hace, duración, etc.)</span></label><input id="bm-detail" placeholder="ej: Carlos Pérez / Mesa del frente / 10 minutos" value="${b?.detail||''}"></div>`;
   }
   document.getElementById('bloque-modal-body').innerHTML=body;
   document.getElementById('modal-bloque').classList.add('open');
@@ -3008,6 +3028,7 @@ function saveBlockFromModal(){
   if(type==='texto'){ block.label=document.getElementById('bm-label')?.value.trim()||''; block.content=document.getElementById('bm-content')?.value||''; }
   else if(type==='versiculo'){ block.reference=document.getElementById('bm-reference')?.value.trim()||''; block.content=document.getElementById('bm-content')?.value||''; }
   else if(type==='oracion'){ block.content=document.getElementById('bm-content')?.value||''; }
+  else if(type==='evento'){ block.eventType=document.getElementById('bm-event-type')?.value||'ofrenda'; block.detail=document.getElementById('bm-detail')?.value.trim()||''; }
   if(_editingBlockIdx!==null) guionBlocks[_editingBlockIdx]=block; else guionBlocks.push(block);
   closeModal('modal-bloque'); renderGuionBlocksUI(); _updateGuionGenWrap(); autoSaveGuion();
 }
@@ -3204,6 +3225,16 @@ function buildGuionCardOracion(b){
     `<div style="font-size:24px;color:#1e293b;line-height:1.8;white-space:pre-wrap">${b.content||''}</div>`);
 }
 
+function buildGuionCardEvento(b){
+  const shadow='0 2px 10px rgba(15,23,42,.07),0 1px 3px rgba(15,23,42,.04)';
+  const et=_EVENTO_TIPOS.find(e=>e.value===b.eventType)||_EVENTO_TIPOS[0];
+  const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  return `<div style="background:${et.bg};border-radius:14px;border:1px solid ${et.border}44;border-left:4px solid ${et.border};box-shadow:${shadow};margin-bottom:12px;padding:18px 22px">
+    <div style="font-family:'Fraunces',Georgia,serif;font-size:22px;font-weight:700;color:#1e293b;line-height:1.2">${et.emoji} ${esc(et.label)}</div>
+    ${b.detail?`<div style="font-size:16px;color:#64748b;margin-top:6px">${esc(b.detail)}</div>`:''}
+  </div>`;
+}
+
 function buildGuionCardCancion(letra, idx){
   const color=_CANCION_COLORS[idx%_CANCION_COLORS.length];
   if(!letra) return `<div style="background:#fff;border-radius:14px;border:1px dashed #dbe5f0;padding:20px;margin-bottom:12px;color:#94a3b8;font-style:italic">Canción no encontrada en biblioteca</div>`;
@@ -3232,6 +3263,7 @@ function buildGuionHTML(){
     if(b.type==='texto') return buildGuionCardText(b);
     if(b.type==='versiculo') return buildGuionCardVersiculo(b);
     if(b.type==='oracion') return buildGuionCardOracion(b);
+    if(b.type==='evento') return buildGuionCardEvento(b);
     if(b.type==='cancion'){
       const letra=letras.find(l=>l.id===b.songId);
       return buildGuionCardCancion(letra, cancionIdx++);
