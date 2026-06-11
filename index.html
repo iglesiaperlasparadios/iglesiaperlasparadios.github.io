@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <style>
 :root {
   --bg: #0d1117;
@@ -442,7 +443,8 @@ select option { background: var(--bg3); }
       <div class="btn-group">
         <button class="btn btn-success" style="flex:1" onclick="generateGuionPNG()"><i class="ti ti-photo-down"></i> Generar imagen</button>
         <button class="btn" onclick="previewGuionPNG()"><i class="ti ti-eye"></i> Vista previa</button>
-        <button class="btn" onclick="printGuionPDF()"><i class="ti ti-file-type-pdf"></i> PDF</button>
+        <button class="btn" onclick="printGuionPDF()"><i class="ti ti-file-type-pdf"></i> PDF A4</button>
+        <button class="btn" onclick="printGuionContinuo()">📜 PDF continuo</button>
       </div>
       <div id="guion-preview-wrap" style="display:none" class="canvas-preview"><canvas id="guion-cv-preview"></canvas></div>
     </div>
@@ -3478,6 +3480,26 @@ async function generateGuionPNG(){
     showToast('Imagen descargada','green');
   }catch(e){ showToast('Error al generar imagen','red'); console.error(e); lbl.textContent='Error'; }
   if(btn) btn.disabled=false;
+}
+
+async function printGuionContinuo(){
+  if(!guionBlocks.length){ showToast('Agregá bloques primero','amber'); return; }
+  const btns=document.querySelectorAll('#guion-gen-wrap button');
+  btns.forEach(b=>b.disabled=true);
+  showToast('Generando PDF continuo...','amber');
+  try{
+    const canvas=await htmlToCanvas(buildGuionHTML(),'_guion_render');
+    const {jsPDF}=window.jspdf;
+    const SCALE=2.5, MM=25.4/96;
+    const imgW=canvas.width/SCALE*MM;
+    const imgH=canvas.height/SCALE*MM;
+    const margin=10;
+    const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:[imgW+margin*2,imgH+margin*2]});
+    pdf.addImage(canvas.toDataURL('image/png'),'PNG',margin,margin,imgW,imgH);
+    pdf.save(`guion-${(_guionDateVal()||'domingo').replace(/-/g,'')}.pdf`);
+    showToast('PDF descargado','green');
+  }catch(e){ showToast('Error al generar PDF','red'); console.error(e); }
+  btns.forEach(b=>b.disabled=false);
 }
 
 function printGuionPDF(){
