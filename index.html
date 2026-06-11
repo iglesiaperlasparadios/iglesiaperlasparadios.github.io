@@ -2937,6 +2937,18 @@ function _blockHeading(b){
   return b.type;
 }
 
+function _selectBgColor(el,color){
+  document.querySelectorAll('#bm-bgcolor-chips .bg-chip').forEach(c=>{c.style.outline='none';c.style.boxShadow='none';});
+  el.style.outline='2px solid var(--accent)';
+  el.style.boxShadow='0 0 0 1px var(--accent)';
+  document.getElementById('bm-bgcolor').value=color;
+}
+
+function _blockBgDot(b){
+  if(b.type!=='texto'||!b.bgColor||b.bgColor==='#ffffff') return '';
+  return `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${b.bgColor};border:1px solid rgba(0,0,0,.15);margin-left:3px;vertical-align:middle;flex-shrink:0"></span>`;
+}
+
 function _blockPreviewText(b){
   if(b.type==='cancion'){
     const c=getLetras().find(l=>l.id===b.songId);
@@ -2959,7 +2971,7 @@ function renderGuionBlocksUI(){
       <div style="display:flex;align-items:flex-start;gap:10px">
         <div style="flex:1;min-width:0">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
-            <span style="font-size:10px;font-weight:700;color:${color};letter-spacing:.08em;text-transform:uppercase">${_BTYPE_LABEL[b.type]||b.type}</span>
+            <span style="font-size:10px;font-weight:700;color:${color};letter-spacing:.08em;text-transform:uppercase">${_BTYPE_LABEL[b.type]||b.type}${_blockBgDot(b)}</span>
             <span style="font-size:13px;font-weight:600;color:var(--text)">${_blockHeading(b)}</span>
           </div>
           <div>${_blockPreviewText(b)}</div>
@@ -3006,7 +3018,11 @@ function openBloqueModal(type, b){
   document.getElementById('bloque-modal-title').textContent=(_editingBlockIdx!==null?'Editar ':'Nuevo ')+(titles[type]||type);
   let body='<input type="hidden" id="bm-type" value="'+type+'">';
   if(type==='texto'){
+    const bgVal=b?.bgColor||'#ffffff';
+    const colorOpts=[['#ffffff','⬜','Blanco'],['#fef9c3','🟡','Amarillo'],['#dcfce7','🟢','Verde'],['#dbeafe','🔵','Azul'],['#ede9fe','🟣','Violeta']];
+    const chips=colorOpts.map(([c,emoji,name])=>`<div class="bg-chip" onclick="_selectBgColor(this,'${c}')" style="background:${c};border:1px solid #d1d5db;border-radius:8px;padding:5px 11px;cursor:pointer;font-size:13px;user-select:none;${bgVal===c?'outline:2px solid var(--accent);box-shadow:0 0 0 1px var(--accent)':''}">${emoji} ${name}</div>`).join('');
     body+=`<div class="field"><label>Etiqueta</label><input id="bm-label" placeholder="ej: Introducción, Conexión, Cierre..." value="${b?.label||''}"></div>
+    <div class="field"><label>Color de fondo</label><div id="bm-bgcolor-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">${chips}</div><input type="hidden" id="bm-bgcolor" value="${bgVal}"></div>
     <div class="field"><label>Contenido</label><textarea id="bm-content" rows="8" placeholder="Texto de introducción, conexión, etc...">${b?.content||''}</textarea></div>`;
   } else if(type==='versiculo'){
     body+=`<div class="field"><label>Referencia</label><input id="bm-reference" placeholder="ej: Juan 8:36" value="${b?.reference||''}"></div>
@@ -3025,7 +3041,7 @@ function openBloqueModal(type, b){
 function saveBlockFromModal(){
   const type=document.getElementById('bm-type')?.value; if(!type) return;
   const block={type, id:(_editingBlockIdx!==null?guionBlocks[_editingBlockIdx].id:null)||Date.now().toString()};
-  if(type==='texto'){ block.label=document.getElementById('bm-label')?.value.trim()||''; block.content=document.getElementById('bm-content')?.value||''; }
+  if(type==='texto'){ block.label=document.getElementById('bm-label')?.value.trim()||''; block.content=document.getElementById('bm-content')?.value||''; block.bgColor=document.getElementById('bm-bgcolor')?.value||'#ffffff'; }
   else if(type==='versiculo'){ block.reference=document.getElementById('bm-reference')?.value.trim()||''; block.content=document.getElementById('bm-content')?.value||''; }
   else if(type==='oracion'){ block.content=document.getElementById('bm-content')?.value||''; }
   else if(type==='evento'){ block.eventType=document.getElementById('bm-event-type')?.value||'ofrenda'; block.detail=document.getElementById('bm-detail')?.value.trim()||''; }
@@ -3205,12 +3221,16 @@ function _ghLabel(label){ return `<div style="font-size:10px;font-weight:600;col
 function _ghTitle(t){ return `<div style="font-size:18px;font-weight:600;color:#fff;line-height:1.2">${t}</div>`; }
 
 function buildGuionCardText(b){
+  const shadow='0 2px 10px rgba(15,23,42,.07),0 1px 3px rgba(15,23,42,.04)';
+  const bg=b.bgColor||'#ffffff';
+  const bodyHTML=`<div style="font-size:24px;color:#1e293b;line-height:1.8;white-space:pre-wrap">${b.content||''}</div>`;
   if(!b.label){
-    return _guionCard(null, '', `<div style="font-size:24px;color:#1e293b;line-height:1.8;white-space:pre-wrap">${b.content||''}</div>`);
+    return `<div style="background:${bg};border-radius:14px;border:1px solid #dbe5f0;overflow:hidden;box-shadow:${shadow};margin-bottom:12px"><div style="padding:16px 20px 18px">${bodyHTML}</div></div>`;
   }
-  return _guionCard('#2d7a50',
-    _ghLabel('COMENTARIO')+_ghTitle(b.label),
-    `<div style="font-size:24px;color:#1e293b;line-height:1.8;white-space:pre-wrap">${b.content||''}</div>`);
+  return `<div style="background:#fff;border-radius:14px;border:1px solid #dbe5f0;overflow:hidden;box-shadow:${shadow};margin-bottom:12px">
+    <div style="background:#2d7a50;padding:12px 18px">${_ghLabel('COMENTARIO')}${_ghTitle(b.label)}</div>
+    <div style="background:${bg};padding:16px 20px 18px">${bodyHTML}</div>
+  </div>`;
 }
 
 function buildGuionCardVersiculo(b){
