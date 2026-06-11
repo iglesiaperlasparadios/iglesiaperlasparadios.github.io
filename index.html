@@ -192,6 +192,9 @@ select option { background: var(--bg3); }
 .search-input input { padding-left: 32px; }
 .canvas-preview { border-radius: 8px; overflow: hidden; border: 1px solid var(--border); margin-top: 10px; }
 .canvas-preview canvas { display: block; width: 100%; height: auto; }
+/* Notas flotantes */
+.nota-flotante textarea { background: transparent; border: none; outline: none; resize: none; width: 100%; font-family: 'Outfit', sans-serif; font-size: 13px; color: #1e293b; padding: 0; box-sizing: border-box; }
+@media (max-width: 700px) { #guion-notas-col { display: none !important; } }
 </style>
 </head>
 <body>
@@ -398,7 +401,10 @@ select option { background: var(--bg3); }
   <!-- ── Editor ──────────────────────────────── -->
   <div id="guion-editor" style="display:none">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <button class="btn btn-sm" onclick="backToGuionLanding()"><i class="ti ti-chevron-left"></i> Guiones</button>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="btn btn-sm" onclick="backToGuionLanding()"><i class="ti ti-chevron-left"></i> Guiones</button>
+        <button class="btn btn-sm" onclick="addGuionNota()" style="border-color:#ec4899;color:#ec4899">📌 Nota</button>
+      </div>
       <span id="guion-save-status" style="font-size:11px;color:var(--text3)"></span>
     </div>
 
@@ -422,31 +428,36 @@ select option { background: var(--bg3); }
       </div>
     </div>
 
-    <div id="guion-blocks-wrap"></div>
+    <div style="display:flex;gap:16px;align-items:flex-start">
+      <div style="flex:1;min-width:0">
+        <div id="guion-blocks-wrap"></div>
 
-    <div class="card">
-      <div class="card-title">Agregar bloque</div>
-      <div class="btn-group">
-        <button class="btn btn-sm" onclick="addGuionBlock('texto')" style="border-color:#2563a8;color:#2563a8"><i class="ti ti-text-size"></i> Texto</button>
-        <button class="btn btn-sm" onclick="addGuionBlock('cancion')" style="border-color:#c05a1f;color:#c05a1f"><i class="ti ti-music"></i> Canción</button>
-        <button class="btn btn-sm" onclick="addGuionBlock('versiculo')" style="border-color:#1a7070;color:#1a7070"><i class="ti ti-book"></i> Versículo</button>
-        <button class="btn btn-sm" onclick="addGuionBlock('oracion')" style="border-color:#6b3fa0;color:#6b3fa0"><i class="ti ti-hands-praying"></i> Oración</button>
-        <button class="btn btn-sm" onclick="addGuionBlock('evento')" style="border-color:#a16207;color:#a16207">🎯 Evento</button>
-      </div>
-    </div>
+        <div class="card">
+          <div class="card-title">Agregar bloque</div>
+          <div class="btn-group">
+            <button class="btn btn-sm" onclick="addGuionBlock('texto')" style="border-color:#2563a8;color:#2563a8"><i class="ti ti-text-size"></i> Texto</button>
+            <button class="btn btn-sm" onclick="addGuionBlock('cancion')" style="border-color:#c05a1f;color:#c05a1f"><i class="ti ti-music"></i> Canción</button>
+            <button class="btn btn-sm" onclick="addGuionBlock('versiculo')" style="border-color:#1a7070;color:#1a7070"><i class="ti ti-book"></i> Versículo</button>
+            <button class="btn btn-sm" onclick="addGuionBlock('oracion')" style="border-color:#6b3fa0;color:#6b3fa0"><i class="ti ti-hands-praying"></i> Oración</button>
+            <button class="btn btn-sm" onclick="addGuionBlock('evento')" style="border-color:#a16207;color:#a16207">🎯 Evento</button>
+          </div>
+        </div>
 
-    <div id="guion-gen-wrap" style="display:none">
-      <div id="guion-prog-wrap" style="display:none">
-        <div class="prog-bar"><div class="prog-fill" id="guion-prog-fill" style="width:0%"></div></div>
-        <div style="font-size:12px;color:var(--text3);text-align:center;margin-top:4px" id="guion-prog-label">Preparando...</div>
+        <div id="guion-gen-wrap" style="display:none">
+          <div id="guion-prog-wrap" style="display:none">
+            <div class="prog-bar"><div class="prog-fill" id="guion-prog-fill" style="width:0%"></div></div>
+            <div style="font-size:12px;color:var(--text3);text-align:center;margin-top:4px" id="guion-prog-label">Preparando...</div>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-success" style="flex:1" onclick="generateGuionPNG()"><i class="ti ti-photo-down"></i> Generar imagen</button>
+            <button class="btn" onclick="previewGuionPNG()"><i class="ti ti-eye"></i> Vista previa</button>
+            <button class="btn" onclick="printGuionPDF()"><i class="ti ti-file-type-pdf"></i> PDF A4</button>
+            <button class="btn" onclick="printGuionContinuo()">📜 PDF continuo</button>
+          </div>
+          <div id="guion-preview-wrap" style="display:none" class="canvas-preview"><canvas id="guion-cv-preview"></canvas></div>
+        </div>
       </div>
-      <div class="btn-group">
-        <button class="btn btn-success" style="flex:1" onclick="generateGuionPNG()"><i class="ti ti-photo-down"></i> Generar imagen</button>
-        <button class="btn" onclick="previewGuionPNG()"><i class="ti ti-eye"></i> Vista previa</button>
-        <button class="btn" onclick="printGuionPDF()"><i class="ti ti-file-type-pdf"></i> PDF A4</button>
-        <button class="btn" onclick="printGuionContinuo()">📜 PDF continuo</button>
-      </div>
-      <div id="guion-preview-wrap" style="display:none" class="canvas-preview"><canvas id="guion-cv-preview"></canvas></div>
+      <div id="guion-notas-col" style="width:220px;flex-shrink:0"></div>
     </div>
   </div>
 
@@ -2471,7 +2482,7 @@ function confirmImport(){
   if(d.historial) saveHistorial(d.historial);
   if(d.config)    localStorage.setItem('mm_config', JSON.stringify(d.config));
   if(d.guiones){
-    saveGuiones(d.guiones.map(g=>({id:g.id||g.date,date:g.date||'',title:g.title||'',blocks:g.blocks||[]})));
+    saveGuiones(d.guiones.map(g=>({id:g.id||g.date,date:g.date||'',title:g.title||'',blocks:g.blocks||[],notas:g.notas||[]})));
   }
   // clear autosave so imported mes state takes over
   localStorage.removeItem('mm_mes_state');
@@ -2741,6 +2752,7 @@ function saveLetras(v){ saveCanciones(v); }
 
 // ── State ─────────────────────────────────────
 let guionBlocks = [];
+let guionNotas = [];
 let _currentGuionId = null;
 let _guionSaveTimer = null;
 let _editingLetraId = null;
@@ -2765,7 +2777,7 @@ function _doSaveGuion(){
   try{
     const all=getGuiones();
     const idx=all.findIndex(g=>g.id===_currentGuionId);
-    const entry={id:_currentGuionId,date,title,blocks:guionBlocks.map(b=>({...b}))};
+    const entry={id:_currentGuionId,date,title,blocks:guionBlocks.map(b=>({...b})),notas:guionNotas.map(n=>({...n}))};
     if(idx>=0) all[idx]=entry; else all.push(entry);
     saveGuiones(all);
     const el=document.getElementById('guion-save-status');
@@ -2790,35 +2802,35 @@ function _showGuionEditor(){
 }
 
 function backToGuionLanding(){
-  _currentGuionId=null; guionBlocks=[];
+  _currentGuionId=null; guionBlocks=[]; guionNotas=[];
   document.getElementById('guion-editor').style.display='none';
   document.getElementById('guion-landing').style.display='';
   renderGuionLanding();
 }
 
 function newGuion(){
-  _currentGuionId=Date.now().toString(); guionBlocks=[];
+  _currentGuionId=Date.now().toString(); guionBlocks=[]; guionNotas=[];
   const fechaEl=document.getElementById('guion-fecha');
   const tituloEl=document.getElementById('guion-titulo');
   if(fechaEl) fechaEl.value=''; if(tituloEl) tituloEl.value='';
-  _showGuionEditor(); renderGuionBlocksUI(); _updateGuionGenWrap();
+  _showGuionEditor(); renderGuionBlocksUI(); renderGuionNotasUI(); _updateGuionGenWrap();
   _updateGuionImportBtn(); _updateGuionServiceInfo(); _updateProgramaBtn();
 }
 
 function openGuion(id){
   const g=getGuiones().find(g=>g.id===id); if(!g) return;
-  _currentGuionId=id; guionBlocks=(g.blocks||[]).map(b=>({...b}));
+  _currentGuionId=id; guionBlocks=(g.blocks||[]).map(b=>({...b})); guionNotas=(g.notas||[]).map(n=>({...n}));
   const fechaEl=document.getElementById('guion-fecha');
   const tituloEl=document.getElementById('guion-titulo');
   if(fechaEl) fechaEl.value=g.date||''; if(tituloEl) tituloEl.value=g.title||'';
-  _showGuionEditor(); renderGuionBlocksUI(); _updateGuionGenWrap();
+  _showGuionEditor(); renderGuionBlocksUI(); renderGuionNotasUI(); _updateGuionGenWrap();
   _updateGuionImportBtn(); _updateGuionServiceInfo(); _updateProgramaBtn();
 }
 
 function duplicateGuion(id){
   const g=getGuiones().find(g=>g.id===id); if(!g) return;
   const newId=Date.now().toString();
-  const copy={id:newId,date:'',title:g.title?'Copia — '+g.title:'',blocks:g.blocks.map(b=>({...b}))};
+  const copy={id:newId,date:'',title:g.title?'Copia — '+g.title:'',blocks:g.blocks.map(b=>({...b})),notas:(g.notas||[]).map(n=>({...n}))};
   const all=getGuiones(); all.push(copy); saveGuiones(all);
   openGuion(newId); showToast('Guión duplicado — asigná una nueva fecha','amber');
 }
@@ -3054,7 +3066,7 @@ async function downloadPrograma(){
 // ── Init ──────────────────────────────────────
 function renderGuion(){
   if(_currentGuionId){
-    _showGuionEditor(); renderGuionBlocksUI(); _updateGuionGenWrap();
+    _showGuionEditor(); renderGuionBlocksUI(); renderGuionNotasUI(); _updateGuionGenWrap();
     _updateGuionImportBtn(); _updateGuionServiceInfo(); _updateProgramaBtn();
   } else {
     document.getElementById('guion-editor').style.display='none';
@@ -3150,6 +3162,55 @@ function renderGuionBlocksUI(){
       </div>
     </div>`;
   }).join('');
+}
+
+// ── Notas flotantes ───────────────────────────
+const _NOTA_COLORS=['#fce7f3','#fef9c3','#dcfce7','#dbeafe'];
+
+function renderGuionNotasUI(){
+  const col=document.getElementById('guion-notas-col'); if(!col) return;
+  if(!guionNotas.length){ col.innerHTML=''; return; }
+  col.innerHTML=guionNotas.map((n,idx)=>`
+    <div class="nota-flotante" style="background:${n.color||'#fef9c3'};border-radius:14px;padding:12px;margin-bottom:10px;box-shadow:0 2px 10px rgba(0,0,0,.3)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="display:flex;gap:5px">
+          ${_NOTA_COLORS.map(c=>`<button onclick="_setNotaColor('${n.id}','${c}')" style="width:15px;height:15px;border-radius:50%;background:${c};border:2px solid ${n.color===c?'#374151':'rgba(0,0,0,.15)'};cursor:pointer;padding:0"></button>`).join('')}
+        </div>
+        <button onclick="_deleteNota('${n.id}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:#64748b;padding:0;line-height:1;opacity:.7">✕</button>
+      </div>
+      <textarea rows="4" class="nota-flotante" style="min-height:60px" oninput="_saveNotaText('${n.id}',this.value)" placeholder="Escribí tu nota...">${esc(n.texto||'')}</textarea>
+      <div style="display:flex;gap:4px;margin-top:8px">
+        <button onclick="_moveNota('${n.id}',-1)"${idx===0?' disabled':''} class="btn btn-sm btn-icon" style="padding:2px 6px;font-size:11px;flex:1"><i class="ti ti-chevron-up"></i></button>
+        <button onclick="_moveNota('${n.id}',1)"${idx===guionNotas.length-1?' disabled':''} class="btn btn-sm btn-icon" style="padding:2px 6px;font-size:11px;flex:1"><i class="ti ti-chevron-down"></i></button>
+      </div>
+    </div>`).join('');
+}
+
+function addGuionNota(){
+  if(!_currentGuionId){ showToast('Abrí un guión primero','amber'); return; }
+  guionNotas.push({id:Date.now().toString(),texto:'',color:'#fef9c3'});
+  renderGuionNotasUI(); autoSaveGuion();
+  setTimeout(()=>{ const t=document.querySelectorAll('#guion-notas-col textarea'); if(t.length) t[t.length-1].focus(); },50);
+}
+
+function _saveNotaText(id,texto){
+  const n=guionNotas.find(n=>n.id===id); if(n){ n.texto=texto; autoSaveGuion(); }
+}
+
+function _setNotaColor(id,color){
+  const n=guionNotas.find(n=>n.id===id); if(n){ n.color=color; renderGuionNotasUI(); autoSaveGuion(); }
+}
+
+function _moveNota(id,dir){
+  const idx=guionNotas.findIndex(n=>n.id===id); if(idx<0) return;
+  const ni=idx+dir; if(ni<0||ni>=guionNotas.length) return;
+  [guionNotas[idx],guionNotas[ni]]=[guionNotas[ni],guionNotas[idx]];
+  renderGuionNotasUI(); autoSaveGuion();
+}
+
+function _deleteNota(id){
+  guionNotas=guionNotas.filter(n=>n.id!==id);
+  renderGuionNotasUI(); autoSaveGuion();
 }
 
 // ── Block CRUD ────────────────────────────────
