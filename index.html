@@ -3036,7 +3036,7 @@ function buildProgramaHTML(){
       <div style="height:1px;background:${accent};opacity:.2;flex:1"></div>
     </div>${blockItems.join('')}</div>`;
 
-  return `<div id="_programa_render" style="width:${W}px;background:#f9f8f6;font-family:'Outfit',sans-serif;padding:${PAD}px;box-sizing:border-box">${header}${programaHTML}${equipoHTML}</div>`;
+  return `<div id="_programa_render" style="width:${W}px;background:#f9f8f6;font-family:'Outfit',sans-serif;padding:${PAD}px;box-sizing:border-box"><style>.nota-flotante{display:none!important}</style>${header}${programaHTML}${equipoHTML}</div>`;
 }
 
 function openProgramaModal(){
@@ -3503,6 +3503,7 @@ function buildGuionHTML(){
   const letras=getLetras();
   const fecha=_guionDateVal();
   const titulo=document.getElementById('guion-titulo')?.value.trim()||'';
+  const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
   let cancionIdx=0;
 
   const cardsHTML=guionBlocks.map(b=>{
@@ -3520,11 +3521,20 @@ function buildGuionHTML(){
   const fechaLabel=fecha?_fmtGuionDate(fecha):'';
   const headerText=[fechaLabel,titulo].filter(Boolean).join(' — ');
 
-  return `<div id="_guion_render" style="width:${_GUION_W}px;background:#f0f2f5;font-family:'Outfit',sans-serif;padding:0">
+  const hasNotas=guionNotas.length>0;
+  const notasColHTML=hasNotas?`<div style="width:220px;flex-shrink:0;padding:14px 14px 36px 0">${
+    guionNotas.map(n=>`<div style="background:${n.color||'#fef9c3'};border-radius:14px;padding:12px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.18)"><div style="font-size:13px;color:#1e293b;white-space:pre-wrap;word-break:break-word;font-family:'Outfit',sans-serif;line-height:1.5">${esc(n.texto||'')}</div></div>`).join('')
+  }</div>`:'';
+  const totalW=_GUION_W+(hasNotas?240:0);
+
+  return `<div id="_guion_render" style="width:${totalW}px;background:#f0f2f5;font-family:'Outfit',sans-serif;padding:0">
     <div style="padding:14px ${_GUION_PAD}px 12px;border-bottom:1px solid #dbe5f0;background:#ffffff">
       <div style="font-size:11px;font-weight:600;color:#64748b;letter-spacing:.1em;text-transform:uppercase">${headerText||'Guión del domingo'}</div>
     </div>
-    <div style="padding:14px ${_GUION_PAD}px 36px">${cardsHTML}</div>
+    <div style="display:flex;align-items:flex-start">
+      <div style="flex:1;padding:14px ${_GUION_PAD}px 36px">${cardsHTML}</div>
+      ${notasColHTML}
+    </div>
   </div>`;
 }
 
