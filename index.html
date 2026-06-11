@@ -416,6 +416,9 @@ select option { background: var(--bg3); }
       <div id="guion-import-wrap" style="display:none;margin-top:8px">
         <button class="btn btn-sm" onclick="importFromCronograma()" style="border-color:#2563a8;color:#2563a8"><i class="ti ti-table-import"></i> Importar canciones del cronograma</button>
       </div>
+      <div id="guion-programa-wrap" style="display:none;margin-top:8px">
+        <button class="btn btn-sm" onclick="openProgramaModal()" style="border-color:#7c3aed;color:#7c3aed">📋 Programa del domingo</button>
+      </div>
     </div>
 
     <div id="guion-blocks-wrap"></div>
@@ -681,6 +684,20 @@ select option { background: var(--bg3); }
     <div id="bloque-modal-body"></div>
     <div class="btn-group" style="margin-top:12px">
       <button class="btn btn-primary btn-full" onclick="saveBlockFromModal()"><i class="ti ti-device-floppy"></i> Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Programa del Domingo -->
+<div class="modal-overlay" id="modal-programa">
+  <div class="modal" style="width:860px;height:90vh;max-height:92vh;display:flex;flex-direction:column;padding:0;overflow:hidden">
+    <div class="modal-title" style="padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0">
+      <span style="font-size:15px;font-weight:600">📋 Programa del domingo</span>
+      <button class="btn btn-sm btn-icon" onclick="closeModal('modal-programa')"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="programa-preview-body" style="flex:1;overflow-y:auto;background:#374151;padding:24px;display:flex;flex-direction:column;align-items:center"></div>
+    <div style="padding:12px 16px;border-top:1px solid var(--border);flex-shrink:0;background:var(--bg2)">
+      <button class="btn btn-primary btn-sm" id="programa-download-btn" onclick="downloadPrograma()"><i class="ti ti-download"></i> Descargar imagen</button>
     </div>
   </div>
 </div>
@@ -2864,8 +2881,13 @@ function _updateGuionServiceInfo(){
   el.innerHTML=`<i class="ti ti-calendar-event" style="color:var(--text3);font-size:14px"></i><span>${svc.label}</span>${coordina?`<span style="margin-left:6px"><i class="ti ti-user" style="color:var(--text3);font-size:14px"></i> ${coordina}</span>`:''}`;
 }
 
+function _updateProgramaBtn(){
+  const wrap=document.getElementById('guion-programa-wrap');
+  if(wrap) wrap.style.display=(_currentGuionId&&_guionDateVal())?'':'none';
+}
+
 function onGuionDateChange(){
-  autoSaveGuion(); _updateGuionImportBtn(); _updateGuionServiceInfo();
+  autoSaveGuion(); _updateGuionImportBtn(); _updateGuionServiceInfo(); _updateProgramaBtn();
 }
 
 function importFromCronograma(){
@@ -2886,11 +2908,154 @@ function importFromCronograma(){
   showToast(newBlocks.filter(b=>b.type==='cancion').length+' canciones importadas del cronograma','green');
 }
 
+// ── Programa del domingo ──────────────────────
+function buildProgramaHTML(){
+  const date=_guionDateVal();
+  const cfg=getConfig();
+  const svc=_findServiceForDate(date);
+  const canciones=getCanciones();
+  const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const [y,m,d]=date.split('-').map(Number);
+  const accent=MES_ACCENT[m-1]||'#1E5F9E';
+  const accentLight=accent+'18';
+  const dt=new Date(y,m-1,d);
+  const dateStr=`${DIAS_N[dt.getDay()].charAt(0).toUpperCase()+DIAS_N[dt.getDay()].slice(1)} ${d} de ${MESES[m-1].toLowerCase()} de ${y}`;
+  const W=800, PAD=36;
+  const shadow='0 2px 10px rgba(15,23,42,.07),0 1px 3px rgba(15,23,42,.04)';
+
+  // HEADER
+  const header=`<div style="margin-bottom:28px;padding-bottom:18px;border-bottom:3px solid ${accent}">
+    ${cfg.iglesia?`<div style="font-size:11px;font-weight:700;color:${IMG_MUTED};letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px">${esc(cfg.iglesia)}</div>`:''}
+    <div style="font-size:13px;font-weight:600;color:${accent};letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">Programa del domingo</div>
+    <div style="font-size:30px;font-weight:700;color:#1e293b;line-height:1.15">${esc(dateStr)}</div>
+    ${svc?.label?`<div style="font-size:14px;color:${IMG_MUTED};margin-top:5px">${esc(svc.label)}</div>`:''}
+  </div>`;
+
+  // EQUIPO
+  let equipoHTML='';
+  if(svc?.roles){
+    const coordina=(svc.roles.coordina||'').trim();
+    const musicians=ROLE_IDS.filter(([,id])=>id!=='coordina'&&(svc.roles[id]||'').trim())
+      .map(([label,id])=>({label,id,name:(svc.roles[id]||'').trim()}));
+    let items='';
+    if(coordina) items+=`<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:${accent}12;border-radius:10px;margin-bottom:10px;border:1px solid ${accent}22">
+      <span style="font-size:20px">👤</span>
+      <div><div style="font-size:10px;font-weight:700;color:${accent};letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px">Coordina</div>
+      <div style="font-size:18px;font-weight:600;color:#1e293b">${esc(coordina)}</div></div>
+    </div>`;
+    if(musicians.length) items+=`<div style="display:flex;flex-wrap:wrap;gap:8px">`+
+      musicians.map(r=>`<div style="width:344px;display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-radius:8px;border:1px solid #e5e9f0;box-shadow:${shadow}">
+        <span style="font-size:18px">${ROLE_EMOJI[r.id]||'🎵'}</span>
+        <div><div style="font-size:9px;font-weight:700;color:${IMG_MUTED};letter-spacing:.08em;text-transform:uppercase;margin-bottom:1px">${esc(r.label)}</div>
+        <div style="font-size:15px;font-weight:500;color:#1e293b">${esc(r.name)}</div></div>
+      </div>`).join('')+`</div>`;
+    if(items) equipoHTML=`<div style="margin-bottom:26px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <span style="font-size:15px">👥</span>
+        <span style="font-size:12px;font-weight:700;color:${accent};letter-spacing:.1em;text-transform:uppercase">Equipo</span>
+        <div style="height:1px;background:${accent};opacity:.2;flex:1"></div>
+      </div>${items}</div>`;
+  }
+
+  // PROGRAMA (desde bloques del guión)
+  let programaHTML='';
+  const blockItems=guionBlocks.map(b=>{
+    if(b.type==='cancion'){
+      const c=canciones.find(c=>c.id===b.songId); if(!c) return '';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:#fff;border-radius:10px;border:1px solid #e5e9f0;margin-bottom:6px;box-shadow:${shadow}">
+        <span style="font-size:15px">🎵</span>
+        <span style="font-size:16px;font-weight:700;color:#1e293b">${esc(c.name)}</span>
+        ${c.key?`<span style="background:${accentLight};color:${accent};border-radius:4px;padding:1px 8px;font-size:11px;font-weight:700;margin-left:2px">${esc(c.key)}</span>`:''}
+      </div>`;
+    }
+    if(b.type==='evento'){
+      const et=_EVENTO_TIPOS.find(e=>e.value===b.eventType)||_EVENTO_TIPOS[0];
+      return `<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:${et.bg};border-radius:10px;border:1px solid ${et.border}44;border-left:4px solid ${et.border};margin-bottom:6px">
+        <span style="font-size:18px">${et.emoji}</span>
+        <div><div style="font-family:'Fraunces',Georgia,serif;font-size:17px;font-weight:700;color:#1e293b">${esc(et.label)}</div>
+        ${b.detail?`<div style="font-size:13px;color:${IMG_MUTED};margin-top:1px">${esc(b.detail)}</div>`:''}</div>
+      </div>`;
+    }
+    if(b.type==='texto'&&(b.label||b.content)){
+      const bg=b.bgColor&&b.bgColor!=='#ffffff'?b.bgColor:'#f8fafc';
+      const line1=(b.content||'').split('\n')[0];
+      const prev=line1.substring(0,90)+(line1.length>90?'…':'');
+      return `<div style="padding:8px 14px;background:${bg};border-radius:10px;border:1px solid #e0e7ef;margin-bottom:6px">
+        ${b.label?`<div style="font-size:10px;font-weight:700;color:${IMG_MUTED};text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px">${esc(b.label)}</div>`:''}
+        ${prev?`<div style="font-size:14px;color:#374151">${esc(prev)}</div>`:''}
+      </div>`;
+    }
+    if(b.type==='versiculo'){
+      const txt=(b.content||'').substring(0,120);
+      return `<div style="display:flex;gap:10px;padding:9px 14px;background:#fff;border-radius:10px;border:1px solid #e5e9f0;margin-bottom:6px;box-shadow:${shadow}">
+        <span style="font-size:15px;flex-shrink:0;margin-top:2px">📖</span>
+        <div><div style="font-size:15px;font-weight:700;color:#1e293b">${esc(b.reference||'Versículo')}</div>
+        ${txt?`<div style="font-size:13px;color:${IMG_MUTED};font-style:italic;margin-top:2px">"${esc(txt)}${b.content.length>120?'…':''}"</div>`:''}</div>
+      </div>`;
+    }
+    if(b.type==='oracion'){
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:#fff;border-radius:10px;border:1px solid #e5e9f0;margin-bottom:6px;box-shadow:${shadow}">
+        <span style="font-size:15px">🙏</span>
+        <span style="font-size:15px;color:#4b5563">${esc((b.content||'').substring(0,70))}${(b.content||'').length>70?'…':''}</span>
+      </div>`;
+    }
+    return '';
+  }).filter(h=>h);
+
+  // Si no hay bloques, mostrar canciones del cronograma
+  if(!blockItems.length&&svc){
+    const songRows=SECCIONES.flatMap(sec=>{
+      const songs=svc.songs?.[sec]||[]; if(!songs.length) return [];
+      const isMain=sec==='principales';
+      const sepLabel=!isMain?`<div style="font-size:10px;font-weight:700;color:${accent};letter-spacing:.12em;text-transform:uppercase;margin:12px 0 6px;padding-left:4px">${SEC_LABEL[sec]||sec}</div>`:'';
+      return [sepLabel,...songs.map(sg=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:#fff;border-radius:10px;border:1px solid #e5e9f0;margin-bottom:6px;box-shadow:${shadow}">
+        <span style="font-size:15px">🎵</span>
+        <span style="font-size:16px;font-weight:700;color:#1e293b">${esc(sg.name)}</span>
+        ${sg.key?`<span style="background:${accentLight};color:${accent};border-radius:4px;padding:1px 8px;font-size:11px;font-weight:700;margin-left:2px">${esc(sg.key)}</span>`:''}
+      </div>`)];
+    });
+    if(songRows.length) blockItems.push(...songRows.filter(h=>h));
+  }
+
+  if(blockItems.length) programaHTML=`<div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <span style="font-size:15px">📋</span>
+      <span style="font-size:12px;font-weight:700;color:${accent};letter-spacing:.1em;text-transform:uppercase">Programa</span>
+      <div style="height:1px;background:${accent};opacity:.2;flex:1"></div>
+    </div>${blockItems.join('')}</div>`;
+
+  return `<div id="_programa_render" style="width:${W}px;background:#f9f8f6;font-family:'Outfit',sans-serif;padding:${PAD}px;box-sizing:border-box">${header}${equipoHTML}${programaHTML}</div>`;
+}
+
+function openProgramaModal(){
+  document.getElementById('modal-programa').classList.add('open');
+  const body=document.getElementById('programa-preview-body');
+  body.innerHTML='';
+  setTimeout(()=>{
+    body.innerHTML=`<div style="box-shadow:0 6px 28px rgba(0,0,0,0.55);flex-shrink:0">${buildProgramaHTML()}</div>`;
+  },40);
+}
+
+async function downloadPrograma(){
+  const btn=document.getElementById('programa-download-btn');
+  btn.disabled=true;
+  showToast('Generando imagen...','amber');
+  try{
+    const cv=await htmlToCanvas(buildProgramaHTML(),'_programa_render');
+    const a=document.createElement('a');
+    a.href=cv.toDataURL('image/png');
+    a.download='programa-'+(_guionDateVal()||'domingo')+'.png';
+    a.click();
+    showToast('Imagen descargada','green');
+  }catch(e){showToast('Error al generar imagen','red');console.error(e);}
+  btn.disabled=false;
+}
+
 // ── Init ──────────────────────────────────────
 function renderGuion(){
   if(_currentGuionId){
     _showGuionEditor(); renderGuionBlocksUI(); _updateGuionGenWrap();
-    _updateGuionImportBtn(); _updateGuionServiceInfo();
+    _updateGuionImportBtn(); _updateGuionServiceInfo(); _updateProgramaBtn();
   } else {
     document.getElementById('guion-editor').style.display='none';
     document.getElementById('guion-landing').style.display='';
