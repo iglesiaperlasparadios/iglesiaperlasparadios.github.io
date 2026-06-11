@@ -10,8 +10,8 @@ Repositorio: https://github.com/bosioinmobiliaria-lang/ministerio-alabanza
 ## Secciones de la app (menú actual, en orden)
 
 - **Cronograma mensual** — planificación mensual: servicios (sábados/domingos), devocional, versículo, desafío, nuevas canciones. Genera imagen PNG descargable.
-- **Coordinación** — guión del servicio: bloques texto/canción/versículo/oración, reordenables con ↑↓. Autosave 800ms. Genera PNG optimizado para iPad vertical.
-- **Canciones** — biblioteca unificada (`mm_canciones`): tono iglesia, tono original, artista, nota de ejecución, link YouTube, categorías, flag "nueva", secciones estructuradas con acordes+letra.
+- **Coordinación** — guión del servicio: bloques texto/canción/versículo/oración/evento, reordenables con ↑↓. Autosave 800ms. Genera PNG optimizado para iPad vertical. Genera imagen "Programa del domingo".
+- **Canciones** — biblioteca unificada (`mm_canciones`): tono iglesia, tono original, artista, nota de ejecución, link YouTube, categorías, flag "nueva", secciones estructuradas con acordes+letra. Vista previa de impresión con slider de font size.
 - **Listas armadas** — sets de canciones por sección (Principales, Santa Cena, Ofrenda, Intervalo, Final).
 - **Bandas** — plantillas de equipos reutilizables (Coordina, Voz 1/2/3, Teclado, Guitarra Acústica x2, Eléctrica, Batería, Bajo).
 - **Participación** — seguimiento de presencia por músico con alertas.
@@ -30,31 +30,71 @@ Repositorio: https://github.com/bosioinmobiliaria-lang/ministerio-alabanza
 - **Nueva pestaña "Coordinación"** (antes "Guión"): biblioteca de letras + constructor de guión por fecha.
 - Autosave 800ms, múltiples guiones por fecha, generación PNG para iPad.
 
-### Sesión 3 (2026-06-07) — commits e971e40 → 064cdc5
-- **Unificación de biblioteca**: `mm_letras` migrado a `mm_canciones`. `getLetras()`/`saveLetras()` son aliases de `getCanciones()`/`saveCanciones()`. IDs de guión remapeados en migración IIFE al inicio.
-- **Editor de secciones por tipo**: Intro/Estrofa/Coro/Puente/Outro/Interludio con campos separados acordes+letra. Luego reemplazado por un único textarea libre por sección.
-- **Editor de secciones — un solo textarea por sección** (commit 95beda7):
-  - `_CHORD_TOKEN` / `_isChordLine(line)`: detecta líneas de acordes si >60% de tokens no vacíos matchean `^[A-G](#|b)?(m|maj|min|aug|dim|sus|add)?[0-9]*(\/[A-G](#|b)?)?$`
-  - `_getSecciones(c)`: migra old `{acordes,letra}` → `{tipo,contenido}`; también maneja `c.lyrics`/`c.chords` legacy.
-  - `_syncCmSecciones()`: lee `.cm-sec-contenido` textarea.
-  - `transposeChordsBy(n)`: transpone solo líneas de acordes dentro de `contenido`.
-  - Data model: `{tipo, contenido}` — el contenido mezcla acordes y letra como vienen de cualquier fuente.
-- **Estadísticas** (pestaña nueva): 4 secciones calculadas desde `mm_mes_*` keys de localStorage.
-- **Renombrado y reorden del menú** con atributos `data-page` en nav items.
-- **Botón imprimir PNG por canción** → formato A4 multipágina (commit bad6e5c):
-  - `_measureSectionH(s)`: mide altura real de cada sección via DOM antes de paginar.
-  - `_paginateSecciones(secciones, p1H, pNH)`: distribuye secciones en páginas sin cortar ninguna.
-  - `_buildCancionPageHTML(c, secciones, pageNum, totalPages)`: página 1 con header completo (nombre + badge tono + capo), páginas 2+ con header compacto (nombre gris + N/M).
-  - 1 página → PNG directo; múltiples → ZIP con JSZip (ya cargado).
-  - `htmlToCanvas()` acepta `extraOpts` (spread) para pasar `height:1123` y `backgroundColor:'#ffffff'`.
-- **Tipografía de impresión** (commits 03644e6 → 064cdc5):
-  - Acordes: 20px Courier New, bold, rojo `#dc2626`, `font-style:normal` explícito.
-  - Letra coro: 20px Courier New, weight 500, azul `#2563a8`, sin cursiva.
-  - Letra estrofa/puente/intro: 20px Courier New, weight 500, negro `#111827`.
-  - Agrupación en pares acorde+letra: `line-height:1.2` dentro del par, `margin-bottom:4px` entre pares.
-  - Entre secciones: `margin-top:28px` (primera sección sin margen). Etiqueta 11px gris `#9ca3af`.
-  - **Mismo tratamiento en vista de Coordinación** (no-print): pares agrupados, naranja `#ea580c` para acordes de coro en pantalla, azul `#2563a8` italic para letra de coro en pantalla.
-- **Orden alfabético A→Z** en todos los pickers y la biblioteca (localeCompare 'es').
+### Sesión 3 (2026-06-07) — commits e971e40 → 5e3db2c
+- **Unificación de biblioteca**: `mm_letras` migrado a `mm_canciones`.
+- **Editor de secciones — un solo textarea por sección** (commit 95beda7).
+- **Estadísticas** (pestaña nueva).
+- **Botón imprimir PNG por canción** → formato A4 multipágina (commit bad6e5c).
+- **Tipografía de impresión refinada** (Courier New, pares acorde+letra).
+- **Orden alfabético A→Z** en todos los pickers y la biblioteca.
+- **Conectar Coordinación con Cronograma mensual** (commit d149fe5):
+  - Picker de fecha en el guión.
+  - Importación automática de canciones del cronograma.
+  - Banner del servicio (coordinador, nombre).
+  - Protección contra sobreescritura.
+  - Lista de guiones (landing) con tarjetas por fecha.
+  - Duplicar/eliminar guión.
+  - Storage migrado a `mm_guiones` (array) desde `mm_guion_YYYY-MM-DD`.
+- **Guiones incluidos en backup/restore** (commit d842b00).
+
+### Sesión 4 (2026-06-11) — commits d19b00e → 78de4ad
+
+#### Vista previa de impresión de canciones (commit d19b00e)
+- Botón 🖨️ abre modal `modal-print-preview` en lugar de descargar directamente.
+- Slider 14px→26px (default 20px): regenera vista en tiempo real.
+- Indicador de cantidad de páginas se actualiza al cambiar font size.
+- Paginación y renderizado parametrizados con `fontSize`.
+- Botón "Descargar PNG" usa el font size elegido.
+
+#### Corrección de detección de acordes y colores (commits d76438e → 5064744)
+- **`_isChordLine`** mejorado:
+  - Tokens que son separadores puros (`-`, `/`, `–`, `—`) se descartan antes de evaluar.
+  - Tokens con guion interno (`Am-G-D`) se parten en sus partes.
+  - Resultado: `D - A - Bm - G`, `D / A / G`, `Am-G-D-F` detectados correctamente como acordes.
+- **Colores unificados** en vista de coordinación (pantalla):
+  - Acordes: siempre naranja `#ea580c` (eliminado rojo `#dc2626`).
+  - Letra de coro: azul `#2563a8` + cursiva.
+  - Letra del resto: negro `#111827` sin cursiva.
+- **Colores en impresión/print preview**: misma lógica (acordes naranja, coro azul cursiva).
+- `font-style:normal` explícito en todas las líneas de acordes sin excepción.
+
+#### Tipos de sección de canciones (commits 85455a8, 1b8ea04)
+- Agregado `final` y `pre-coro`.
+- Eliminado `outro`.
+- Orden actual: `intro`, `estrofa`, `pre-coro`, `coro`, `puente`, `interludio`, `final`.
+
+#### Bloque tipo Evento en Coordinación (commit 0842275)
+- Botón 🎯 Evento en la barra de agregar bloques.
+- 7 tipos predefinidos con emoji, color pastel y borde:
+  `ofrenda` 🎁, `santa-cena` 🍞, `predicacion` 📖, `oracion-g` 🙏, `bienvenida` 👋, `anuncio` 📢, `altar` ✝️.
+- Campo `detail` libre (quién, duración, etc.).
+- Card en el guión: fondo pastel, borde izquierdo 4px, título Fraunces serif 22px bold.
+- En el listado del constructor: color del borde varía por tipo.
+
+#### Color de fondo en bloque de texto (commit 55c7807)
+- Modal de texto: 5 chips de color (blanco, amarillo, verde, azul, violeta).
+- Campo `bgColor` guardado en el bloque.
+- Card del guión aplica el color al área de contenido.
+- Listado del constructor: cuadradito de color junto a "TEXTO" cuando no es blanco.
+
+#### Programa del domingo (commit 78de4ad)
+- Botón "📋 Programa del domingo" en violeta, visible cuando el guión tiene fecha.
+- Modal `modal-programa` con vista previa sobre fondo gris + botón descargar.
+- `buildProgramaHTML()`: imagen ~800px con fondo crema `#f9f8f6`:
+  - **Header**: nombre de iglesia + "Programa del domingo" + fecha completa + nombre del servicio. Borde inferior en color del mes (`MES_ACCENT`).
+  - **Equipo**: coordinador destacado con fondo accent, músicos en grilla 2 columnas con emoji de instrumento.
+  - **Programa**: bloques del guión en orden. Si no hay bloques, muestra canciones del cronograma como fallback.
+- `_updateProgramaBtn()`: muestra/oculta el botón según si hay fecha asignada.
 
 ---
 
@@ -62,35 +102,51 @@ Repositorio: https://github.com/bosioinmobiliaria-lang/ministerio-alabanza
 
 | Key | Contenido |
 |-----|-----------|
-| `mm_canciones` | Array de canciones unificado (incluye las que antes eran `mm_letras`) |
+| `mm_canciones` | Array de canciones unificado |
 | `mm_bandas` | Array de plantillas de banda |
 | `mm_listas` | Array de listas armadas |
 | `mm_historial` | Historial de servicios (hasta 24) |
 | `mm_config` | Configuración de la iglesia |
 | `mm_mes_YYYY_M` | Datos del mes (servicios, versículo, devocional, desafío, nuevas) |
-| `mm_guion_YYYY-MM-DD` | Guión del servicio por fecha (array de bloques) |
+| `mm_guiones` | Array de guiones de coordinación (reemplazó `mm_guion_YYYY-MM-DD`) |
 
 ### Estructura de una canción (`mm_canciones`)
 ```js
 {
-  id: string,          // timestamp
+  id: string,
   name: string,
   key: string,         // tono iglesia
   keyOrig: string,     // tono original
   author: string,
-  playNote: string,    // nota de ejecución
+  playNote: string,
   youtube: string,
   nueva: boolean,
-  cats: string[],      // categorías espirituales
+  cats: string[],
   capo: string,
-  chordsOnly: boolean, // mostrar solo acordes en guión
-  secciones: [{tipo, contenido}],  // nuevo formato unificado
+  chordsOnly: boolean,
+  secciones: [{tipo, contenido}],
   usosCount: number
 }
 ```
 
 ### Tipos de sección (`_SEC_TIPOS`)
-`intro`, `estrofa`, `coro`, `puente`, `outro`, `interludio`
+`intro`, `estrofa`, `pre-coro`, `coro`, `puente`, `interludio`, `final`
+
+### Estructura de un guión (`mm_guiones`)
+```js
+{
+  id: string,        // timestamp
+  date: string,      // "YYYY-MM-DD"
+  title: string,
+  blocks: [
+    {type:'cancion', id, songId},
+    {type:'texto',   id, label, content, bgColor},   // bgColor: #ffffff | #fef9c3 | #dcfce7 | #dbeafe | #ede9fe
+    {type:'versiculo', id, reference, content},
+    {type:'oracion', id, content},
+    {type:'evento',  id, eventType, detail},         // eventType: ofrenda|santa-cena|predicacion|oracion-g|bienvenida|anuncio|altar
+  ]
+}
+```
 
 ---
 
@@ -98,40 +154,52 @@ Repositorio: https://github.com/bosioinmobiliaria-lang/ministerio-alabanza
 
 ### Canciones
 - `getCanciones()` / `saveCanciones()` — CRUD sobre `mm_canciones`
-- `getLetras()` / `saveLetras()` — aliases de las anteriores
-- `_isChordLine(line)` — detecta líneas de acordes (>60% tokens matchean regex)
+- `_CHORD_TOKEN` / `_isChordLine(line)` — detecta líneas de acordes. Descarta separadores puros (`- / – —`), parte tokens internos (`Am-G → Am G`), luego >60% de tokens deben matchear el regex.
 - `_getSecciones(c)` — normaliza formatos legacy al nuevo `{tipo,contenido}`
-- `_renderSeccionesHTML(secciones, chordsOnly, scale, printFonts)` — renderiza secciones con pares acorde+letra. `printFonts=true` activa tipografía para impresión (Courier New, tamaños mayores, sin colores de pantalla).
-- `_measureSectionH(s)` — mide altura DOM de una sección (para paginación)
-- `_paginateSecciones(secs, p1H, pNH)` — distribuye secciones en páginas A4
-- `_buildCancionPageHTML(c, secs, pageNum, total)` — HTML de una página A4
-- `printCancion(id)` — genera y descarga PNG (o ZIP si multipágina)
-- `transposeChordsBy(n)` — transpone solo líneas de acordes en `contenido`
+- `_renderSeccionesHTML(secciones, chordsOnly, scale, printFonts, fontSize)` — renderiza secciones. En pantalla: acordes naranja `#ea580c`, coro azul+cursiva, resto negro. En impresión: igual, Courier New, fontSize configurable (default 22px).
+- `_measureSectionH(s, fontSize)` / `_paginateSecciones(secs, p1H, pNH, fontSize)` — paginación A4 con fontSize variable.
+- `_buildCancionPageHTML(c, secs, pageNum, total, fontSize)` — HTML de una página A4.
+- `printCancion` reemplazado por:
+  - `openPrintPreview(id)` — abre modal con vista previa
+  - `updatePrintPreview()` — regenera páginas al mover el slider
+  - `downloadPrintCancion()` — genera canvas con el fontSize elegido y descarga
 
 ### Guión / Coordinación
-- `buildGuionCardCancion(letra, idx)` — tarjeta de canción en el guión (usa `_renderSeccionesHTML` con `scale='large'`)
-- `buildGuionHTML()` — HTML completo del guión para PNG
+- `getGuiones()` / `saveGuiones()` — CRUD sobre `mm_guiones`
+- `_findServiceForDate(date)` — busca servicio en `mm_mes_YYYY_M` por fecha ISO
+- `buildGuionCardEvento(b)` — card pastel con emoji, serif, borde izquierdo por tipo
+- `buildGuionCardText(b)` — aplica `b.bgColor` al fondo del área de contenido
+- `buildProgramaHTML()` — imagen del programa combinando equipo del cronograma + bloques del guión
+- `openProgramaModal()` / `downloadPrograma()` — modal y descarga del programa
+- `_updateProgramaBtn()` — muestra botón cuando hay guión con fecha asignada
 - `htmlToCanvas(html, targetId, extraOpts)` — wrapper de html2canvas a 2.5x
+
+### Backup / Restore
+- `exportBackup()` — exporta todo: config, historial, bandas, canciones, listas, guiones, mesActual (con servicios completos).
+- `confirmImport()` — restaura todo. Guiones: maneja formato nuevo (`{id,...}`) y legacy (`{date,...}`).
 
 ---
 
 ## Notas técnicas
 
-- **html2canvas** v1.4.1 a escala 2.5x. Para páginas A4 se pasa `{height:1123, backgroundColor:'#ffffff'}` via `extraOpts`.
-- **JSZip** v3.10.1 — usado para descarga multipágina de canciones.
-- **Fuentes**: `Outfit` (sans-serif), `Fraunces` (serif) via Google Fonts. `Courier New` monospace solo en impresión de canciones.
+- **html2canvas** v1.4.1 a escala 2.5x.
+- **JSZip** v3.10.1 — descarga multipágina de canciones.
+- **Fuentes**: `Outfit` (sans-serif), `Fraunces` (serif), `Courier New` monospace (impresión canciones).
 - **Iconos**: Tabler Icons v2.44.0.
-- **Autosave**: debounce 800ms en mes y guión.
-- **Deploy**: GitHub Pages auto-deploy al hacer push a `main`. No hay `gh` CLI — se usa `git push` directo con credenciales guardadas.
-- **Detección de acordes**: `_CHORD_TOKEN = /^[A-G](#|b)?(m|maj|min|aug|dim|sus|add)?[0-9]*(\/[A-G](#|b)?)?$/` — línea es acorde si >60% de tokens no vacíos matchean.
+- **Autosave**: debounce 800ms.
+- **Deploy**: GitHub Pages auto-deploy al hacer push a `main`. No hay `gh` CLI.
+- **Migración storage**: IIFE al inicio convierte `mm_guion_YYYY-MM-DD` → `mm_guiones` array.
 
 ---
 
-## Pendientes / ideas
+## Colores del sistema
 
-- [ ] Agregar `.gitignore` para excluir `.DS_Store` y otros archivos de macOS.
-- [ ] Incluir `mm_guion_*` en el sistema de backup/restore.
-- [ ] Opción de duplicar un guión existente como punto de partida.
-- [ ] Posibilidad de exportar imagen por servicio individual (además del mes completo).
-- [ ] Soporte para más de 4 servicios en el mes sin que la imagen se deforme.
-- [ ] Modo claro/oscuro para la interfaz de la app.
+| Uso | Color |
+|-----|-------|
+| Acordes (pantalla e impresión) | `#ea580c` naranja |
+| Letra coro | `#2563a8` azul + cursiva |
+| Letra estrofa/puente/intro/final | `#111827` negro |
+| Acento del mes | `MES_ACCENT[month]` (array de 12) |
+| Colores de canción en guión | `DOMINGO_COLORS` (4 colores rotativos) |
+| Fondo imagen cronograma | `#f0f2f5` |
+| Fondo imagen programa | `#f9f8f6` crema |
