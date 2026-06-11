@@ -2961,9 +2961,9 @@ function buildProgramaHTML(){
 
   // PROGRAMA (desde bloques del guión) — canciones agrupadas, eventos protagonistas
   let programaHTML='';
-  const _renderSongGroup=songs=>`<div style="display:flex;gap:8px;align-items:flex-start;padding:2px 0 10px 2px">
-    <span style="font-size:12px;flex-shrink:0;margin-top:2px;opacity:.55">🎵</span>
-    <div>${songs.map(n=>`<div style="font-size:13px;color:#6b7280;line-height:1.7">• ${esc(n)}</div>`).join('')}</div>
+  const _renderSongGroup=songs=>`<div style="display:flex;gap:10px;align-items:flex-start;background:#f0f4f0;border-radius:12px;padding:10px 14px;margin-bottom:6px">
+    <span style="font-size:14px;flex-shrink:0;margin-top:1px">🎵</span>
+    <div>${songs.map(n=>`<div style="font-size:14px;font-weight:400;color:#374151;line-height:1.7">• ${esc(n)}</div>`).join('')}</div>
   </div>`;
 
   // Agrupar bloques: canciones consecutivas → un bloque de lista
