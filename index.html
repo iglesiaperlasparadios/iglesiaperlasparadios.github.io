@@ -2967,14 +2967,16 @@ function buildProgramaHTML(){
   </div>`;
 
   // Agrupar bloques: canciones consecutivas → un bloque de lista
+  // Los bloques texto se descartan antes de agrupar para no cortar secuencias de canciones
+  const filteredBlocks=guionBlocks.filter(b=>b.type!=='texto');
   const grouped=[];
   let i=0;
-  while(i<guionBlocks.length){
-    const b=guionBlocks[i];
+  while(i<filteredBlocks.length){
+    const b=filteredBlocks[i];
     if(b.type==='cancion'){
       const names=[];
-      while(i<guionBlocks.length&&guionBlocks[i].type==='cancion'){
-        const c=canciones.find(c=>c.id===guionBlocks[i].songId);
+      while(i<filteredBlocks.length&&filteredBlocks[i].type==='cancion'){
+        const c=canciones.find(c=>c.id===filteredBlocks[i].songId);
         if(c) names.push(c.name);
         i++;
       }
