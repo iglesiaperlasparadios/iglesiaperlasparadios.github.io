@@ -543,7 +543,7 @@ select option { background: var(--bg3); }
     </div>
     <div id="cv-body"></div>
     <div class="btn-group" style="margin-top:14px">
-      <button class="btn btn-sm" onclick="printCancion(_cvCurrentId)"><i class="ti ti-printer"></i> PNG</button>
+      <button class="btn btn-sm" onclick="openPrintPreview(_cvCurrentId)"><i class="ti ti-printer"></i> Imprimir</button>
       <button class="btn btn-sm" onclick="closeModal('modal-cancion-view');openCancionModal(_cvCurrentId)"><i class="ti ti-edit"></i> Editar</button>
     </div>
   </div>
@@ -684,7 +684,26 @@ select option { background: var(--bg3); }
   </div>
 </div>
 
-<!-- Modal Cargar Guión -->
+<!-- Modal Print Preview -->
+<div class="modal-overlay" id="modal-print-preview">
+  <div class="modal" style="width:860px;height:90vh;max-height:92vh;display:flex;flex-direction:column;padding:0;overflow:hidden">
+    <div class="modal-title" style="padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0">
+      <span id="print-preview-title" style="font-size:15px;font-weight:600">Vista previa de impresión</span>
+      <button class="btn btn-sm btn-icon" onclick="closeModal('modal-print-preview')"><i class="ti ti-x"></i></button>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0">
+      <i class="ti ti-typography" style="color:var(--text3);font-size:16px"></i>
+      <input type="range" id="print-font-slider" min="14" max="26" value="20" style="flex:1;accent-color:var(--accent)" oninput="updatePrintPreview()">
+      <span id="print-font-size-label" style="font-size:13px;font-weight:600;color:var(--text2);min-width:30px;text-align:right">20px</span>
+      <span style="width:1px;height:20px;background:var(--border);flex-shrink:0"></span>
+      <span id="print-page-count" style="font-size:13px;color:var(--text3);white-space:nowrap;min-width:60px;text-align:center"></span>
+      <button class="btn btn-sm btn-primary" id="print-download-btn" onclick="downloadPrintCancion()">
+        <i class="ti ti-download"></i> Descargar PNG
+      </button>
+    </div>
+    <div id="print-preview-body" style="flex:1;overflow-y:auto;background:#374151;padding:24px;display:flex;flex-direction:column;gap:20px;align-items:center;min-height:300px"></div>
+  </div>
+</div>
 
 <script>
 // ═══════════════════════════════════════════════
@@ -1550,7 +1569,7 @@ function _getSecciones(c){
   return [];
 }
 
-function _renderSeccionesHTML(secciones, chordsOnly=false, scale='normal', printFonts=false){
+function _renderSeccionesHTML(secciones, chordsOnly=false, scale='normal', printFonts=false, fontSize=22){
   const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
   if(!secciones.length) return '<div style="font-size:14px;color:#94a3b8;font-style:italic">Sin contenido cargado</div>';
   const sz=scale==='large'?'20px':'15px';
@@ -1578,18 +1597,19 @@ function _renderSeccionesHTML(secciones, chordsOnly=false, scale='normal', print
         if(grp.every(l=>!l.trim())) return '<div style="height:8px"></div>';
         const inner=grp.map(line=>{
           if(_isChordLine(line))
-            return `<span style="display:block;font-family:'Courier New',monospace;white-space:pre;font-size:22px;font-weight:700;font-style:normal;color:#ea580c;line-height:1.2">${esc(line)}</span>`;
+            return `<span style="display:block;font-family:'Courier New',monospace;white-space:pre;font-size:${fontSize}px;font-weight:700;font-style:normal;color:#ea580c;line-height:1.2">${esc(line)}</span>`;
           if(chordsOnly) return '';
           if(!line.trim()) return '<div style="height:4px"></div>';
-          return `<span style="display:block;font-family:'Courier New',monospace;white-space:pre;font-size:22px;font-weight:500;${lyricItalic}color:${lyricColor};line-height:1.2">${esc(line)}</span>`;
+          return `<span style="display:block;font-family:'Courier New',monospace;white-space:pre;font-size:${fontSize}px;font-weight:500;${lyricItalic}color:${lyricColor};line-height:1.2">${esc(line)}</span>`;
         }).join('');
         return `<div style="margin-bottom:4px">${inner}</div>`;
       }).join('');
       secStyle=`margin-top:${si===0?'0':'28px'}`;
       labelStyle='font-size:11px;font-weight:600;color:#9ca3af;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px';
     } else {
+      // chord color by section type; detection is purely line-by-line for all types
       const chordColor=isChorus?'#ea580c':'#dc2626';
-      const chordItalic=isChorus?'font-style:italic;':'';
+      const lyricColor=isChorus?'#2563a8':'#111827';
       const groups=[];let cur=[];
       for(const line of lines){
         if(_isChordLine(line)){if(cur.length)groups.push(cur);cur=[line];}
@@ -1600,12 +1620,10 @@ function _renderSeccionesHTML(secciones, chordsOnly=false, scale='normal', print
         if(grp.every(l=>!l.trim())) return '<div style="height:8px"></div>';
         const inner=grp.map(line=>{
           if(_isChordLine(line))
-            return `<span style="display:block;font-family:monospace;white-space:pre;font-size:${sz};font-weight:700;color:${chordColor};${chordItalic}line-height:1.2">${esc(line)}</span>`;
+            return `<span style="display:block;font-family:monospace;white-space:pre;font-size:${sz};font-weight:700;font-style:normal;color:${chordColor};line-height:1.2">${esc(line)}</span>`;
           if(chordsOnly) return '';
           if(!line.trim()) return '<div style="height:4px"></div>';
-          const lyricColor=isChorus?'#2563a8':'#111827';
-          const italic=isChorus?'font-style:italic;':'';
-          return `<span style="display:block;font-family:monospace;white-space:pre;font-size:${sz};color:${lyricColor};${italic}line-height:1.2">${esc(line)}</span>`;
+          return `<span style="display:block;font-family:monospace;white-space:pre;font-size:${sz};font-style:normal;color:${lyricColor};line-height:1.2">${esc(line)}</span>`;
         }).join('');
         return `<div style="margin-bottom:4px">${inner}</div>`;
       }).join('');
@@ -1656,21 +1674,21 @@ function deleteCancion(id){
   renderCanciones();
 }
 
-function _measureSectionH(s){
+function _measureSectionH(s, fontSize=22){
   const tmp=document.createElement('div');
   tmp.style.cssText='position:fixed;left:-9999px;top:0;width:698px;visibility:hidden;overflow:auto';
-  tmp.innerHTML=_renderSeccionesHTML([s],false,'normal',true);
+  tmp.innerHTML=_renderSeccionesHTML([s],false,'normal',true,fontSize);
   document.body.appendChild(tmp);
   const h=tmp.offsetHeight;
   document.body.removeChild(tmp);
   return h;
 }
 
-function _paginateSecciones(secciones, p1H, pNH){
+function _paginateSecciones(secciones, p1H, pNH, fontSize=22){
   const pages=[];
   let cur=[], curH=0;
   for(const s of secciones){
-    const h=_measureSectionH(s);
+    const h=_measureSectionH(s,fontSize);
     const avail=pages.length===0?p1H:pNH;
     if(cur.length>0&&curH+h>avail){pages.push(cur);cur=[s];curH=h;}
     else{cur.push(s);curH+=h;}
@@ -1679,7 +1697,7 @@ function _paginateSecciones(secciones, p1H, pNH){
   return pages;
 }
 
-function _buildCancionPageHTML(c, secciones, pageNum, totalPages){
+function _buildCancionPageHTML(c, secciones, pageNum, totalPages, fontSize=22){
   const W=794, PAD=48;
   const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
   let header;
@@ -1691,23 +1709,58 @@ function _buildCancionPageHTML(c, secciones, pageNum, totalPages){
   } else {
     header=`<div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #e5e7eb;padding-bottom:8px;margin-bottom:20px"><span style="font-size:12px;color:#9ca3af">${esc(c.name)}</span><span style="font-size:12px;color:#9ca3af">${pageNum}/${totalPages}</span></div>`;
   }
-  return `<div id="_cancion_print" style="width:${W}px;height:1123px;background:#fff;font-family:'Outfit',sans-serif;padding:${PAD}px;box-sizing:border-box;overflow:hidden">${header}${_renderSeccionesHTML(secciones,false,'normal',true)}</div>`;
+  return `<div id="_cancion_print" style="width:${W}px;height:1123px;background:#fff;font-family:'Outfit',sans-serif;padding:${PAD}px;box-sizing:border-box;overflow:hidden">${header}${_renderSeccionesHTML(secciones,false,'normal',true,fontSize)}</div>`;
 }
 
-async function printCancion(id){
+let _printPreviewId=null;
+
+function openPrintPreview(id){
+  _printPreviewId=id;
   const c=getCanciones().find(c=>c.id===id);
+  document.getElementById('print-preview-title').textContent=c?c.name:'Vista previa de impresión';
+  const slider=document.getElementById('print-font-slider');
+  slider.value=20;
+  document.getElementById('print-font-size-label').textContent='20px';
+  document.getElementById('modal-print-preview').classList.add('open');
+  updatePrintPreview();
+}
+
+function updatePrintPreview(){
+  const c=getCanciones().find(c=>c.id===_printPreviewId);
   if(!c) return;
+  const fontSize=parseInt(document.getElementById('print-font-slider').value);
+  document.getElementById('print-font-size-label').textContent=fontSize+'px';
+  const secciones=_getSecciones(c);
+  const body=document.getElementById('print-preview-body');
+  const countEl=document.getElementById('print-page-count');
+  if(!secciones.length){
+    body.innerHTML='<p style="color:#9ca3af;font-size:14px;margin-top:40px">Sin contenido para previsualizar</p>';
+    countEl.textContent='';
+    return;
+  }
+  const p1H=c.capo?920:942, pNH=975;
+  const pages=_paginateSecciones(secciones,p1H,pNH,fontSize);
+  const N=pages.length;
+  countEl.textContent=N+(N===1?' página':' páginas');
+  body.innerHTML=pages.map((pageSecs,i)=>`<div style="box-shadow:0 6px 28px rgba(0,0,0,0.55);flex-shrink:0">${_buildCancionPageHTML(c,pageSecs,i+1,N,fontSize)}</div>`).join('');
+}
+
+async function downloadPrintCancion(){
+  const c=getCanciones().find(c=>c.id===_printPreviewId);
+  if(!c) return;
+  const fontSize=parseInt(document.getElementById('print-font-slider').value);
+  const btn=document.getElementById('print-download-btn');
+  btn.disabled=true;
   showToast('Generando imagen...','amber');
   try{
     const secciones=_getSecciones(c);
-    if(!secciones.length){showToast('Sin contenido para imprimir','amber');return;}
-    // available content height: 1123 - 48*2 = 1027px, minus header estimate
+    if(!secciones.length){showToast('Sin contenido para imprimir','amber');btn.disabled=false;return;}
     const p1H=c.capo?920:942, pNH=975;
-    const pages=_paginateSecciones(secciones,p1H,pNH);
+    const pages=_paginateSecciones(secciones,p1H,pNH,fontSize);
     const N=pages.length;
     const canvases=[];
     for(let i=0;i<N;i++){
-      canvases.push(await htmlToCanvas(_buildCancionPageHTML(c,pages[i],i+1,N),'_cancion_print',{backgroundColor:'#ffffff',height:1123}));
+      canvases.push(await htmlToCanvas(_buildCancionPageHTML(c,pages[i],i+1,N,fontSize),'_cancion_print',{backgroundColor:'#ffffff',height:1123}));
     }
     const base=(c.name.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,''))||'cancion';
     if(N===1){
@@ -1720,6 +1773,7 @@ async function printCancion(id){
     }
     showToast(N===1?'PNG descargado':`${N} páginas — ZIP descargado`,'green');
   }catch(e){showToast('Error al generar imagen','red');console.error(e);}
+  btn.disabled=false;
 }
 
 function renderCanciones(){
@@ -1751,7 +1805,7 @@ function renderCanciones(){
         ${s.cats?.length?`<div class="tag-list" style="margin-top:4px">${s.cats.map(c=>`<span class="badge badge-gray" style="font-size:10px">${c}</span>`).join('')}</div>`:''}
       </div>
       <div class="btn-group">
-        ${(s.secciones?.length||s.lyrics||s.chords)?`<button class="btn btn-sm btn-icon" onclick="printCancion('${s.id}')" title="Descargar PNG"><i class="ti ti-printer"></i></button>`:''}
+        ${(s.secciones?.length||s.lyrics||s.chords)?`<button class="btn btn-sm btn-icon" onclick="openPrintPreview('${s.id}')" title="Vista previa de impresión"><i class="ti ti-printer"></i></button>`:''}
         <button class="btn btn-sm btn-icon" onclick="openCancionModal('${s.id}')"><i class="ti ti-edit"></i></button>
         <button class="btn btn-sm btn-icon btn-danger" onclick="deleteCancion('${s.id}')"><i class="ti ti-trash"></i></button>
       </div>
