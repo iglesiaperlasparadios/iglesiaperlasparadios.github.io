@@ -192,9 +192,6 @@ select option { background: var(--bg3); }
 .search-input input { padding-left: 32px; }
 .canvas-preview { border-radius: 8px; overflow: hidden; border: 1px solid var(--border); margin-top: 10px; }
 .canvas-preview canvas { display: block; width: 100%; height: auto; }
-/* Notas flotantes */
-.nota-flotante textarea { background: transparent; border: none; outline: none; resize: none; width: 100%; font-family: 'Outfit', sans-serif; font-size: 13px; color: #1e293b; padding: 0; box-sizing: border-box; }
-@media (max-width: 700px) { #guion-notas-col { display: none !important; } }
 </style>
 </head>
 <body>
@@ -401,10 +398,7 @@ select option { background: var(--bg3); }
   <!-- ── Editor ──────────────────────────────── -->
   <div id="guion-editor" style="display:none">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <div style="display:flex;align-items:center;gap:8px">
-        <button class="btn btn-sm" onclick="backToGuionLanding()"><i class="ti ti-chevron-left"></i> Guiones</button>
-        <button class="btn btn-sm" onclick="addGuionNota()" style="border-color:#ec4899;color:#ec4899">📌 Nota</button>
-      </div>
+      <button class="btn btn-sm" onclick="backToGuionLanding()"><i class="ti ti-chevron-left"></i> Guiones</button>
       <span id="guion-save-status" style="font-size:11px;color:var(--text3)"></span>
     </div>
 
@@ -428,36 +422,31 @@ select option { background: var(--bg3); }
       </div>
     </div>
 
-    <div style="display:flex;gap:16px;align-items:flex-start">
-      <div style="flex:1;min-width:0">
-        <div id="guion-blocks-wrap"></div>
+    <div id="guion-blocks-wrap"></div>
 
-        <div class="card">
-          <div class="card-title">Agregar bloque</div>
-          <div class="btn-group">
-            <button class="btn btn-sm" onclick="addGuionBlock('texto')" style="border-color:#2563a8;color:#2563a8"><i class="ti ti-text-size"></i> Texto</button>
-            <button class="btn btn-sm" onclick="addGuionBlock('cancion')" style="border-color:#c05a1f;color:#c05a1f"><i class="ti ti-music"></i> Canción</button>
-            <button class="btn btn-sm" onclick="addGuionBlock('versiculo')" style="border-color:#1a7070;color:#1a7070"><i class="ti ti-book"></i> Versículo</button>
-            <button class="btn btn-sm" onclick="addGuionBlock('oracion')" style="border-color:#6b3fa0;color:#6b3fa0"><i class="ti ti-hands-praying"></i> Oración</button>
-            <button class="btn btn-sm" onclick="addGuionBlock('evento')" style="border-color:#a16207;color:#a16207">🎯 Evento</button>
-          </div>
-        </div>
-
-        <div id="guion-gen-wrap" style="display:none">
-          <div id="guion-prog-wrap" style="display:none">
-            <div class="prog-bar"><div class="prog-fill" id="guion-prog-fill" style="width:0%"></div></div>
-            <div style="font-size:12px;color:var(--text3);text-align:center;margin-top:4px" id="guion-prog-label">Preparando...</div>
-          </div>
-          <div class="btn-group">
-            <button class="btn btn-success" style="flex:1" onclick="generateGuionPNG()"><i class="ti ti-photo-down"></i> Generar imagen</button>
-            <button class="btn" onclick="previewGuionPNG()"><i class="ti ti-eye"></i> Vista previa</button>
-            <button class="btn" onclick="printGuionPDF()"><i class="ti ti-file-type-pdf"></i> PDF A4</button>
-            <button class="btn" onclick="printGuionContinuo()">📜 PDF continuo</button>
-          </div>
-          <div id="guion-preview-wrap" style="display:none" class="canvas-preview"><canvas id="guion-cv-preview"></canvas></div>
-        </div>
+    <div class="card">
+      <div class="card-title">Agregar bloque</div>
+      <div class="btn-group">
+        <button class="btn btn-sm" onclick="addGuionBlock('texto')" style="border-color:#2563a8;color:#2563a8"><i class="ti ti-text-size"></i> Texto</button>
+        <button class="btn btn-sm" onclick="addGuionBlock('cancion')" style="border-color:#c05a1f;color:#c05a1f"><i class="ti ti-music"></i> Canción</button>
+        <button class="btn btn-sm" onclick="addGuionBlock('versiculo')" style="border-color:#1a7070;color:#1a7070"><i class="ti ti-book"></i> Versículo</button>
+        <button class="btn btn-sm" onclick="addGuionBlock('oracion')" style="border-color:#6b3fa0;color:#6b3fa0"><i class="ti ti-hands-praying"></i> Oración</button>
+        <button class="btn btn-sm" onclick="addGuionBlock('evento')" style="border-color:#a16207;color:#a16207">🎯 Evento</button>
       </div>
-      <div id="guion-notas-col" style="width:220px;flex-shrink:0"></div>
+    </div>
+
+    <div id="guion-gen-wrap" style="display:none">
+      <div id="guion-prog-wrap" style="display:none">
+        <div class="prog-bar"><div class="prog-fill" id="guion-prog-fill" style="width:0%"></div></div>
+        <div style="font-size:12px;color:var(--text3);text-align:center;margin-top:4px" id="guion-prog-label">Preparando...</div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-success" style="flex:1" onclick="generateGuionPNG()"><i class="ti ti-photo-down"></i> Generar imagen</button>
+        <button class="btn" onclick="previewGuionPNG()"><i class="ti ti-eye"></i> Vista previa</button>
+        <button class="btn" onclick="printGuionPDF()"><i class="ti ti-file-type-pdf"></i> PDF A4</button>
+        <button class="btn" onclick="printGuionContinuo()">📜 PDF continuo</button>
+      </div>
+      <div id="guion-preview-wrap" style="display:none" class="canvas-preview"><canvas id="guion-cv-preview"></canvas></div>
     </div>
   </div>
 
@@ -2482,7 +2471,7 @@ function confirmImport(){
   if(d.historial) saveHistorial(d.historial);
   if(d.config)    localStorage.setItem('mm_config', JSON.stringify(d.config));
   if(d.guiones){
-    saveGuiones(d.guiones.map(g=>({id:g.id||g.date,date:g.date||'',title:g.title||'',blocks:g.blocks||[],notas:g.notas||[]})));
+    saveGuiones(d.guiones.map(g=>({id:g.id||g.date,date:g.date||'',title:g.title||'',blocks:g.blocks||[]})));
   }
   // clear autosave so imported mes state takes over
   localStorage.removeItem('mm_mes_state');
@@ -2752,7 +2741,7 @@ function saveLetras(v){ saveCanciones(v); }
 
 // ── State ─────────────────────────────────────
 let guionBlocks = [];
-let guionNotas = [];
+let _expandedBlocks = new Set();
 let _currentGuionId = null;
 let _guionSaveTimer = null;
 let _editingLetraId = null;
@@ -2777,7 +2766,7 @@ function _doSaveGuion(){
   try{
     const all=getGuiones();
     const idx=all.findIndex(g=>g.id===_currentGuionId);
-    const entry={id:_currentGuionId,date,title,blocks:guionBlocks.map(b=>({...b})),notas:guionNotas.map(n=>({...n}))};
+    const entry={id:_currentGuionId,date,title,blocks:guionBlocks.map(b=>({...b}))};
     if(idx>=0) all[idx]=entry; else all.push(entry);
     saveGuiones(all);
     const el=document.getElementById('guion-save-status');
@@ -2802,35 +2791,35 @@ function _showGuionEditor(){
 }
 
 function backToGuionLanding(){
-  _currentGuionId=null; guionBlocks=[]; guionNotas=[];
+  _currentGuionId=null; guionBlocks=[]; _expandedBlocks=new Set();
   document.getElementById('guion-editor').style.display='none';
   document.getElementById('guion-landing').style.display='';
   renderGuionLanding();
 }
 
 function newGuion(){
-  _currentGuionId=Date.now().toString(); guionBlocks=[]; guionNotas=[];
+  _currentGuionId=Date.now().toString(); guionBlocks=[]; _expandedBlocks=new Set();
   const fechaEl=document.getElementById('guion-fecha');
   const tituloEl=document.getElementById('guion-titulo');
   if(fechaEl) fechaEl.value=''; if(tituloEl) tituloEl.value='';
-  _showGuionEditor(); renderGuionBlocksUI(); renderGuionNotasUI(); _updateGuionGenWrap();
+  _showGuionEditor(); renderGuionBlocksUI(); _updateGuionGenWrap();
   _updateGuionImportBtn(); _updateGuionServiceInfo(); _updateProgramaBtn();
 }
 
 function openGuion(id){
   const g=getGuiones().find(g=>g.id===id); if(!g) return;
-  _currentGuionId=id; guionBlocks=(g.blocks||[]).map(b=>({...b})); guionNotas=(g.notas||[]).map(n=>({...n}));
+  _currentGuionId=id; guionBlocks=(g.blocks||[]).map(b=>({...b})); _expandedBlocks=new Set();
   const fechaEl=document.getElementById('guion-fecha');
   const tituloEl=document.getElementById('guion-titulo');
   if(fechaEl) fechaEl.value=g.date||''; if(tituloEl) tituloEl.value=g.title||'';
-  _showGuionEditor(); renderGuionBlocksUI(); renderGuionNotasUI(); _updateGuionGenWrap();
+  _showGuionEditor(); renderGuionBlocksUI(); _updateGuionGenWrap();
   _updateGuionImportBtn(); _updateGuionServiceInfo(); _updateProgramaBtn();
 }
 
 function duplicateGuion(id){
   const g=getGuiones().find(g=>g.id===id); if(!g) return;
   const newId=Date.now().toString();
-  const copy={id:newId,date:'',title:g.title?'Copia — '+g.title:'',blocks:g.blocks.map(b=>({...b})),notas:(g.notas||[]).map(n=>({...n}))};
+  const copy={id:newId,date:'',title:g.title?'Copia — '+g.title:'',blocks:g.blocks.map(b=>({...b}))};
   const all=getGuiones(); all.push(copy); saveGuiones(all);
   openGuion(newId); showToast('Guión duplicado — asigná una nueva fecha','amber');
 }
@@ -3036,7 +3025,7 @@ function buildProgramaHTML(){
       <div style="height:1px;background:${accent};opacity:.2;flex:1"></div>
     </div>${blockItems.join('')}</div>`;
 
-  return `<div id="_programa_render" style="width:${W}px;background:#f9f8f6;font-family:'Outfit',sans-serif;padding:${PAD}px;box-sizing:border-box"><style>.nota-flotante{display:none!important}</style>${header}${programaHTML}${equipoHTML}</div>`;
+  return `<div id="_programa_render" style="width:${W}px;background:#f9f8f6;font-family:'Outfit',sans-serif;padding:${PAD}px;box-sizing:border-box">${header}${programaHTML}${equipoHTML}</div>`;
 }
 
 function openProgramaModal(){
@@ -3066,7 +3055,7 @@ async function downloadPrograma(){
 // ── Init ──────────────────────────────────────
 function renderGuion(){
   if(_currentGuionId){
-    _showGuionEditor(); renderGuionBlocksUI(); renderGuionNotasUI(); _updateGuionGenWrap();
+    _showGuionEditor(); renderGuionBlocksUI(); _updateGuionGenWrap();
     _updateGuionImportBtn(); _updateGuionServiceInfo(); _updateProgramaBtn();
   } else {
     document.getElementById('guion-editor').style.display='none';
@@ -3144,6 +3133,13 @@ function renderGuionBlocksUI(){
   }
   wrap.innerHTML=guionBlocks.map((b,idx)=>{
     const color=_blockAccent(b,idx);
+    const isExpanded=b.type==='cancion'&&_expandedBlocks.has(b.id);
+    const expandBtn=b.type==='cancion'
+      ?`<button class="btn btn-sm btn-icon" onclick="toggleExpandBlock('${b.id}')" title="Ver secciones"><i class="ti ti-chevron-${isExpanded?'up':'down'}"></i></button>`
+      :'';
+    const expandedHTML=isExpanded
+      ?`<div style="border-top:1px solid var(--border);margin-top:10px;padding-top:10px">${_renderBlockSectionsDOMWithNotes(b,idx,getLetras().find(l=>l.id===b.songId))}</div>`
+      :'';
     return `<div class="card" style="border-left:4px solid ${color};margin-bottom:8px;padding:10px 14px">
       <div style="display:flex;align-items:flex-start;gap:10px">
         <div style="flex:1;min-width:0">
@@ -3154,63 +3150,88 @@ function renderGuionBlocksUI(){
           <div>${_blockPreviewText(b)}</div>
         </div>
         <div style="display:flex;gap:4px;flex-shrink:0">
+          ${expandBtn}
           <button class="btn btn-sm btn-icon" onclick="moveGuionBlock(${idx},-1)"${idx===0?' disabled':''}><i class="ti ti-chevron-up"></i></button>
           <button class="btn btn-sm btn-icon" onclick="moveGuionBlock(${idx},1)"${idx===guionBlocks.length-1?' disabled':''}><i class="ti ti-chevron-down"></i></button>
           <button class="btn btn-sm btn-icon" onclick="openEditGuionBlock(${idx})"><i class="ti ti-edit"></i></button>
           <button class="btn btn-sm btn-icon btn-danger" onclick="deleteGuionBlock(${idx})"><i class="ti ti-trash"></i></button>
         </div>
       </div>
+      ${expandedHTML}
     </div>`;
   }).join('');
 }
 
-// ── Notas flotantes ───────────────────────────
-const _NOTA_COLORS=['#fce7f3','#fef9c3','#dcfce7','#dbeafe'];
+// ── Notas de sección ──────────────────────────
+const _SNOTA_COLORS=['#fce7f3','#fef9c3','#dcfce7','#dbeafe'];
 
-function renderGuionNotasUI(){
-  const col=document.getElementById('guion-notas-col'); if(!col) return;
-  if(!guionNotas.length){ col.innerHTML=''; return; }
-  col.innerHTML=guionNotas.map((n,idx)=>`
-    <div class="nota-flotante" style="background:${n.color||'#fef9c3'};border-radius:14px;padding:12px;margin-bottom:10px;box-shadow:0 2px 10px rgba(0,0,0,.3)">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div style="display:flex;gap:5px">
-          ${_NOTA_COLORS.map(c=>`<button onclick="_setNotaColor('${n.id}','${c}')" style="width:15px;height:15px;border-radius:50%;background:${c};border:2px solid ${n.color===c?'#374151':'rgba(0,0,0,.15)'};cursor:pointer;padding:0"></button>`).join('')}
+function toggleExpandBlock(id){
+  if(_expandedBlocks.has(id)) _expandedBlocks.delete(id); else _expandedBlocks.add(id);
+  renderGuionBlocksUI();
+}
+
+function _renderBlockSectionsDOMWithNotes(b, blockIdx, letra){
+  if(!letra) return '<div style="color:var(--text3);font-style:italic;font-size:13px;padding:4px 0">Canción no encontrada en biblioteca</div>';
+  const secs=_getSecciones(letra);
+  if(!secs.length) return '<div style="color:var(--text3);font-style:italic;font-size:13px;padding:4px 0">Sin secciones cargadas</div>';
+  const secNotas=b.secNotas||{};
+  const totals={};secs.forEach(s=>totals[s.tipo]=(totals[s.tipo]||0)+1);
+  const counts={};
+  return secs.map((sec,si)=>{
+    counts[sec.tipo]=(counts[sec.tipo]||0)+1;
+    const label=(_SEC_TIPO_LABEL[sec.tipo]||sec.tipo)+(totals[sec.tipo]>1?' '+counts[sec.tipo]:'');
+    const notas=secNotas[si]||[];
+    const secContentHTML=_renderSeccionesHTML([sec],!!letra.chordsOnly,'normal');
+    const notasHTML=notas.map(n=>{
+      const safeText=(n.texto||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+      return `<div style="background:${n.color||'#fef9c3'};border-radius:12px;padding:10px;margin-bottom:6px;box-shadow:0 1px 6px rgba(0,0,0,.2)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div style="display:flex;gap:4px">${_SNOTA_COLORS.map(c=>`<button onclick="_setSectionNotaColor(${blockIdx},${si},'${n.id}','${c}')" style="width:12px;height:12px;border-radius:50%;background:${c};border:2px solid ${n.color===c?'#374151':'rgba(0,0,0,.15)'};cursor:pointer;padding:0"></button>`).join('')}</div>
+          <button onclick="_deleteSectionNota(${blockIdx},${si},'${n.id}')" style="background:none;border:none;cursor:pointer;font-size:12px;color:#64748b;padding:0;opacity:.7">✕</button>
         </div>
-        <button onclick="_deleteNota('${n.id}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:#64748b;padding:0;line-height:1;opacity:.7">✕</button>
+        <textarea style="background:transparent;border:none;outline:none;resize:none;width:100%;font-family:'Outfit',sans-serif;font-size:12px;color:#1e293b;padding:0;box-sizing:border-box;min-height:48px" oninput="_saveSectionNotaText(${blockIdx},${si},'${n.id}',this.value)" placeholder="Nota...">${safeText}</textarea>
+      </div>`;
+    }).join('');
+    return `<div style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+        <span style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em">${label}</span>
+        <button onclick="addSectionNota(${blockIdx},${si})" style="font-size:10px;color:#ec4899;background:none;border:1px solid #ec4899;border-radius:4px;padding:1px 5px;cursor:pointer;line-height:1.5">+ nota</button>
       </div>
-      <textarea rows="4" class="nota-flotante" style="min-height:60px" oninput="_saveNotaText('${n.id}',this.value)" placeholder="Escribí tu nota...">${esc(n.texto||'')}</textarea>
-      <div style="display:flex;gap:4px;margin-top:8px">
-        <button onclick="_moveNota('${n.id}',-1)"${idx===0?' disabled':''} class="btn btn-sm btn-icon" style="padding:2px 6px;font-size:11px;flex:1"><i class="ti ti-chevron-up"></i></button>
-        <button onclick="_moveNota('${n.id}',1)"${idx===guionNotas.length-1?' disabled':''} class="btn btn-sm btn-icon" style="padding:2px 6px;font-size:11px;flex:1"><i class="ti ti-chevron-down"></i></button>
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        <div style="flex:1;overflow:hidden">${secContentHTML}</div>
+        ${notas.length?`<div style="width:200px;flex-shrink:0">${notasHTML}</div>`:''}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
-function addGuionNota(){
-  if(!_currentGuionId){ showToast('Abrí un guión primero','amber'); return; }
-  guionNotas.push({id:Date.now().toString(),texto:'',color:'#fef9c3'});
-  renderGuionNotasUI(); autoSaveGuion();
-  setTimeout(()=>{ const t=document.querySelectorAll('#guion-notas-col textarea'); if(t.length) t[t.length-1].focus(); },50);
+function addSectionNota(blockIdx, secIdx){
+  const b=guionBlocks[blockIdx]; if(!b||b.type!=='cancion') return;
+  if(!b.secNotas) b.secNotas={};
+  if(!b.secNotas[secIdx]) b.secNotas[secIdx]=[];
+  b.secNotas[secIdx].push({id:Date.now().toString(),texto:'',color:'#fef9c3'});
+  renderGuionBlocksUI(); autoSaveGuion();
+  setTimeout(()=>{ const t=document.querySelectorAll('#guion-blocks-wrap textarea'); if(t.length) t[t.length-1].focus(); },50);
 }
 
-function _saveNotaText(id,texto){
-  const n=guionNotas.find(n=>n.id===id); if(n){ n.texto=texto; autoSaveGuion(); }
+function _saveSectionNotaText(blockIdx, secIdx, notaId, texto){
+  const b=guionBlocks[blockIdx]; if(!b) return;
+  const nota=b.secNotas?.[secIdx]?.find(n=>n.id===notaId);
+  if(nota){ nota.texto=texto; autoSaveGuion(); }
 }
 
-function _setNotaColor(id,color){
-  const n=guionNotas.find(n=>n.id===id); if(n){ n.color=color; renderGuionNotasUI(); autoSaveGuion(); }
+function _setSectionNotaColor(blockIdx, secIdx, notaId, color){
+  const b=guionBlocks[blockIdx]; if(!b) return;
+  const nota=b.secNotas?.[secIdx]?.find(n=>n.id===notaId);
+  if(nota){ nota.color=color; renderGuionBlocksUI(); autoSaveGuion(); }
 }
 
-function _moveNota(id,dir){
-  const idx=guionNotas.findIndex(n=>n.id===id); if(idx<0) return;
-  const ni=idx+dir; if(ni<0||ni>=guionNotas.length) return;
-  [guionNotas[idx],guionNotas[ni]]=[guionNotas[ni],guionNotas[idx]];
-  renderGuionNotasUI(); autoSaveGuion();
-}
-
-function _deleteNota(id){
-  guionNotas=guionNotas.filter(n=>n.id!==id);
-  renderGuionNotasUI(); autoSaveGuion();
+function _deleteSectionNota(blockIdx, secIdx, notaId){
+  const b=guionBlocks[blockIdx]; if(!b) return;
+  if(b.secNotas?.[secIdx]){
+    b.secNotas[secIdx]=b.secNotas[secIdx].filter(n=>n.id!==notaId);
+    renderGuionBlocksUI(); autoSaveGuion();
+  }
 }
 
 // ── Block CRUD ────────────────────────────────
@@ -3481,7 +3502,43 @@ function buildGuionCardEvento(b){
   </div>`;
 }
 
-function buildGuionCardCancion(letra, idx){
+function _renderSeccionesWithNotesHTML(secciones, chordsOnly, secNotas){
+  if(!secciones.length) return '<div style="font-size:14px;color:#94a3b8;font-style:italic">Sin contenido cargado</div>';
+  const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const totals={};secciones.forEach(s=>totals[s.tipo]=(totals[s.tipo]||0)+1);
+  const counts={};
+  return secciones.map((sec,si)=>{
+    counts[sec.tipo]=(counts[sec.tipo]||0)+1;
+    const label=(_SEC_TIPO_LABEL[sec.tipo]||sec.tipo)+(totals[sec.tipo]>1?' '+counts[sec.tipo]:'');
+    const isChorus=sec.tipo==='coro';
+    const lyricColor=isChorus?'#2563a8':'#111827';
+    const lyricStyle=isChorus?'font-style:italic;':'font-style:normal;';
+    const lines=(sec.contenido||'').split('\n');
+    const groups=[];let cur=[];
+    for(const line of lines){
+      if(_isChordLine(line)){if(cur.length)groups.push(cur);cur=[line];}
+      else cur.push(line);
+    }
+    if(cur.length)groups.push(cur);
+    const linesHTML=groups.map(grp=>{
+      if(grp.every(l=>!l.trim())) return '<div style="height:8px"></div>';
+      const inner=grp.map(line=>{
+        if(_isChordLine(line)) return `<span style="display:block;font-family:monospace;white-space:pre;font-size:20px;font-weight:700;font-style:normal;color:#ea580c;line-height:1.2">${esc(line)}</span>`;
+        if(chordsOnly) return '';
+        if(!line.trim()) return '<div style="height:4px"></div>';
+        return `<span style="display:block;font-family:monospace;white-space:pre;font-size:20px;${lyricStyle}color:${lyricColor};line-height:1.2">${esc(line)}</span>`;
+      }).join('');
+      return `<div style="margin-bottom:4px">${inner}</div>`;
+    }).join('');
+    const secContent=`<div style="margin-top:${si===0?'0':'28px'}"><div style="font-size:11px;font-weight:600;color:#94a3b8;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">[${label}]</div><div>${linesHTML}</div></div>`;
+    const notas=secNotas[si]||[];
+    if(!notas.length) return secContent;
+    const notasHTML=notas.map(n=>`<div style="background:${n.color||'#fef9c3'};border-radius:12px;padding:10px;margin-bottom:8px;box-shadow:0 2px 6px rgba(0,0,0,.12)"><div style="font-size:12px;color:#1e293b;white-space:pre-wrap;word-break:break-word;font-family:'Outfit',sans-serif;line-height:1.5">${esc(n.texto||'')}</div></div>`).join('');
+    return `<div style="display:flex;gap:12px;align-items:flex-start">${secContent}<div style="width:180px;flex-shrink:0;padding-top:${si===0?'0':'28px'}">${notasHTML}</div></div>`;
+  }).join('');
+}
+
+function buildGuionCardCancion(letra, idx, block){
   const color=_CANCION_COLORS[idx%_CANCION_COLORS.length];
   if(!letra) return `<div style="background:#fff;border-radius:14px;border:1px dashed #dbe5f0;padding:20px;margin-bottom:12px;color:#94a3b8;font-style:italic">Canción no encontrada en biblioteca</div>`;
 
@@ -3494,7 +3551,11 @@ function buildGuionCardCancion(letra, idx){
   const header=`${_ghLabel('CANCIÓN')}<div style="font-size:22px;font-weight:800;color:#fff;line-height:1.05">${letra.name}</div>${badges}`;
 
   const secciones=_getSecciones(letra);
-  const contentHTML=_renderSeccionesHTML(secciones,!!letra.chordsOnly,'large');
+  const secNotas=block?.secNotas||{};
+  const hasAnyNota=Object.values(secNotas).some(a=>Array.isArray(a)&&a.length);
+  const contentHTML=hasAnyNota
+    ?_renderSeccionesWithNotesHTML(secciones,!!letra.chordsOnly,secNotas)
+    :_renderSeccionesHTML(secciones,!!letra.chordsOnly,'large');
 
   return _guionCard(color, header, contentHTML);
 }
@@ -3503,7 +3564,6 @@ function buildGuionHTML(){
   const letras=getLetras();
   const fecha=_guionDateVal();
   const titulo=document.getElementById('guion-titulo')?.value.trim()||'';
-  const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
   let cancionIdx=0;
 
   const cardsHTML=guionBlocks.map(b=>{
@@ -3513,7 +3573,7 @@ function buildGuionHTML(){
     if(b.type==='evento') return buildGuionCardEvento(b);
     if(b.type==='cancion'){
       const letra=letras.find(l=>l.id===b.songId);
-      return buildGuionCardCancion(letra, cancionIdx++);
+      return buildGuionCardCancion(letra, cancionIdx++, b);
     }
     return '';
   }).join('');
@@ -3521,20 +3581,11 @@ function buildGuionHTML(){
   const fechaLabel=fecha?_fmtGuionDate(fecha):'';
   const headerText=[fechaLabel,titulo].filter(Boolean).join(' — ');
 
-  const hasNotas=guionNotas.length>0;
-  const notasColHTML=hasNotas?`<div style="width:220px;flex-shrink:0;padding:14px 14px 36px 0">${
-    guionNotas.map(n=>`<div style="background:${n.color||'#fef9c3'};border-radius:14px;padding:12px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.18)"><div style="font-size:13px;color:#1e293b;white-space:pre-wrap;word-break:break-word;font-family:'Outfit',sans-serif;line-height:1.5">${esc(n.texto||'')}</div></div>`).join('')
-  }</div>`:'';
-  const totalW=_GUION_W+(hasNotas?240:0);
-
-  return `<div id="_guion_render" style="width:${totalW}px;background:#f0f2f5;font-family:'Outfit',sans-serif;padding:0">
+  return `<div id="_guion_render" style="width:${_GUION_W}px;background:#f0f2f5;font-family:'Outfit',sans-serif;padding:0">
     <div style="padding:14px ${_GUION_PAD}px 12px;border-bottom:1px solid #dbe5f0;background:#ffffff">
       <div style="font-size:11px;font-weight:600;color:#64748b;letter-spacing:.1em;text-transform:uppercase">${headerText||'Guión del domingo'}</div>
     </div>
-    <div style="display:flex;align-items:flex-start">
-      <div style="flex:1;padding:14px ${_GUION_PAD}px 36px">${cardsHTML}</div>
-      ${notasColHTML}
-    </div>
+    <div style="padding:14px ${_GUION_PAD}px 36px">${cardsHTML}</div>
   </div>`;
 }
 
