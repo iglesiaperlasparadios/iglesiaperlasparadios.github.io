@@ -2222,7 +2222,7 @@ async function htmlToCanvas(html, targetId='_month_render', extraOpts={}){
   await document.fonts.ready;
   await new Promise(r=>requestAnimationFrame(r));
   await new Promise(r=>setTimeout(r,160));
-  const el=document.getElementById(targetId)||container.firstElementChild;
+  const el=container.querySelector('#'+targetId)||container.firstElementChild;
   const canvas=await html2canvas(el,{
     scale:2.5, useCORS:true, allowTaint:true,
     backgroundColor:'#f2f4f7', logging:false,
