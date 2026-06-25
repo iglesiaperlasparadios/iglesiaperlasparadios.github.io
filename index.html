@@ -12,24 +12,24 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <style>
 :root {
-  --bg: #0d1117;
-  --bg2: #161b22;
-  --bg3: #21262d;
-  --bg4: #30363d;
-  --border: #30363d;
-  --border2: #444c56;
-  --text: #e6edf3;
-  --text2: #8b949e;
-  --text3: #6e7681;
-  --accent: #388bfd;
-  --accent-bg: #1f3460;
-  --green: #3fb950;
-  --green-bg: #0d2a1a;
-  --amber: #d29922;
-  --amber-bg: #2d1f00;
-  --red: #f85149;
-  --red-bg: #2d0f0f;
-  --navy: #0f2a4a;
+  --bg: #f5f4f0;
+  --bg2: #ffffff;
+  --bg3: #efece7;
+  --bg4: #e5e1db;
+  --border: #dedad3;
+  --border2: #c9c4bb;
+  --text: #1b1814;
+  --text2: #57534e;
+  --text3: #78716c;
+  --accent: #6d4fc4;
+  --accent-bg: #ede9f8;
+  --green: #059669;
+  --green-bg: #ecfdf5;
+  --amber: #d97706;
+  --amber-bg: #fffbeb;
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+  --navy: #1e3a5f;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-serif; font-size: 14px; }
@@ -37,14 +37,14 @@ body { min-height: 100vh; }
 
 /* LAYOUT */
 .shell { display: flex; height: 100vh; overflow: hidden; }
-.sidebar { width: 200px; flex-shrink: 0; background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 0; }
+.sidebar { width: 200px; flex-shrink: 0; background: var(--bg3); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 0; }
 .sidebar-logo { padding: 20px 16px 16px; border-bottom: 1px solid var(--border); }
 .sidebar-logo h1 { font-family: 'Fraunces', serif; font-size: 15px; font-weight: 600; color: var(--text); line-height: 1.3; }
 .sidebar-logo span { font-size: 11px; color: var(--text3); font-weight: 400; }
 .nav { flex: 1; padding: 8px 0; }
 .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 16px; font-size: 13px; font-weight: 500; color: var(--text2); cursor: pointer; border-left: 2px solid transparent; transition: all .15s; }
 .nav-item:hover { color: var(--text); background: var(--bg3); }
-.nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(56,139,253,.08); }
+.nav-item.active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-bg); }
 .nav-item i { font-size: 16px; }
 .main { flex: 1; overflow-y: auto; background: var(--bg); }
 .page { display: none; padding: 24px; max-width: 900px; }
@@ -53,7 +53,7 @@ body { min-height: 100vh; }
 .page-sub { font-size: 13px; color: var(--text3); margin-bottom: 20px; }
 
 /* CARDS */
-.card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+.card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
 .card-title { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
 
 /* FORMS */
@@ -74,8 +74,8 @@ select option { background: var(--bg3); }
 .btn { height: 32px; padding: 0 14px; border-radius: 6px; font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--border2); background: var(--bg3); color: var(--text); transition: all .15s; display: inline-flex; align-items: center; gap: 6px; }
 .btn:hover { background: var(--bg4); border-color: var(--text3); }
 .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-.btn-primary:hover { background: #58a6ff; border-color: #58a6ff; }
-.btn-success { background: var(--green); border-color: var(--green); color: #000; }
+.btn-primary:hover { background: #8b70d8; border-color: #8b70d8; }
+.btn-success { background: var(--green); border-color: var(--green); color: #fff; }
 .btn-success:hover { opacity: .9; }
 .btn-danger { background: transparent; border-color: var(--red); color: var(--red); }
 .btn-danger:hover { background: var(--red-bg); }
@@ -95,8 +95,8 @@ select option { background: var(--bg3); }
 /* ALERTS */
 .alert { padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; display: flex; gap: 10px; align-items: flex-start; }
 .alert i { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
-.alert-amber { background: var(--amber-bg); border: 1px solid var(--amber); color: #f0c060; }
-.alert-red { background: var(--red-bg); border: 1px solid var(--red); color: #ff8080; }
+.alert-amber { background: var(--amber-bg); border: 1px solid var(--amber); color: var(--amber); }
+.alert-red { background: var(--red-bg); border: 1px solid var(--red); color: var(--red); }
 .alert-green { background: var(--green-bg); border: 1px solid var(--green); color: var(--green); }
 
 /* CALENDAR */
@@ -151,7 +151,7 @@ select option { background: var(--bg3); }
 /* MODAL */
 .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 100; align-items: center; justify-content: center; }
 .modal-overlay.open { display: flex; }
-.modal { background: var(--bg2); border: 1px solid var(--border2); border-radius: 12px; padding: 20px; width: 540px; max-height: 85vh; overflow-y: auto; }
+.modal { background: var(--bg2); border: 1px solid var(--border2); border-radius: 12px; padding: 20px; width: 540px; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.15); }
 .modal-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
 
 /* SONG PICKER */
@@ -173,14 +173,14 @@ select option { background: var(--bg3); }
 .chip-group { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
 .chip { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); color: var(--text3); background: transparent; transition: all .15s; }
 .chip:hover { border-color: var(--text2); color: var(--text2); }
-.chip.active { border-color: var(--accent); color: var(--accent); background: rgba(56,139,253,.1); }
+.chip.active { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
 .modal-tabs { display: flex; border-bottom: 1px solid var(--border); margin: -4px -20px 14px; padding: 0 20px; }
 .modal-tab { background: none; border: none; border-bottom: 2px solid transparent; color: var(--text2); font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 500; padding: 8px 14px; cursor: pointer; margin-bottom: -1px; transition: all .15s; }
 .modal-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 .modal-tab:hover { color: var(--text); }
 
 /* WHATSAPP PREVIEW */
-.wa-preview { background: #0d1f12; border: 1px solid #1a3a22; border-radius: 10px; padding: 14px; font-size: 13px; line-height: 1.7; color: #e8f5e9; white-space: pre-wrap; font-family: 'Outfit', monospace; max-height: 320px; overflow-y: auto; }
+.wa-preview { background: #f1f8f3; border: 1px solid #c8e0cd; border-radius: 10px; padding: 14px; font-size: 13px; line-height: 1.7; color: #2d4a32; white-space: pre-wrap; font-family: 'Outfit', monospace; max-height: 320px; overflow-y: auto; }
 
 /* MISC */
 .divider { height: 1px; background: var(--border); margin: 14px 0; }
@@ -698,7 +698,7 @@ select option { background: var(--bg3); }
       <span style="font-size:15px;font-weight:600">📋 Programa del domingo</span>
       <button class="btn btn-sm btn-icon" onclick="closeModal('modal-programa')"><i class="ti ti-x"></i></button>
     </div>
-    <div id="programa-preview-body" style="flex:1;overflow-y:auto;background:#374151;padding:24px;display:flex;flex-direction:column;align-items:center"></div>
+    <div id="programa-preview-body" style="flex:1;overflow-y:auto;background:#c8c4bc;padding:24px;display:flex;flex-direction:column;align-items:center"></div>
     <div style="padding:12px 16px;border-top:1px solid var(--border);flex-shrink:0;background:var(--bg2)">
       <button class="btn btn-primary btn-sm" id="programa-download-btn" onclick="downloadPrograma()"><i class="ti ti-download"></i> Descargar imagen</button>
     </div>
@@ -722,7 +722,7 @@ select option { background: var(--bg3); }
         <i class="ti ti-download"></i> Descargar PNG
       </button>
     </div>
-    <div id="print-preview-body" style="flex:1;overflow-y:auto;background:#374151;padding:24px;display:flex;flex-direction:column;gap:20px;align-items:center;min-height:300px"></div>
+    <div id="print-preview-body" style="flex:1;overflow-y:auto;background:#c8c4bc;padding:24px;display:flex;flex-direction:column;gap:20px;align-items:center;min-height:300px"></div>
   </div>
 </div>
 
