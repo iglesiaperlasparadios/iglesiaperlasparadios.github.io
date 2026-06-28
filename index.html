@@ -492,7 +492,7 @@ select option { background: var(--bg3); }
   <div class="modal" style="width:640px">
     <div class="modal-title">
       <span id="cancion-modal-title">Nueva canción</span>
-      <button class="btn btn-sm btn-icon" onclick="closeModal('modal-cancion')"><i class="ti ti-x"></i></button>
+      <button class="btn btn-sm btn-icon" onclick="closeCancionModal()"><i class="ti ti-x"></i></button>
     </div>
     <div class="modal-tabs">
       <button class="modal-tab active" id="cm-tab-btn-info" onclick="switchCancionTab('info')">Info</button>
@@ -537,6 +537,7 @@ select option { background: var(--bg3); }
       </div>
     </div>
     <div class="btn-group" style="margin-top:16px">
+      <button class="btn btn-full" onclick="closeCancionModal()"><i class="ti ti-x"></i> Cancelar</button>
       <button class="btn btn-primary btn-full" onclick="saveCancion()"><i class="ti ti-device-floppy"></i> Guardar canción</button>
     </div>
   </div>
@@ -1488,6 +1489,32 @@ function openCancionModal(id=null){
   }
   renderCmSecciones();
   renderCmCats(id?getCanciones().find(c=>c.id===id)?.cats||[]:[]);
+  // Draft restore
+  try{
+    const raw=localStorage.getItem('mm_cancion_draft');
+    if(raw){
+      const draft=JSON.parse(raw);
+      if(draft.editingId===id && confirm('Hay un borrador guardado automáticamente. ¿Restaurarlo?')){
+        const ds=JSON.parse(draft.snapshot);
+        document.getElementById('cm-name').value=ds.name||'';
+        document.getElementById('cm-key').value=ds.key||'';
+        document.getElementById('cm-key-orig').value=ds.keyOrig||'';
+        document.getElementById('cm-author').value=ds.author||'';
+        document.getElementById('cm-note').value=ds.note||'';
+        document.getElementById('cm-youtube').value=ds.youtube||'';
+        document.getElementById('cm-capo').value=ds.capo||'';
+        document.getElementById('cm-nueva').checked=!!ds.nueva;
+        document.getElementById('cm-chords-only').checked=!!ds.chordsOnly;
+        _cmSecciones=(ds.secciones||[]).map(s=>({...s}));
+        renderCmSecciones();
+        renderCmCats(ds.cats||[]);
+      }
+      localStorage.removeItem('mm_cancion_draft');
+    }
+  }catch(e){}
+  _cmInitialSnapshot=_getCmSnapshot();
+  if(_cmDraftTimer)clearInterval(_cmDraftTimer);
+  _cmDraftTimer=setInterval(_saveCmDraft,30000);
   document.getElementById('modal-cancion').classList.add('open');
 }
 
@@ -1541,6 +1568,38 @@ function transposeChordsBy(n){
 
 // ── Editor de secciones ───────────────────────────
 let _cmSecciones=[];
+let _cmInitialSnapshot=null, _cmDraftTimer=null;
+
+function _getCmSnapshot(){
+  _syncCmSecciones();
+  return JSON.stringify({
+    name:document.getElementById('cm-name').value,
+    key:document.getElementById('cm-key').value,
+    keyOrig:document.getElementById('cm-key-orig').value,
+    author:document.getElementById('cm-author').value,
+    note:document.getElementById('cm-note').value,
+    youtube:document.getElementById('cm-youtube').value,
+    capo:document.getElementById('cm-capo').value,
+    nueva:document.getElementById('cm-nueva').checked,
+    chordsOnly:document.getElementById('cm-chords-only').checked,
+    cats:getSelectedCats(),
+    secciones:_cmSecciones.map(s=>({...s}))
+  });
+}
+function _saveCmDraft(){
+  try{localStorage.setItem('mm_cancion_draft',JSON.stringify({editingId:editingCancionId,snapshot:_getCmSnapshot(),ts:Date.now()}));}catch(e){}
+}
+function _clearCmDraft(){
+  localStorage.removeItem('mm_cancion_draft');
+  if(_cmDraftTimer){clearInterval(_cmDraftTimer);_cmDraftTimer=null;}
+}
+function closeCancionModal(){
+  const current=_getCmSnapshot();
+  if(current!==_cmInitialSnapshot && !confirm('¿Salir sin guardar? Perderás los cambios.')) return;
+  _clearCmDraft();
+  closeModal('modal-cancion');
+}
+
 const _SEC_TIPOS=['intro','estrofa','pre-coro','coro','puente','interludio','final'];
 const _SEC_TIPO_LABEL={intro:'Intro',estrofa:'Estrofa','pre-coro':'Pre-Coro',coro:'Coro',puente:'Puente',interludio:'Interludio',final:'Final'};
 
@@ -1691,6 +1750,7 @@ function saveCancion(){
   if(editingCancionId){const idx=canciones.findIndex(cc=>cc.id===editingCancionId);if(idx>=0)canciones[idx]=c;else canciones.push(c);}
   else canciones.push(c);
   saveCanciones(canciones);
+  _clearCmDraft();
   closeModal('modal-cancion');
   renderCanciones();
 }
@@ -2528,7 +2588,11 @@ function showToast(msg, type='green'){
 // UTILS
 // ═══════════════════════════════════════════════
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
-document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{
+  if(e.target!==m) return;
+  if(m.id==='modal-cancion'){closeCancionModal();return;}
+  m.classList.remove('open');
+}));
 
 // ═══════════════════════════════════════════════
 // ESTADÍSTICAS
