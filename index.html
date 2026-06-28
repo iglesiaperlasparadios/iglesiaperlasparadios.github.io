@@ -738,6 +738,7 @@ const ROLE_EMOJIS = {coordina:'🎤',voz1:'🎤',voz2:'🎤',voz3:'🎤',teclado
 const SECCIONES = ['principales','cena','ofrenda','intervalo','final'];
 const SEC_LABELS = {principales:'Canciones',cena:'Santa Cena',ofrenda:'Ofrenda',intervalo:'Intervalo',final:'Final'};
 const SEC_EMOJIS = {principales:'🎵',cena:'🍷',ofrenda:'🙌',intervalo:'⏸️',final:'✨'};
+const SEC_COLORS = {principales:'#2563a8',cena:'#2d7a50',ofrenda:'#c05a1f',final:'#6b3fa0',intervalo:'#64748b'};
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DIAS_N = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
 
@@ -871,6 +872,7 @@ function restoreMesState(year, month){
 
     renderCalMes();
     renderServices();
+    _autoOpenNearest();
     document.getElementById('gen-wrap').style.display='block';
     checkAlerts();
     const el = document.getElementById('save-status');
@@ -972,6 +974,7 @@ function buildMonth(){
     }
   }
   renderServices();
+  _autoOpenNearest();
   document.getElementById('gen-wrap').style.display=monthServices.length?'block':'none';
   checkAlerts();
   saveMesState();
@@ -980,69 +983,90 @@ function buildMonth(){
 function renderServices(){
   const wrap=document.getElementById('services-wrap');
   const bandas=getBandas(), listas=getListas();
-  wrap.innerHTML=monthServices.map((s,i)=>`
-    <div class="service-card">
-      <div class="service-header" onclick="toggleService(${i})" style="flex-direction:column;align-items:stretch;gap:8px;cursor:pointer">
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <span class="service-date"><i class="ti ti-calendar-event" style="margin-right:6px;opacity:.6"></i>${s.label} — ${MESES[s.month]}</span>
-          <div style="display:flex;align-items:center;gap:6px">
-            <button class="btn btn-sm btn-icon" title="Mensaje WhatsApp" onclick="event.stopPropagation();openWa(${i})"><i class="ti ti-brand-whatsapp"></i></button>
-            <i class="ti ti-chevron-${s.open?'up':'down'}" style="color:var(--text3);font-size:16px"></i>
+  wrap.innerHTML=monthServices.map((s,i)=>{
+    const accent=DOMINGO_COLORS[i%DOMINGO_COLORS.length];
+    const coordina=(s.roles?.coordina||'').trim();
+    const totalSongs=SECCIONES.reduce((n,sec)=>n+(s.songs[sec]?.length||0),0);
+    return `<div class="service-card" style="border-left:4px solid ${accent}">
+      <div class="service-header" onclick="toggleService(${i})" style="padding:0;background:var(--bg2)">
+        <div style="padding:12px 16px 10px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <span style="font-size:15px;font-weight:700;color:${accent}">${s.label}</span>
+              <span style="font-size:12px;color:var(--text3)">— ${MESES[s.month]}</span>
+              ${coordina?`<span style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px"><i class="ti ti-user" style="font-size:11px"></i>${coordina}</span>`:''}
+              ${totalSongs?`<span style="background:${accent}15;color:${accent};border-radius:20px;padding:1px 8px;font-size:11px;font-weight:600">🎵 ${totalSongs}</span>`:''}
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+              <button class="btn btn-sm btn-icon" title="Mensaje WhatsApp" onclick="event.stopPropagation();openWa(${i})"><i class="ti ti-brand-whatsapp"></i></button>
+              <i class="ti ti-chevron-${s.open?'up':'down'}" style="color:var(--text3);font-size:16px"></i>
+            </div>
           </div>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap" onclick="event.stopPropagation()">
-          <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:180px">
-            <span style="font-size:11px;color:var(--text3);white-space:nowrap;flex-shrink:0"><i class="ti ti-users" style="font-size:13px"></i> Banda</span>
-            <select style="flex:1;height:28px;font-size:12px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:0 8px" onchange="applyBanda(${i},this.value)">
-              <option value="">— elegir banda —</option>
-              ${bandas.map(b=>`<option value="${b.id}">${b.name}</option>`).join('')}
-            </select>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px" onclick="event.stopPropagation()">
+            <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:180px">
+              <span style="font-size:11px;color:var(--text3);white-space:nowrap;flex-shrink:0"><i class="ti ti-users" style="font-size:13px"></i> Banda</span>
+              <select style="flex:1;height:28px;font-size:12px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:0 8px" onchange="applyBanda(${i},this.value)">
+                <option value="">— elegir banda —</option>
+                ${bandas.map(b=>`<option value="${b.id}">${b.name}</option>`).join('')}
+              </select>
+            </div>
+            ${listas.length?`<div style="display:flex;align-items:center;gap:6px;flex:1;min-width:180px">
+              <span style="font-size:11px;color:var(--text3);white-space:nowrap;flex-shrink:0"><i class="ti ti-playlist" style="font-size:13px"></i> Lista</span>
+              <select style="flex:1;height:28px;font-size:12px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:0 8px" onchange="applyLista(${i},this.value)">
+                <option value="">— elegir lista —</option>
+                ${listas.map(l=>`<option value="${l.id}">${l.name}</option>`).join('')}
+              </select>
+            </div>`:''}
           </div>
-          ${listas.length?`<div style="display:flex;align-items:center;gap:6px;flex:1;min-width:180px">
-            <span style="font-size:11px;color:var(--text3);white-space:nowrap;flex-shrink:0"><i class="ti ti-playlist" style="font-size:13px"></i> Lista</span>
-            <select style="flex:1;height:28px;font-size:12px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:0 8px" onchange="applyLista(${i},this.value)">
-              <option value="">— elegir lista —</option>
-              ${listas.map(l=>`<option value="${l.id}">${l.name}</option>`).join('')}
-            </select>
-          </div>`:''}
         </div>
       </div>
       <div class="service-body${s.open?' open':''}" id="sb-${i}">
-        <div class="card-title" style="margin-bottom:8px">Equipo</div>
-        <div class="roles-grid" id="sr-${i}">
-          ${ROLE_IDS.map(([l,id])=>`<div class="role-row"><span class="role-lbl">${l}</span><input style="height:28px;font-size:12px" data-role="${id}" placeholder="${id==='acustica2'?'opcional':l}" value="${s.roles[id]||''}" onchange="updateRole(${i},'${id}',this.value)"></div>`).join('')}
-        </div>
-        <div class="divider"></div>
-        <div style="display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start">
-          <div>
-            <div class="card-title" style="margin-bottom:8px">Canciones</div>
-            <div class="songs-sections">
-              ${SECCIONES.map(sec=>`
-                <div class="songs-sec-block">
-                  <div class="songs-sec-title">${SEC_LABELS[sec]}</div>
+        <div style="padding:14px 16px">
+          <div style="display:grid;grid-template-columns:3fr 2fr;gap:16px;align-items:start">
+            <div>
+              <div style="font-size:10px;font-weight:700;color:${accent};text-transform:uppercase;letter-spacing:.10em;margin-bottom:10px">Equipo</div>
+              <div class="roles-grid" id="sr-${i}">
+                ${ROLE_IDS.map(([l,id])=>`<div class="role-row"><span class="role-lbl">${l}</span><input style="height:28px;font-size:12px" data-role="${id}" placeholder="${id==='acustica2'?'opcional':l}" value="${s.roles[id]||''}" onchange="updateRole(${i},'${id}',this.value)"></div>`).join('')}
+              </div>
+              <div class="divider"></div>
+              <div style="font-size:10px;font-weight:700;color:${SEC_COLORS.principales};text-transform:uppercase;letter-spacing:.10em;margin-bottom:8px">${SEC_EMOJIS.principales} Canciones</div>
+              <div id="ss-${i}-principales">
+                ${(s.songs['principales']||[]).map((sg,si)=>renderSongItem(i,'principales',si,sg,SEC_COLORS.principales)).join('')}
+              </div>
+              <button class="btn btn-sm" style="margin-top:4px;width:100%;border-color:${SEC_COLORS.principales}44;color:${SEC_COLORS.principales}" onclick="openPicker(${i},'principales')"><i class="ti ti-plus"></i> Agregar</button>
+            </div>
+            <div>
+              ${['cena','ofrenda','final','intervalo'].map(sec=>{
+                const c=SEC_COLORS[sec];
+                return `<div style="background:${c}08;border:1px solid ${c}22;border-radius:10px;padding:10px 12px;margin-bottom:10px">
+                  <div style="font-size:9px;font-weight:700;color:${c};text-transform:uppercase;letter-spacing:.10em;margin-bottom:7px">${SEC_EMOJIS[sec]||''} ${SEC_LABELS[sec]}</div>
                   <div id="ss-${i}-${sec}">
-                    ${(s.songs[sec]||[]).map((sg,si)=>renderSongItem(i,sec,si,sg)).join('')}
+                    ${(s.songs[sec]||[]).map((sg,si)=>renderSongItem(i,sec,si,sg,c)).join('')}
                   </div>
-                  <button class="btn btn-sm" style="margin-top:4px;width:100%" onclick="openPicker(${i},'${sec}')"><i class="ti ti-plus"></i> Agregar</button>
-                </div>`).join('')}
+                  <button class="btn btn-sm" style="margin-top:4px;width:100%;border-color:${c}44;color:${c};font-size:11px" onclick="openPicker(${i},'${sec}')"><i class="ti ti-plus"></i> Agregar</button>
+                </div>`;
+              }).join('')}
             </div>
           </div>
+          <div class="divider"></div>
           <div id="hist-panel-${i}">${renderHistPanel(i)}</div>
         </div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
-function renderSongItem(si,sec,idx,sg){
-  return `<div class="song-item" id="sitem-${si}-${sec}-${idx}">
+function renderSongItem(si,sec,idx,sg,sectionColor=null){
+  const itemBg=sectionColor?sectionColor+'12':'var(--bg3)';
+  const keyColor=sectionColor||'var(--accent)';
+  return `<div class="song-item" id="sitem-${si}-${sec}-${idx}" style="background:${itemBg}">
     <div style="flex:1">
-      <div style="display:flex;align-items:center;gap:6px">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
         <span class="song-item-name" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px" data-name="${sg.name.replace(/"/g,'&quot;')}" onclick="openCancionViewByName(this.dataset.name)">${sg.name}</span>
-        <span class="song-item-key">${sg.key||''}</span>
+        ${sg.key?`<span class="song-item-key" style="color:${keyColor}">${sg.key}</span>`:''}
         ${sg.nueva?`<span class="badge badge-green" style="font-size:10px">Nueva</span>`:''}
       </div>
-      ${sg.note?`<div class="song-item-note">${sg.note}</div>`:''}
-      <input style="height:24px;font-size:11px;margin-top:3px;color:var(--text3);background:transparent;border-color:var(--bg4)" placeholder="nota para el equipo..." value="${sg.note||''}" onchange="updateSongNote(${si},'${sec}',${idx},this.value)">
+      <input style="height:24px;font-size:11px;margin-top:4px;color:#78716c;background:#fefce8;border:1px solid #fef08a;border-radius:4px;font-style:italic;padding:0 6px;width:100%;box-sizing:border-box" placeholder="nota para el equipo..." value="${sg.note||''}" onchange="updateSongNote(${si},'${sec}',${idx},this.value)">
     </div>
     <button class="btn btn-sm btn-icon btn-danger" onclick="removeSong(${si},'${sec}',${idx})"><i class="ti ti-x"></i></button>
   </div>`;
@@ -1098,14 +1122,10 @@ function renderHistPanel(serviceIdx){
     }
   }
 
-  if(!prevServices.length){
-    return '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px 14px">'
-      + '<div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px"><i class="ti ti-eye" style="margin-right:5px"></i>Servicio anterior</div>'
-      + '<div style="font-size:12px;color:var(--text3);font-style:italic">Cargá el mes y se mostrará el servicio anterior como referencia.</div>'
-      + '</div>';
-  }
+  if(!prevServices.length) return '';
 
-  let html = '<div style="display:flex;flex-direction:column;gap:10px">';
+  let html = '<div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.10em;margin-bottom:8px"><i class="ti ti-eye" style="margin-right:4px;font-size:10px"></i>Servicios anteriores</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">';
   prevServices.forEach(function(prev){
     html += buildMirrorPanel(prev.label, prev.roles, prev.songsBySec);
   });
@@ -1114,44 +1134,34 @@ function renderHistPanel(serviceIdx){
 }
 
 function buildMirrorPanel(label, roles, songsBySec){
-  let html = '<div style="background:var(--bg2);border:1px solid var(--border2);border-radius:8px;overflow:hidden">';
-
-  // header
-  html += '<div style="background:var(--bg3);padding:8px 13px;border-bottom:1px solid var(--border)">';
-  html += '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:1px"><i class="ti ti-eye" style="margin-right:4px;font-size:11px"></i>Servicio anterior</div>';
-  html += '<div style="font-size:12px;font-weight:600;color:var(--accent)">'+label+'</div>';
+  let html = '<div style="background:var(--bg2);border:1px solid var(--border2);border-radius:10px;overflow:hidden">';
+  html += '<div style="background:var(--bg3);padding:7px 12px;border-bottom:1px solid var(--border)">';
+  html += '<div style="font-size:11px;font-weight:600;color:var(--accent)">'+label+'</div>';
   html += '</div>';
-
-  // roles
   if(roles.length){
-    html += '<div style="padding:8px 13px;border-bottom:1px solid var(--border)">';
+    html += '<div style="padding:7px 12px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:4px 8px">';
     roles.forEach(function(r){
-      html += '<div style="display:flex;align-items:baseline;gap:6px;padding:2px 0">';
-      html += '<span style="font-size:10px;color:var(--text3);width:90px;flex-shrink:0">'+r.label+'</span>';
-      html += '<span style="font-size:12px;font-weight:600;color:var(--text)">'+r.name+'</span>';
-      html += '</div>';
+      html += '<div><div style="font-size:9px;color:var(--text3)">'+r.label+'</div><div style="font-size:11px;font-weight:600;color:var(--text)">'+r.name+'</div></div>';
     });
     html += '</div>';
   }
-
-  // songs
-  html += '<div style="padding:8px 13px">';
+  html += '<div style="padding:7px 12px">';
   var hasSongs = false;
   SECCIONES.forEach(function(sec){
     const songs = songsBySec[sec]||[];
     if(!songs.length) return;
     hasSongs = true;
-    html += '<div style="margin-bottom:7px">';
-    html += '<div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px">'+SEC_LABELS[sec]+'</div>';
+    const c = SEC_COLORS[sec]||'var(--text3)';
+    html += '<div style="margin-bottom:5px">';
+    html += '<div style="font-size:8px;font-weight:700;color:'+c+';text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px">'+SEC_LABELS[sec]+'</div>';
     songs.forEach(function(sg){
       const key = sg.key||'';
-      html += '<div style="font-size:11px;color:var(--text2);padding:1px 0">• '+sg.name+(key?' <span style="color:var(--accent);font-weight:700">'+key+'</span>':'')+'</div>';
+      html += '<div style="font-size:10px;color:var(--text2);line-height:1.5">• '+sg.name+(key?' <span style="color:'+c+';font-weight:700">'+key+'</span>':'')+'</div>';
     });
     html += '</div>';
   });
-  if(!hasSongs) html += '<div style="font-size:11px;color:var(--text3);font-style:italic">Sin canciones registradas</div>';
-  html += '</div>';
-  html += '</div>';
+  if(!hasSongs) html += '<div style="font-size:10px;color:var(--text3);font-style:italic">Sin canciones</div>';
+  html += '</div></div>';
   return html;
 }
 
@@ -1193,16 +1203,36 @@ function saveHistorialFromServices(){
 }
 
 function toggleService(i){
-  monthServices[i].open=!monthServices[i].open;
-  const body=document.getElementById('sb-'+i);
-  if(body)body.classList.toggle('open',monthServices[i].open);
-  const card=body?.closest('.service-card');
-  if(card){const ico=card.querySelector('.ti-chevron-up,.ti-chevron-down');if(ico){ico.className=monthServices[i].open?'ti ti-chevron-up':'ti ti-chevron-down';}}
-  // refresh mirror panel with latest data when opening
-  if(monthServices[i].open){
-    const panel = document.getElementById('hist-panel-'+i);
-    if(panel) panel.innerHTML = renderHistPanel(i);
+  const wasOpen=monthServices[i].open;
+  // close all
+  monthServices.forEach((s,idx)=>{
+    if(!s.open) return;
+    s.open=false;
+    const b=document.getElementById('sb-'+idx);
+    if(b) b.classList.remove('open');
+    const card=b?.closest('.service-card');
+    if(card){const ico=card.querySelector('.ti-chevron-up,.ti-chevron-down');if(ico)ico.className='ti ti-chevron-down';}
+  });
+  if(!wasOpen){
+    monthServices[i].open=true;
+    const body=document.getElementById('sb-'+i);
+    if(body) body.classList.add('open');
+    const card=body?.closest('.service-card');
+    if(card){const ico=card.querySelector('.ti-chevron-up,.ti-chevron-down');if(ico)ico.className='ti ti-chevron-up';}
+    const panel=document.getElementById('hist-panel-'+i);
+    if(panel) panel.innerHTML=renderHistPanel(i);
   }
+}
+
+function _autoOpenNearest(){
+  if(!monthServices.length||monthServices.some(s=>s.open)) return;
+  const todayMs=new Date().getTime();
+  let nearest=0, minDiff=Infinity;
+  monthServices.forEach((s,i)=>{
+    const diff=Math.abs(new Date(s.year,s.month,s.day).getTime()-todayMs);
+    if(diff<minDiff){minDiff=diff;nearest=i;}
+  });
+  toggleService(nearest);
 }
 
 function updateRole(si,role,val){
@@ -1247,7 +1277,7 @@ function applyLista(si,id){
 function refreshSongsSection(si){
   SECCIONES.forEach(sec=>{
     const wrap=document.getElementById(`ss-${si}-${sec}`);
-    if(wrap) wrap.innerHTML=(monthServices[si].songs[sec]||[]).map((sg,idx)=>renderSongItem(si,sec,idx,sg)).join('');
+    if(wrap) wrap.innerHTML=(monthServices[si].songs[sec]||[]).map((sg,idx)=>renderSongItem(si,sec,idx,sg,SEC_COLORS[sec])).join('');
   });
 }
 
@@ -1258,7 +1288,7 @@ function updateSongNote(si,sec,idx,val){
 function removeSong(si,sec,idx){
   monthServices[si].songs[sec].splice(idx,1);
   const wrap=document.getElementById(`ss-${si}-${sec}`);
-  if(wrap) wrap.innerHTML=monthServices[si].songs[sec].map((sg,i)=>renderSongItem(si,sec,i,sg)).join('');
+  if(wrap) wrap.innerHTML=monthServices[si].songs[sec].map((sg,i)=>renderSongItem(si,sec,i,sg,SEC_COLORS[sec])).join('');
   saveMesState();
   // refresh mirror of next service
   const nextPanel = document.getElementById('hist-panel-'+(si+1));
