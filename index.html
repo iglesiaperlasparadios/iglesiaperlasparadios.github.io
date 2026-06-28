@@ -2964,10 +2964,10 @@ function importFromCronograma(){
   if(!svc){showToast('No hay servicio en esa fecha','amber');return;}
   if(guionBlocks.length&&!confirm('Este guión ya tiene contenido.\n¿Reemplazar con las canciones del cronograma?')) return;
   const canciones=getCanciones(), newBlocks=[];
-  [{sec:'principales',label:null},{sec:'cena',label:'SANTA CENA'},{sec:'ofrenda',label:'OFRENDA'},{sec:'intervalo',label:'INTERVALO'},{sec:'final',label:'FINAL'}]
-    .forEach(({sec,label})=>{
+  [{sec:'principales',evento:null},{sec:'cena',evento:'santa-cena'},{sec:'ofrenda',evento:'ofrenda'},{sec:'intervalo',evento:'anuncio'},{sec:'final',evento:'altar'}]
+    .forEach(({sec,evento})=>{
       const songs=svc.songs?.[sec]||[]; if(!songs.length) return;
-      if(label) newBlocks.push({type:'texto',id:Date.now().toString()+Math.random().toString(36).slice(2),label:'',content:label});
+      if(evento) newBlocks.push({type:'evento',id:Date.now().toString()+Math.random().toString(36).slice(2),eventType:evento,detail:''});
       songs.forEach(sg=>{
         const c=canciones.find(c=>c.id===sg.id)||(sg.name?canciones.find(c=>c.name===sg.name):null);
         if(c) newBlocks.push({type:'cancion',id:Date.now().toString()+Math.random().toString(36).slice(2),songId:c.id});
