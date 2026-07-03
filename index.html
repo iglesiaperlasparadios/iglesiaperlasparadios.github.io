@@ -126,6 +126,13 @@ select option { background: var(--bg3); }
 .role-lbl { font-size: 11px; color: var(--text3); width: 100px; flex-shrink: 0; letter-spacing: .04em; text-transform: uppercase; }
 .songs-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; margin-top: 10px; }
 .songs-sec-block { }
+
+/* TIMELINE — servicios anteriores */
+.timeline-wrap { display: flex; flex-direction: column; }
+.timeline-item { position: relative; }
+.timeline-connector { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 7px 0; }
+.timeline-connector span { width: 4px; height: 4px; border-radius: 50%; background: var(--border2); flex-shrink: 0; }
+.timeline-connector .tl-line { width: 0; height: 14px; border-left: 2px dotted var(--border2); }
 .songs-sec-title { font-size: 10px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .10em; margin-bottom: 5px; }
 .song-item { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 5px; background: var(--bg3); border-radius: 8px; padding: 5px 8px; }
 .song-item-name { flex: 1; font-size: 12px; color: var(--text); }
@@ -140,11 +147,15 @@ select option { background: var(--bg3); }
 .song-lib-tags { display: flex; gap: 4px; flex-wrap: wrap; flex: 1; }
 
 /* BANDAS */
-.banda-item { background: var(--bg2); border-radius: 14px; padding: 12px; margin-bottom: 8px; border: 1px solid var(--border); box-shadow: 0 2px 12px rgba(15,23,42,.07),0 1px 3px rgba(15,23,42,.04); }
-.banda-name { font-size: 14px; font-weight: 600; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-.banda-roles { display: grid; grid-template-columns: repeat(3,1fr); gap: 4px 8px; font-size: 12px; color: var(--text2); }
-.banda-role { display: flex; gap: 4px; }
-.banda-role span:first-child { color: var(--text3); }
+.bandas-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+@media (max-width: 1180px) { .bandas-grid { grid-template-columns: repeat(3,1fr); } }
+@media (max-width: 860px)  { .bandas-grid { grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 560px)  { .bandas-grid { grid-template-columns: 1fr; } }
+.banda-card-wrap { position: relative; }
+.banda-card-actions { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; z-index: 1; }
+.banda-card-actions button { width: 26px; height: 26px; border-radius: 50%; border: none; background: rgba(255,255,255,.22); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 12px; transition: background .15s; }
+.banda-card-actions button:hover { background: rgba(255,255,255,.4); }
+.banda-card-actions button.banda-card-del:hover { background: #dc2626; }
 
 /* PARTICIPACION */
 .part-table { width: 100%; border-collapse: collapse; }
@@ -1024,8 +1035,11 @@ function renderServices(){
         </div>
       </div>
       <div class="service-body${s.open?' open':''}" id="sb-${i}">
-        <div style="display:grid;grid-template-columns:58% 42%">
-          <div style="padding:14px 16px 18px;border-right:1px solid var(--border2)">
+        <div style="display:grid;grid-template-columns:38% 62%">
+          <div style="background:var(--bg3);padding:14px;position:sticky;top:16px;align-self:start;border-radius:0 0 0 14px;max-height:calc(100vh - 32px);overflow-y:auto" id="hist-panel-${i}">
+            ${renderHistPanel(i)}
+          </div>
+          <div style="padding:14px 16px 18px;border-left:1px solid var(--border2)">
             <div style="font-size:10px;font-weight:700;color:${accent};text-transform:uppercase;letter-spacing:.10em;margin-bottom:8px">Equipo</div>
             <div class="roles-grid" id="sr-${i}">
               ${ROLE_IDS.map(([l,id])=>`<div class="role-row"><span class="role-lbl">${l}</span><input style="height:28px;font-size:12px" data-role="${id}" placeholder="${id==='acustica2'?'opcional':l}" value="${s.roles[id]||''}" onchange="updateRole(${i},'${id}',this.value)"></div>`).join('')}
@@ -1046,9 +1060,6 @@ function renderServices(){
                 <button class="btn btn-sm" style="margin-top:4px;width:100%;border-color:${c}44;color:${c};font-size:11px" onclick="openPicker(${i},'${sec}')"><i class="ti ti-plus"></i> Agregar</button>
               </div>`;
             }).join('')}
-          </div>
-          <div style="background:var(--bg3);padding:14px;position:sticky;top:16px;border-radius:0 0 14px 0;max-height:calc(100vh - 80px);overflow-y:auto" id="hist-panel-${i}">
-            ${renderHistPanel(i)}
           </div>
         </div>
       </div>
@@ -1083,9 +1094,8 @@ function renderHistPanel(serviceIdx){
     if(hasRoles || hasSongs){
       prevServices.push({
         label: prev.label + ' — ' + MESES[prev.month],
-        roles: ROLE_IDS.map(([l,id])=>({label:l, name:(prev.roles[id]||'').trim()})).filter(r=>r.name),
-        songsBySec: SECCIONES.reduce((a,sec)=>{ a[sec]=prev.songs[sec]||[]; return a; }, {}),
-        fromHistory: false
+        roles: {...prev.roles},
+        songs: SECCIONES.reduce((a,sec)=>{ a[sec]=prev.songs[sec]||[]; return a; }, {})
       });
     }
     if(prevServices.length >= 2) break;
@@ -1102,18 +1112,14 @@ function renderHistPanel(serviceIdx){
       const key = h.year+'-'+h.month+'-'+h.serviceLabel;
       if(seen.has(key)) continue;
       seen.add(key);
-      const songsBySec = SECCIONES.reduce((a,sec)=>{
+      const songs = SECCIONES.reduce((a,sec)=>{
         a[sec] = h.songs.filter(sg=>sg.sec===sec);
         return a;
       }, {});
-      const roles = h.roles
-        ? ROLE_IDS.map(([l,id])=>({label:l,name:(h.roles[id]||'').trim()})).filter(r=>r.name)
-        : [];
       prevServices.push({
         label: h.serviceLabel + ' — ' + MESES[h.month] + ' ' + h.year,
-        roles,
-        songsBySec,
-        fromHistory: true
+        roles: {...(h.roles||{})},
+        songs
       });
     }
   }
@@ -1121,43 +1127,17 @@ function renderHistPanel(serviceIdx){
   if(!prevServices.length) return '<div style="font-size:11px;color:var(--text3);font-style:italic;text-align:center;padding:28px 0">Sin servicios anteriores</div>';
 
   let html = '<div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.10em;margin-bottom:10px"><i class="ti ti-eye" style="margin-right:4px;font-size:10px"></i>Servicios anteriores</div>';
-  html += '<div style="display:flex;flex-direction:column;gap:10px">';
-  prevServices.forEach(function(prev){
-    html += buildMirrorPanel(prev.label, prev.roles, prev.songsBySec);
+  html += '<div class="timeline-wrap">';
+  prevServices.forEach(function(prev, idx){
+    const accent = DOMINGO_COLORS[idx % DOMINGO_COLORS.length];
+    if(idx>0) html += '<div class="timeline-connector"><span></span><div class="tl-line"></div><span></span></div>';
+    html += '<div class="timeline-item">'
+      + buildBandCard({label:prev.label, roles:prev.roles}, accent, 0)
+      + '<div style="height:10px"></div>'
+      + buildSongsCard({songs:prev.songs}, accent)
+      + '</div>';
   });
   html += '</div>';
-  return html;
-}
-
-function buildMirrorPanel(label, roles, songsBySec){
-  let html = '<div style="background:var(--bg2);border:1px solid var(--border2);border-radius:10px;overflow:hidden">';
-  html += '<div style="background:var(--bg3);padding:7px 12px;border-bottom:1px solid var(--border)">';
-  html += '<div style="font-size:11px;font-weight:600;color:var(--accent)">'+label+'</div>';
-  html += '</div>';
-  if(roles.length){
-    html += '<div style="padding:7px 12px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:4px 8px">';
-    roles.forEach(function(r){
-      html += '<div><div style="font-size:9px;color:var(--text3)">'+r.label+'</div><div style="font-size:11px;font-weight:600;color:var(--text)">'+r.name+'</div></div>';
-    });
-    html += '</div>';
-  }
-  html += '<div style="padding:7px 12px">';
-  var hasSongs = false;
-  SECCIONES.forEach(function(sec){
-    const songs = songsBySec[sec]||[];
-    if(!songs.length) return;
-    hasSongs = true;
-    const c = SEC_COLORS[sec]||'var(--text3)';
-    html += '<div style="margin-bottom:5px">';
-    html += '<div style="font-size:8px;font-weight:700;color:'+c+';text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px">'+SEC_LABELS[sec]+'</div>';
-    songs.forEach(function(sg){
-      const key = sg.key||'';
-      html += '<div style="font-size:10px;color:var(--text2);line-height:1.5">• '+sg.name+(key?' <span style="color:'+c+';font-weight:700">'+key+'</span>':'')+'</div>';
-    });
-    html += '</div>';
-  });
-  if(!hasSongs) html += '<div style="font-size:10px;color:var(--text3);font-style:italic">Sin canciones</div>';
-  html += '</div></div>';
   return html;
 }
 
@@ -1470,18 +1450,16 @@ function renderBandas(){
   const bandas=getBandas();
   const el=document.getElementById('bandas-list');
   if(!bandas.length){el.innerHTML='<div class="empty-state"><i class="ti ti-users-off"></i>No hay bandas guardadas</div>';return;}
-  el.innerHTML=bandas.map(b=>`
-    <div class="banda-item">
-      <div class="banda-name">${b.name}
-        <div class="btn-group">
-          <button class="btn btn-sm" onclick="openBandaModal('${b.id}')"><i class="ti ti-edit"></i> Editar</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteBanda('${b.id}')"><i class="ti ti-trash"></i></button>
-        </div>
+  el.innerHTML='<div class="bandas-grid">'+bandas.map((b,i)=>{
+    const accent=DOMINGO_COLORS[i%DOMINGO_COLORS.length];
+    return `<div class="banda-card-wrap">
+      ${buildBandCard({label:b.name, roles:b.roles}, accent, 0, {mode:'bandas'})}
+      <div class="banda-card-actions">
+        <button onclick="openBandaModal('${b.id}')" title="Editar"><i class="ti ti-edit"></i></button>
+        <button class="banda-card-del" onclick="deleteBanda('${b.id}')" title="Eliminar"><i class="ti ti-trash"></i></button>
       </div>
-      <div class="banda-roles">
-        ${ROLE_IDS.filter(([,rid])=>b.roles[rid]).map(([l,rid])=>`<div class="banda-role"><span>${l}:</span><span style="color:var(--text)">${b.roles[rid]}</span></div>`).join('')}
-      </div>
-    </div>`).join('');
+    </div>`;
+  }).join('')+'</div>';
 }
 
 // ═══════════════════════════════════════════════
@@ -2166,24 +2144,29 @@ const IMG_TEXT    = '#172235';
 const IMG_MUTED   = '#64748b';
 const IMG_SHADOW  = '0 2px 12px rgba(15,23,42,.07),0 1px 3px rgba(15,23,42,.04)';
 
-function buildBandCard(s, accent, rolesH){
+function buildBandCard(s, accent, rolesH, opts={}){
+  const compact = opts.mode === 'bandas';
   const roles = ROLE_IDS.map(([l,id])=>({label:l,id,name:(s.roles[id]||'').trim()})).filter(r=>r.name);
   const accentTint = accent+'10';
+  const circleSize = compact ? 32 : 36;
+  const nameSize   = compact ? 16 : 19;
+  const rowPad     = compact ? 7 : 9;
   const rolesHTML = roles.map((r,i)=>`
-    <div style="display:flex;align-items:center;gap:12px;padding:9px 0;${i<roles.length-1?'border-bottom:1px solid '+accent+'15':''}">
-      <div style="width:36px;height:36px;border-radius:50%;background:${accent}16;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:17px;line-height:1">${ROLE_EMOJI[r.id]||'🎵'}</div>
+    <div style="display:flex;align-items:center;gap:12px;padding:${rowPad}px 0;${i<roles.length-1?'border-bottom:1px solid '+accent+'15':''}">
+      <div style="width:${circleSize}px;height:${circleSize}px;border-radius:50%;background:${accent}16;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:${compact?15:17}px;line-height:1">${ROLE_EMOJI[r.id]||'🎵'}</div>
       <div style="min-width:0;line-height:1.25">
         <div style="font-size:9.5px;font-weight:600;color:${accent};letter-spacing:.09em;text-transform:uppercase;margin-bottom:2px;opacity:.8">${r.label}</div>
-        <div style="font-size:19px;font-weight:400;color:${IMG_TEXT};letter-spacing:-.01em">${r.name}</div>
+        <div style="font-size:${nameSize}px;font-weight:400;color:${IMG_TEXT};letter-spacing:-.01em${compact?';overflow:hidden;text-overflow:ellipsis;white-space:nowrap':''}">${r.name}</div>
       </div>
     </div>`).join('');
-  const usedH = Math.max(roles.length * ROLES_ROW_H + 20, rolesH);
+  const usedH = compact ? 0 : Math.max(roles.length * ROLES_ROW_H + 20, rolesH);
+  const headerPad = compact ? '13px 54px 12px 16px' : '13px 16px 12px';
   return `
     <div style="background:${IMG_SURFACE};border-radius:14px;border:1px solid ${IMG_BORDER};overflow:hidden;box-shadow:${IMG_SHADOW}">
-      <div style="padding:13px 16px 12px;background:${accent}">
-        <div style="font-size:19px;font-weight:700;color:#fff">${s.label}</div>
+      <div style="padding:${headerPad};background:${accent}">
+        <div style="font-size:19px;font-weight:700;color:#fff${compact?';overflow:hidden;text-overflow:ellipsis;white-space:nowrap':''}">${s.label}</div>
       </div>
-      <div style="padding:8px 14px 14px;background:${accentTint};min-height:${usedH}px;box-sizing:border-box">
+      <div style="padding:8px 14px 14px;background:${accentTint};${usedH?`min-height:${usedH}px;`:''}box-sizing:border-box">
         ${rolesHTML||'<div style="font-size:14px;color:#c8d0dc;font-style:italic;padding:4px 0">Sin equipo asignado</div>'}
       </div>
     </div>`;
