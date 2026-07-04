@@ -127,12 +127,19 @@ select option { background: var(--bg3); }
 .songs-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; margin-top: 10px; }
 .songs-sec-block { }
 
-/* TIMELINE — servicios anteriores */
-.timeline-wrap { display: flex; flex-direction: column; }
-.timeline-item { position: relative; }
-.timeline-connector { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 7px 0; }
-.timeline-connector span { width: 4px; height: 4px; border-radius: 50%; background: var(--border2); flex-shrink: 0; }
-.timeline-connector .tl-line { width: 0; height: 14px; border-left: 2px dotted var(--border2); }
+/* CRONOGRAMA — 3 columnas: 2 servicios anteriores (25%+25%) + formulario (50%) */
+.crono-3col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.crono-prev-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; position: sticky; top: 16px; align-self: start; max-height: calc(100vh - 32px); overflow-y: auto; }
+.crono-prev-col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.crono-col-form { border-left: 1px solid var(--border2); }
+.crono-toggle-mobile { display: none; }
+@media (max-width: 760px) {
+  .crono-3col { display: flex; flex-direction: column; gap: 12px; }
+  .crono-col-form { order: 1; border-left: none; }
+  .crono-toggle-mobile { display: flex; align-items: center; justify-content: center; gap: 6px; order: 2; width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--border2); background: var(--bg2); color: var(--text2); font-size: 13px; cursor: pointer; }
+  .crono-prev-wrap { order: 3; display: none; position: static; grid-template-columns: 1fr; max-height: none; overflow-y: visible; }
+  .crono-3col.show-prev .crono-prev-wrap { display: grid; }
+}
 .songs-sec-title { font-size: 10px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .10em; margin-bottom: 5px; }
 .song-item { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 5px; background: var(--bg3); border-radius: 8px; padding: 5px 8px; }
 .song-item-name { flex: 1; font-size: 12px; color: var(--text); }
@@ -1035,11 +1042,11 @@ function renderServices(){
         </div>
       </div>
       <div class="service-body${s.open?' open':''}" id="sb-${i}">
-        <div style="display:grid;grid-template-columns:38% 62%">
-          <div style="background:var(--bg3);padding:14px;position:sticky;top:16px;align-self:start;border-radius:0 0 0 14px;max-height:calc(100vh - 32px);overflow-y:auto" id="hist-panel-${i}">
+        <div class="crono-3col" id="crono-cols-${i}">
+          <div class="crono-prev-wrap" id="hist-panel-${i}">
             ${renderHistPanel(i)}
           </div>
-          <div style="padding:14px 16px 18px;border-left:1px solid var(--border2)">
+          <div class="crono-col-form" style="padding:14px 16px 18px">
             <div style="font-size:10px;font-weight:700;color:${accent};text-transform:uppercase;letter-spacing:.10em;margin-bottom:8px">Equipo</div>
             <div class="roles-grid" id="sr-${i}">
               ${ROLE_IDS.map(([l,id])=>`<div class="role-row"><span class="role-lbl">${l}</span><input style="height:28px;font-size:12px" data-role="${id}" placeholder="${id==='acustica2'?'opcional':l}" value="${s.roles[id]||''}" onchange="updateRole(${i},'${id}',this.value)"></div>`).join('')}
@@ -1061,6 +1068,7 @@ function renderServices(){
               </div>`;
             }).join('')}
           </div>
+          <button class="crono-toggle-mobile" onclick="toggleCronoPrev(${i})" id="crono-toggle-${i}"><i class="ti ti-history"></i> Ver servicios anteriores</button>
         </div>
       </div>
     </div>`;
@@ -1124,20 +1132,16 @@ function renderHistPanel(serviceIdx){
     }
   }
 
-  if(!prevServices.length) return '<div style="font-size:11px;color:var(--text3);font-style:italic;text-align:center;padding:28px 0">Sin servicios anteriores</div>';
+  if(!prevServices.length) return '<div style="grid-column:1/-1;font-size:11px;color:var(--text3);font-style:italic;text-align:center;padding:28px 0">Sin servicios anteriores</div>';
 
-  let html = '<div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.10em;margin-bottom:10px"><i class="ti ti-eye" style="margin-right:4px;font-size:10px"></i>Servicios anteriores</div>';
-  html += '<div class="timeline-wrap">';
+  let html = '<div style="grid-column:1/-1;font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.10em;margin-bottom:2px"><i class="ti ti-eye" style="margin-right:4px;font-size:10px"></i>Servicios anteriores</div>';
   prevServices.forEach(function(prev, idx){
     const accent = DOMINGO_COLORS[idx % DOMINGO_COLORS.length];
-    if(idx>0) html += '<div class="timeline-connector"><span></span><div class="tl-line"></div><span></span></div>';
-    html += '<div class="timeline-item">'
-      + buildBandCard({label:prev.label, roles:prev.roles}, accent, 0)
-      + '<div style="height:10px"></div>'
-      + buildSongsCard({songs:prev.songs}, accent)
+    html += '<div class="crono-prev-col">'
+      + buildBandCard({label:prev.label, roles:prev.roles}, accent, 0, {mode:'compact'})
+      + buildSongsCard({songs:prev.songs}, accent, {mode:'compact'})
       + '</div>';
   });
-  html += '</div>';
   return html;
 }
 
@@ -1176,6 +1180,14 @@ function saveHistorialFromServices(){
   // sort newest first and keep last 24
   hist.sort((a,b) => new Date(b.date) - new Date(a.date));
   saveHistorial(hist.slice(0,24));
+}
+
+function toggleCronoPrev(i){
+  const cols=document.getElementById('crono-cols-'+i);
+  const btn=document.getElementById('crono-toggle-'+i);
+  if(!cols||!btn) return;
+  const showing=cols.classList.toggle('show-prev');
+  btn.innerHTML=showing?'<i class="ti ti-history"></i> Ocultar servicios anteriores':'<i class="ti ti-history"></i> Ver servicios anteriores';
 }
 
 function toggleService(i){
@@ -1453,7 +1465,7 @@ function renderBandas(){
   el.innerHTML='<div class="bandas-grid">'+bandas.map((b,i)=>{
     const accent=DOMINGO_COLORS[i%DOMINGO_COLORS.length];
     return `<div class="banda-card-wrap">
-      ${buildBandCard({label:b.name, roles:b.roles}, accent, 0, {mode:'bandas'})}
+      ${buildBandCard({label:b.name, roles:b.roles}, accent, 0, {mode:'compact', actions:true})}
       <div class="banda-card-actions">
         <button onclick="openBandaModal('${b.id}')" title="Editar"><i class="ti ti-edit"></i></button>
         <button class="banda-card-del" onclick="deleteBanda('${b.id}')" title="Eliminar"><i class="ti ti-trash"></i></button>
@@ -2145,7 +2157,7 @@ const IMG_MUTED   = '#64748b';
 const IMG_SHADOW  = '0 2px 12px rgba(15,23,42,.07),0 1px 3px rgba(15,23,42,.04)';
 
 function buildBandCard(s, accent, rolesH, opts={}){
-  const compact = opts.mode === 'bandas';
+  const compact = opts.mode === 'compact';
   const roles = ROLE_IDS.map(([l,id])=>({label:l,id,name:(s.roles[id]||'').trim()})).filter(r=>r.name);
   const accentTint = accent+'10';
   const circleSize = compact ? 32 : 36;
@@ -2160,7 +2172,7 @@ function buildBandCard(s, accent, rolesH, opts={}){
       </div>
     </div>`).join('');
   const usedH = compact ? 0 : Math.max(roles.length * ROLES_ROW_H + 20, rolesH);
-  const headerPad = compact ? '13px 54px 12px 16px' : '13px 16px 12px';
+  const headerPad = compact ? (opts.actions ? '11px 54px 10px 14px' : '11px 14px 10px') : '13px 16px 12px';
   return `
     <div style="background:${IMG_SURFACE};border-radius:14px;border:1px solid ${IMG_BORDER};overflow:hidden;box-shadow:${IMG_SHADOW}">
       <div style="padding:${headerPad};background:${accent}">
@@ -2172,7 +2184,16 @@ function buildBandCard(s, accent, rolesH, opts={}){
     </div>`;
 }
 
-function buildSongsCard(s, accent){
+function buildSongsCard(s, accent, opts={}){
+  const compact = opts.mode === 'compact';
+  const nameSize   = compact ? 12.5 : 15.5;
+  const noteSize   = compact ? 10.5 : 12;
+  const titleSize  = compact ? 13 : 17;
+  const emojiSize  = compact ? 12 : 15;
+  const secGap     = compact ? '8px 0 5px' : '12px 0 7px';
+  const rowPad     = compact ? '3px 0' : '5px 0';
+  const headerPad  = compact ? '7px 12px 6px' : '10px 16px 9px';
+  const bodyPad    = compact ? '7px 12px 10px' : '10px 16px 14px';
   const songs = SECCIONES.reduce((a,sec)=>{a[sec]=s.songs[sec]||[];return a},{});
   const hasSongs = SECCIONES.some(sec=>songs[sec].length>0);
   const songsHTML = SECCIONES.map(sec=>{
@@ -2181,27 +2202,27 @@ function buildSongsCard(s, accent){
     return `
       <div style="margin-bottom:4px">
         ${!isMain?`
-        <div style="display:flex;align-items:center;gap:7px;margin:12px 0 7px">
+        <div style="display:flex;align-items:center;gap:7px;margin:${secGap}">
           <div style="height:1px;background:${accent};opacity:.2;flex:1"></div>
-          <span style="font-size:9px;font-weight:700;color:${accent};letter-spacing:.18em;text-transform:uppercase">${SEC_LABEL[sec]}</span>
+          <span style="font-size:${compact?8:9}px;font-weight:700;color:${accent};letter-spacing:.18em;text-transform:uppercase">${SEC_LABEL[sec]}</span>
           <div style="height:1px;background:${accent};opacity:.2;flex:1"></div>
         </div>`:''}
         ${songs[sec].map(sg=>`
-          <div style="padding:5px 0">
-            <div style="font-size:15.5px;font-weight:400;color:${IMG_TEXT};line-height:1.45">
+          <div style="padding:${rowPad}">
+            <div style="font-size:${nameSize}px;font-weight:400;color:${IMG_TEXT};line-height:1.45">
               • ${sg.name}${sg.key?` <span style="color:${accent};font-weight:700">— ${sg.key}</span>`:''}${sg.nueva?` <span style="font-size:8px;font-weight:700;color:#fff;background:#2d8a4e;border-radius:3px;padding:1px 5px;vertical-align:middle">NUEVA</span>`:''}
             </div>
-            ${sg.note?`<div style="font-size:12px;color:${IMG_MUTED};padding-left:12px;margin-top:2px;font-style:italic;line-height:1.35">↳ ${sg.note}</div>`:''}
+            ${sg.note?`<div style="font-size:${noteSize}px;color:${IMG_MUTED};padding-left:12px;margin-top:2px;font-style:italic;line-height:1.35">↳ ${sg.note}</div>`:''}
           </div>`).join('')}
       </div>`;
   }).join('');
   return `
     <div style="background:${IMG_SOFT};border-radius:14px;border:1px solid ${IMG_BORDER};overflow:hidden;box-shadow:${IMG_SHADOW}">
-      <div style="display:flex;align-items:center;gap:8px;padding:10px 16px 9px;border-bottom:1px solid ${accent}18;background:${IMG_SURFACE}">
-        <span style="font-size:15px">🎵</span>
-        <span style="font-size:17px;font-weight:700;color:${accent}">Canciones</span>
+      <div style="display:flex;align-items:center;gap:8px;padding:${headerPad};border-bottom:1px solid ${accent}18;background:${IMG_SURFACE}">
+        <span style="font-size:${emojiSize}px">🎵</span>
+        <span style="font-size:${titleSize}px;font-weight:700;color:${accent}">Canciones</span>
       </div>
-      <div style="padding:10px 16px 14px">
+      <div style="padding:${bodyPad}">
         ${hasSongs?songsHTML:'<div style="font-size:14px;color:#c8d0dc;font-style:italic">Sin canciones asignadas</div>'}
       </div>
     </div>`;
