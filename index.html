@@ -1147,8 +1147,8 @@ function renderHistPanel(serviceIdx){
   let html = '<div style="grid-column:1/-1;font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.10em;margin-bottom:2px"><i class="ti ti-eye" style="margin-right:4px;font-size:10px"></i>Servicios anteriores</div>';
   display.forEach(function({prev, accent}){
     html += '<div class="crono-prev-col">'
-      + buildBandCard({label:prev.label, roles:prev.roles}, accent, sharedRolesH, {mode:'compact'})
-      + buildSongsCard({songs:prev.songs}, accent, {mode:'compact'})
+      + buildBandCard({label:prev.label, roles:prev.roles}, accent, sharedRolesH, {mode:'crono'})
+      + buildSongsCard({songs:prev.songs}, accent, {mode:'crono'})
       + '</div>';
   });
   return html;
@@ -2204,39 +2204,44 @@ const IMG_MUTED   = '#64748b';
 const IMG_SHADOW  = '0 2px 12px rgba(15,23,42,.07),0 1px 3px rgba(15,23,42,.04)';
 
 function buildBandCard(s, accent, rolesH, opts={}){
-  const compact = opts.mode === 'compact';
+  // 'compact'  → grilla de Bandas (tamaño original, no tocar)
+  // 'crono'    → columnas de "servicios anteriores" del Cronograma mensual (más chico)
+  // sin mode   → tamaño completo (export / PNG mensual)
+  const mode = opts.mode;
+  const isBandas = mode === 'compact';
+  const isCrono  = mode === 'crono';
+  const small = isBandas || isCrono;
   const roles = ROLE_IDS.map(([l,id])=>({label:l,id,name:(s.roles[id]||'').trim()})).filter(r=>r.name);
   const accentTint = accent+'10';
-  const circleSize = compact ? 20 : 36;
-  const nameSize   = compact ? 12  : 19;
-  const labelSize  = compact ? 7.5 : 9.5;
-  const rowPad     = compact ? 4   : 9;
+  const circleSize = isCrono ? 20 : isBandas ? 32 : 36;
+  const nameSize   = isCrono ? 12  : isBandas ? 16 : 19;
+  const labelSize  = isCrono ? 7.5 : 9.5;
+  const rowPad     = isCrono ? 4   : isBandas ? 7 : 9;
   const rolesHTML = roles.map((r,i)=>`
-    <div style="display:flex;align-items:center;gap:${compact?8:12}px;padding:${rowPad}px 0;${i<roles.length-1?'border-bottom:1px solid '+accent+'15':''}">
-      <div style="width:${circleSize}px;height:${circleSize}px;border-radius:50%;background:${accent}16;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:${compact?10:17}px;line-height:1">${ROLE_EMOJI[r.id]||'🎵'}</div>
-      <div style="min-width:0;line-height:${compact?1.15:1.25}">
-        <div style="font-size:${labelSize}px;font-weight:600;color:${accent};letter-spacing:.09em;text-transform:uppercase;margin-bottom:${compact?0:2}px;opacity:.8">${r.label}</div>
-        <div style="font-size:${nameSize}px;font-weight:400;color:${IMG_TEXT};letter-spacing:-.01em${compact?';overflow:hidden;text-overflow:ellipsis;white-space:nowrap':''}">${r.name}</div>
+    <div style="display:flex;align-items:center;gap:${isCrono?8:12}px;padding:${rowPad}px 0;${i<roles.length-1?'border-bottom:1px solid '+accent+'15':''}">
+      <div style="width:${circleSize}px;height:${circleSize}px;border-radius:50%;background:${accent}16;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:${isCrono?10:isBandas?15:17}px;line-height:1">${ROLE_EMOJI[r.id]||'🎵'}</div>
+      <div style="min-width:0;line-height:${isCrono?1.15:1.25}">
+        <div style="font-size:${labelSize}px;font-weight:600;color:${accent};letter-spacing:.09em;text-transform:uppercase;margin-bottom:${isCrono?0:2}px;opacity:.8">${r.label}</div>
+        <div style="font-size:${nameSize}px;font-weight:400;color:${IMG_TEXT};letter-spacing:-.01em${small?';overflow:hidden;text-overflow:ellipsis;white-space:nowrap':''}">${r.name}</div>
       </div>
     </div>`).join('');
-  const rowH = compact ? ROLES_ROW_H_COMPACT : ROLES_ROW_H;
-  const headerAllow = compact ? 12 : 20;
-  const usedH = Math.max(roles.length * rowH + headerAllow, rolesH||0);
-  const headerPad = compact ? (opts.actions ? '9px 54px 8px 12px' : '9px 12px 8px') : '13px 16px 12px';
-  const bodyPad = compact ? '5px 12px 8px' : '8px 14px 14px';
+  const usedH = isCrono ? Math.max(roles.length * ROLES_ROW_H_COMPACT + 12, rolesH||0) : (isBandas ? 0 : Math.max(roles.length * ROLES_ROW_H + 20, rolesH));
+  const headerPad = isCrono ? '9px 12px 8px' : isBandas ? (opts.actions ? '11px 54px 10px 14px' : '11px 14px 10px') : '13px 16px 12px';
+  const bodyPad = isCrono ? '5px 12px 8px' : '8px 14px 14px';
   return `
     <div style="background:${IMG_SURFACE};border-radius:14px;border:1px solid ${IMG_BORDER};overflow:hidden;box-shadow:${IMG_SHADOW}">
       <div style="padding:${headerPad};background:${accent}">
-        <div style="font-size:${compact?12.5:19}px;font-weight:700;color:#fff${compact?';overflow:hidden;text-overflow:ellipsis;white-space:nowrap':''}">${s.label}</div>
+        <div style="font-size:${isCrono?12.5:19}px;font-weight:700;color:#fff${small?';overflow:hidden;text-overflow:ellipsis;white-space:nowrap':''}">${s.label}</div>
       </div>
-      <div style="padding:${bodyPad};background:${accentTint};min-height:${usedH}px;box-sizing:border-box">
+      <div style="padding:${bodyPad};background:${accentTint};${usedH?`min-height:${usedH}px;`:''}box-sizing:border-box">
         ${rolesHTML||'<div style="font-size:14px;color:#c8d0dc;font-style:italic;padding:4px 0">Sin equipo asignado</div>'}
       </div>
     </div>`;
 }
 
 function buildSongsCard(s, accent, opts={}){
-  const compact = opts.mode === 'compact';
+  // 'crono' → columnas de "servicios anteriores" del Cronograma mensual (única usuaria hasta ahora)
+  const compact = opts.mode === 'crono';
   const nameSize   = compact ? 11.5 : 15.5;
   const noteSize   = compact ? 9.5 : 12;
   const titleSize  = compact ? 11.5 : 17;
