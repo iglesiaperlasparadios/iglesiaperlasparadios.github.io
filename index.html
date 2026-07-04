@@ -1134,11 +1134,19 @@ function renderHistPanel(serviceIdx){
 
   if(!prevServices.length) return '<div style="grid-column:1/-1;font-size:11px;color:var(--text3);font-style:italic;text-align:center;padding:28px 0">Sin servicios anteriores</div>';
 
+  // altura común para las 2 cards de banda, para que las de "Canciones" arranquen alineadas
+  const maxRoles = Math.max(...prevServices.map(p => ROLE_IDS.filter(([,id]) => (p.roles[id]||'').trim()).length));
+  const sharedRolesH = maxRoles * ROLES_ROW_H_COMPACT + 12;
+
+  // idx 0 = más reciente (color/orden original) — se muestra en la columna derecha;
+  // orden de lectura izquierda→derecha = más antiguo → más reciente
+  const withAccent = prevServices.map((prev, idx) => ({prev, accent: DOMINGO_COLORS[idx % DOMINGO_COLORS.length]}));
+  const display = withAccent.length > 1 ? [...withAccent].reverse() : withAccent;
+
   let html = '<div style="grid-column:1/-1;font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.10em;margin-bottom:2px"><i class="ti ti-eye" style="margin-right:4px;font-size:10px"></i>Servicios anteriores</div>';
-  prevServices.forEach(function(prev, idx){
-    const accent = DOMINGO_COLORS[idx % DOMINGO_COLORS.length];
+  display.forEach(function({prev, accent}){
     html += '<div class="crono-prev-col">'
-      + buildBandCard({label:prev.label, roles:prev.roles}, accent, 0, {mode:'compact'})
+      + buildBandCard({label:prev.label, roles:prev.roles}, accent, sharedRolesH, {mode:'compact'})
       + buildSongsCard({songs:prev.songs}, accent, {mode:'compact'})
       + '</div>';
   });
@@ -2146,6 +2154,7 @@ const ROLE_EMOJI = {
 const SEC_LABEL = {principales:'CANCIONES',cena:'SANTA CENA',ofrenda:'OFRENDA',intervalo:'INTERVALO',final:'FINAL'};
 
 const ROLES_ROW_H = 56;
+const ROLES_ROW_H_COMPACT = 34;
 const DOMINGO_COLORS = ['#2563a8','#2d7a50','#6b3fa0','#c05a1f'];
 
 const IMG_BG      = '#f0f2f5';
@@ -2160,25 +2169,29 @@ function buildBandCard(s, accent, rolesH, opts={}){
   const compact = opts.mode === 'compact';
   const roles = ROLE_IDS.map(([l,id])=>({label:l,id,name:(s.roles[id]||'').trim()})).filter(r=>r.name);
   const accentTint = accent+'10';
-  const circleSize = compact ? 32 : 36;
-  const nameSize   = compact ? 16 : 19;
-  const rowPad     = compact ? 7 : 9;
+  const circleSize = compact ? 20 : 36;
+  const nameSize   = compact ? 12  : 19;
+  const labelSize  = compact ? 7.5 : 9.5;
+  const rowPad     = compact ? 4   : 9;
   const rolesHTML = roles.map((r,i)=>`
-    <div style="display:flex;align-items:center;gap:12px;padding:${rowPad}px 0;${i<roles.length-1?'border-bottom:1px solid '+accent+'15':''}">
-      <div style="width:${circleSize}px;height:${circleSize}px;border-radius:50%;background:${accent}16;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:${compact?15:17}px;line-height:1">${ROLE_EMOJI[r.id]||'🎵'}</div>
-      <div style="min-width:0;line-height:1.25">
-        <div style="font-size:9.5px;font-weight:600;color:${accent};letter-spacing:.09em;text-transform:uppercase;margin-bottom:2px;opacity:.8">${r.label}</div>
+    <div style="display:flex;align-items:center;gap:${compact?8:12}px;padding:${rowPad}px 0;${i<roles.length-1?'border-bottom:1px solid '+accent+'15':''}">
+      <div style="width:${circleSize}px;height:${circleSize}px;border-radius:50%;background:${accent}16;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:${compact?10:17}px;line-height:1">${ROLE_EMOJI[r.id]||'🎵'}</div>
+      <div style="min-width:0;line-height:${compact?1.15:1.25}">
+        <div style="font-size:${labelSize}px;font-weight:600;color:${accent};letter-spacing:.09em;text-transform:uppercase;margin-bottom:${compact?0:2}px;opacity:.8">${r.label}</div>
         <div style="font-size:${nameSize}px;font-weight:400;color:${IMG_TEXT};letter-spacing:-.01em${compact?';overflow:hidden;text-overflow:ellipsis;white-space:nowrap':''}">${r.name}</div>
       </div>
     </div>`).join('');
-  const usedH = compact ? 0 : Math.max(roles.length * ROLES_ROW_H + 20, rolesH);
-  const headerPad = compact ? (opts.actions ? '11px 54px 10px 14px' : '11px 14px 10px') : '13px 16px 12px';
+  const rowH = compact ? ROLES_ROW_H_COMPACT : ROLES_ROW_H;
+  const headerAllow = compact ? 12 : 20;
+  const usedH = Math.max(roles.length * rowH + headerAllow, rolesH||0);
+  const headerPad = compact ? (opts.actions ? '9px 54px 8px 12px' : '9px 12px 8px') : '13px 16px 12px';
+  const bodyPad = compact ? '5px 12px 8px' : '8px 14px 14px';
   return `
     <div style="background:${IMG_SURFACE};border-radius:14px;border:1px solid ${IMG_BORDER};overflow:hidden;box-shadow:${IMG_SHADOW}">
       <div style="padding:${headerPad};background:${accent}">
-        <div style="font-size:19px;font-weight:700;color:#fff${compact?';overflow:hidden;text-overflow:ellipsis;white-space:nowrap':''}">${s.label}</div>
+        <div style="font-size:${compact?12.5:19}px;font-weight:700;color:#fff${compact?';overflow:hidden;text-overflow:ellipsis;white-space:nowrap':''}">${s.label}</div>
       </div>
-      <div style="padding:8px 14px 14px;background:${accentTint};${usedH?`min-height:${usedH}px;`:''}box-sizing:border-box">
+      <div style="padding:${bodyPad};background:${accentTint};min-height:${usedH}px;box-sizing:border-box">
         ${rolesHTML||'<div style="font-size:14px;color:#c8d0dc;font-style:italic;padding:4px 0">Sin equipo asignado</div>'}
       </div>
     </div>`;
@@ -2186,14 +2199,14 @@ function buildBandCard(s, accent, rolesH, opts={}){
 
 function buildSongsCard(s, accent, opts={}){
   const compact = opts.mode === 'compact';
-  const nameSize   = compact ? 12.5 : 15.5;
-  const noteSize   = compact ? 10.5 : 12;
-  const titleSize  = compact ? 13 : 17;
-  const emojiSize  = compact ? 12 : 15;
-  const secGap     = compact ? '8px 0 5px' : '12px 0 7px';
-  const rowPad     = compact ? '3px 0' : '5px 0';
-  const headerPad  = compact ? '7px 12px 6px' : '10px 16px 9px';
-  const bodyPad    = compact ? '7px 12px 10px' : '10px 16px 14px';
+  const nameSize   = compact ? 11.5 : 15.5;
+  const noteSize   = compact ? 9.5 : 12;
+  const titleSize  = compact ? 11.5 : 17;
+  const emojiSize  = compact ? 11 : 15;
+  const secGap     = compact ? '7px 0 4px' : '12px 0 7px';
+  const rowPad     = compact ? '2px 0' : '5px 0';
+  const headerPad  = compact ? '6px 10px 5px' : '10px 16px 9px';
+  const bodyPad    = compact ? '5px 10px 8px' : '10px 16px 14px';
   const songs = SECCIONES.reduce((a,sec)=>{a[sec]=s.songs[sec]||[];return a},{});
   const hasSongs = SECCIONES.some(sec=>songs[sec].length>0);
   const songsHTML = SECCIONES.map(sec=>{
