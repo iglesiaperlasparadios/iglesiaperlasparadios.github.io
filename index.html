@@ -1049,7 +1049,7 @@ function renderServices(){
           <div class="crono-col-form" style="padding:14px 16px 18px">
             <div style="font-size:10px;font-weight:700;color:${accent};text-transform:uppercase;letter-spacing:.10em;margin-bottom:8px">Equipo</div>
             <div class="roles-grid" id="sr-${i}">
-              ${ROLE_IDS.map(([l,id])=>`<div class="role-row"><span class="role-lbl">${l}</span><input style="height:28px;font-size:12px" data-role="${id}" placeholder="${id==='acustica2'?'opcional':l}" value="${s.roles[id]||''}" onchange="updateRole(${i},'${id}',this.value)"></div>`).join('')}
+              ${ROLE_IDS.map(([l,id])=>`<div class="role-row"><span class="role-lbl">${ROLE_EMOJI[id]||''} ${l}</span><input style="height:28px;font-size:12px" data-role="${id}" placeholder="${id==='acustica2'?'opcional':l}" value="${s.roles[id]||''}" onchange="updateRole(${i},'${id}',this.value)"></div>`).join('')}
             </div>
             <div class="divider" style="margin:10px 0"></div>
             <div style="font-size:10px;font-weight:700;color:${SEC_COLORS.principales};text-transform:uppercase;letter-spacing:.10em;margin-bottom:7px">${SEC_EMOJIS.principales} Canciones</div>
@@ -1073,6 +1073,7 @@ function renderServices(){
       </div>
     </div>`;
   }).join('');
+  monthServices.forEach((s,i)=>{ if(s.open) equalizeCronoPanel(document.getElementById('hist-panel-'+i)); });
 }
 
 function renderSongItem(si,sec,idx,sg,sectionColor=null){
@@ -1153,6 +1154,43 @@ function renderHistPanel(serviceIdx){
   return html;
 }
 
+// Iguala alturas entre las 2 columnas de "servicios anteriores": la card de banda
+// se estira al máximo de las 2; la card de canciones más corta reparte la diferencia
+// como margen extra entre sus propios ítems (en vez de dejar relleno vacío abajo).
+function equalizeCronoPanel(panel){
+  if(!panel) return;
+  const cols = panel.querySelectorAll(':scope > .crono-prev-col');
+  if(cols.length < 2) return;
+  const bandCards = Array.from(cols).map(c=>c.children[0]).filter(Boolean);
+  const songCards = Array.from(cols).map(c=>c.children[1]).filter(Boolean);
+
+  bandCards.forEach(el=>{ el.style.minHeight=''; });
+  songCards.forEach(el=>{
+    el.style.minHeight='';
+    el.querySelectorAll('.crono-song-row').forEach(r=>{ r.style.paddingBottom=''; });
+  });
+
+  if(bandCards.length===2){
+    const max = Math.max(bandCards[0].offsetHeight, bandCards[1].offsetHeight);
+    bandCards.forEach(el=>{ el.style.minHeight = max+'px'; });
+  }
+  if(songCards.length===2){
+    const heights = songCards.map(el=>el.offsetHeight);
+    const max = Math.max(heights[0], heights[1]);
+    songCards.forEach((el,idx)=>{
+      const deficit = max - heights[idx];
+      if(deficit <= 1) return;
+      const rows = el.querySelectorAll('.crono-song-row');
+      if(rows.length){
+        const extra = deficit / rows.length;
+        rows.forEach(r=>{ r.style.paddingBottom = extra+'px'; });
+      } else {
+        el.style.minHeight = max+'px';
+      }
+    });
+  }
+}
+
 function saveHistorialFromServices(){
   // load fresh each time and accumulate all services at once
   let hist = getHistorial();
@@ -1216,7 +1254,7 @@ function toggleService(i){
     const card=body?.closest('.service-card');
     if(card){const ico=card.querySelector('.ti-chevron-up,.ti-chevron-down');if(ico)ico.className='ti ti-chevron-up';}
     const panel=document.getElementById('hist-panel-'+i);
-    if(panel) panel.innerHTML=renderHistPanel(i);
+    if(panel){ panel.innerHTML=renderHistPanel(i); equalizeCronoPanel(panel); }
   }
 }
 
@@ -1288,7 +1326,7 @@ function removeSong(si,sec,idx){
   saveMesState();
   // refresh mirror of next service
   const nextPanel = document.getElementById('hist-panel-'+(si+1));
-  if(nextPanel) nextPanel.innerHTML = renderHistPanel(si+1);
+  if(nextPanel){ nextPanel.innerHTML = renderHistPanel(si+1); equalizeCronoPanel(nextPanel); }
 }
 
 function addNuevaMes(name='',key='',author=''){
@@ -1359,7 +1397,7 @@ function confirmPicker(){
   saveMesState();
   // refresh mirror of NEXT service if it exists
   const nextPanel = document.getElementById('hist-panel-'+(pickerSI+1));
-  if(nextPanel) nextPanel.innerHTML = renderHistPanel(pickerSI+1);
+  if(nextPanel){ nextPanel.innerHTML = renderHistPanel(pickerSI+1); equalizeCronoPanel(nextPanel); }
 }
 
 // ═══════════════════════════════════════════════
@@ -2221,7 +2259,7 @@ function buildSongsCard(s, accent, opts={}){
           <div style="height:1px;background:${accent};opacity:.2;flex:1"></div>
         </div>`:''}
         ${songs[sec].map(sg=>`
-          <div style="padding:${rowPad}">
+          <div${compact?' class="crono-song-row"':''} style="padding:${rowPad}">
             <div style="font-size:${nameSize}px;font-weight:400;color:${IMG_TEXT};line-height:1.45">
               • ${sg.name}${sg.key?` <span style="color:${accent};font-weight:700">— ${sg.key}</span>`:''}${sg.nueva?` <span style="font-size:8px;font-weight:700;color:#fff;background:#2d8a4e;border-radius:3px;padding:1px 5px;vertical-align:middle">NUEVA</span>`:''}
             </div>
