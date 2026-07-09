@@ -328,9 +328,11 @@ select option { background: var(--bg3); }
 <div class="page" id="page-canciones">
   <div class="page-title">Biblioteca de canciones</div>
   <div class="page-sub">Todas las canciones disponibles con tonalidad y etiquetas</div>
-  <div class="btn-group" style="margin-bottom:12px">
+  <div class="btn-group" style="margin-bottom:6px">
     <button class="btn btn-primary" onclick="openCancionModal()"><i class="ti ti-plus"></i> Nueva canción</button>
+    <button class="btn" id="publish-canciones-btn" onclick="publishCancionesToCloud()" style="display:none;border-color:#2563a8;color:#2563a8"><i class="ti ti-cloud-upload"></i> Publicar canciones a la nube</button>
   </div>
+  <div id="publish-canciones-hint" style="font-size:11px;color:var(--text3);margin-bottom:10px;display:none"><i class="ti ti-lock" style="font-size:11px"></i> Iniciá sesión en Configuración para publicar la biblioteca a la nube.</div>
   <div class="search-input" style="margin-bottom:10px">
     <i class="ti ti-search"></i>
     <input id="search-canciones" placeholder="Buscar canción..." oninput="renderCanciones()">
@@ -393,6 +395,28 @@ select option { background: var(--bg3); }
     <div class="card-title">Previsualización del header</div>
     <div id="cfg-header-preview" style="background:#f4f6f9;border-radius:8px;padding:16px;font-family:'Outfit',sans-serif">
       <div style="font-size:11px;color:var(--text3);text-align:center">Guardá los datos para ver la previsualización</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Backup de datos</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Descargá una copia completa de todos los datos guardados (canciones, cronogramas, bandas, listas, guiones, participación, configuración) o restaurala en otro navegador o dispositivo.</div>
+    <div class="btn-group">
+      <button class="btn" onclick="exportAllData()"><i class="ti ti-download"></i> Exportar datos</button>
+      <label class="btn" style="cursor:pointer">
+        <i class="ti ti-upload"></i> Importar datos
+        <input type="file" id="cfg-import-file" accept="application/json,.json" style="display:none" onchange="importAllDataFile(event)">
+      </label>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Sincronización de canciones en la nube</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Iniciá sesión con Google para publicar la biblioteca de canciones a la nube. Cualquier dispositivo (sin necesidad de iniciar sesión) lee automáticamente la última versión publicada al abrir la app.</div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span id="cloud-auth-status" style="font-size:12px;color:var(--text2)">Verificando conexión...</span>
+      <button class="btn btn-sm" id="cloud-signin-btn" onclick="cloudSignIn()" style="display:none"><i class="ti ti-brand-google"></i> Iniciar sesión con Google</button>
+      <button class="btn btn-sm btn-danger" id="cloud-signout-btn" onclick="cloudSignOut()" style="display:none"><i class="ti ti-logout"></i> Cerrar sesión</button>
     </div>
   </div>
 </div>
@@ -2156,6 +2180,52 @@ function removeLogo(){
   if(rm)rm.style.display='none';
   renderConfigPreview();
 }
+
+// ── Backup completo de datos (Configuración) ──
+// Vuelca TODO localStorage (todas las claves que usa la app) a un único JSON.
+function exportAllData(){
+  const data={};
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    data[k]=localStorage.getItem(k);
+  }
+  const payload={app:'ministerio-musica',exportedAt:new Date().toISOString(),data};
+  const now=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  const dateStr=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  const cfg=getConfig();
+  const firstWord=(cfg.iglesia||'').trim().split(/\s+/)[0]||'ministerio';
+  const slug=firstWord.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'')||'ministerio';
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`${slug}-backup-${dateStr}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('Datos exportados correctamente','green');
+}
+
+function importAllDataFile(event){
+  const file=event.target.files[0];
+  if(!file)return;
+  event.target.value='';
+  const reader=new FileReader();
+  reader.onload=e=>{
+    let parsed;
+    try{ parsed=JSON.parse(e.target.result); }
+    catch(err){ showToast('El archivo no es un JSON válido','red'); return; }
+    const data=(parsed&&typeof parsed.data==='object')?parsed.data:null;
+    if(!data){ showToast('El archivo no tiene el formato esperado','red'); return; }
+    if(!confirm('Esto reemplazará los datos actuales, ¿continuar?')) return;
+    Object.keys(data).forEach(k=>{
+      try{ localStorage.setItem(k,data[k]); }catch(err){}
+    });
+    showToast('Datos importados. Recargando...','green');
+    setTimeout(()=>location.reload(),800);
+  };
+  reader.readAsText(file);
+}
+
 function renderConfigPreview(){
   const cfg=getConfig();
   const el=document.getElementById('cfg-header-preview');
@@ -2871,6 +2941,10 @@ initCal();
 renderCalMes();
 // restore mes state if exists
 restoreMesState();
+
+// si el módulo Firebase nunca llega a inicializar (CDN bloqueado, sin red),
+// no dejar el texto colgado en "Verificando conexión..."
+setTimeout(()=>{ if(!window.mmCloud) renderCloudAuthUI(null); }, 6000);
 // pre-load logo from config if stored
 (()=>{
   const cfg=getConfig();
@@ -3823,6 +3897,159 @@ async function previewGuionPNG(){
   }catch(e){ showToast('Error al generar','red'); console.error(e); }
   btns.forEach(b=>b.disabled=false);
 }
+
+// ═══════════════════════════════════════════════
+// SINCRONIZACIÓN DE CANCIONES EN LA NUBE (Firebase)
+// Solo la biblioteca de canciones usa la nube. Todo lo demás sigue
+// funcionando 100% con localStorage, con o sin Firebase disponible.
+// ═══════════════════════════════════════════════
+
+// Llamado por el módulo Firebase (abajo) cuando cambia el estado de sesión.
+function onCloudAuthChanged(user){
+  renderCloudAuthUI(user);
+}
+
+function renderCloudAuthUI(user){
+  const statusEl = document.getElementById('cloud-auth-status');
+  const signInBtn = document.getElementById('cloud-signin-btn');
+  const signOutBtn = document.getElementById('cloud-signout-btn');
+  const pubBtn = document.getElementById('publish-canciones-btn');
+  const pubHint = document.getElementById('publish-canciones-hint');
+  const cloudOk = window.mmCloud && window.mmCloud.ready();
+
+  if(statusEl){
+    if(!cloudOk) statusEl.textContent = 'Sin conexión a la nube — usando datos locales';
+    else if(user) statusEl.textContent = `Conectado como ${user.email}`;
+    else statusEl.textContent = 'Desconectado';
+  }
+  if(signInBtn) signInBtn.style.display = (cloudOk && !user) ? '' : 'none';
+  if(signOutBtn) signOutBtn.style.display = (cloudOk && user) ? '' : 'none';
+  if(pubBtn) pubBtn.style.display = (cloudOk && user) ? '' : 'none';
+  if(pubHint) pubHint.style.display = (cloudOk && !user) ? '' : 'none';
+}
+
+async function cloudSignIn(){
+  if(!window.mmCloud || !window.mmCloud.ready()){ showToast('Sin conexión a la nube en este momento','red'); return; }
+  try{
+    await window.mmCloud.signIn();
+    showToast('Sesión iniciada','green');
+  }catch(e){
+    console.error('cloudSignIn error', e);
+    showToast('No se pudo iniciar sesión','red');
+  }
+}
+
+async function cloudSignOut(){
+  if(!window.mmCloud || !window.mmCloud.ready()) return;
+  try{
+    await window.mmCloud.signOutUser();
+    showToast('Sesión cerrada','amber');
+  }catch(e){
+    console.error('cloudSignOut error', e);
+  }
+}
+
+async function publishCancionesToCloud(){
+  if(!window.mmCloud || !window.mmCloud.ready()){ showToast('Sin conexión a la nube en este momento','red'); return; }
+  if(!window.mmCloud.user){ showToast('Iniciá sesión primero','amber'); return; }
+  const btn = document.getElementById('publish-canciones-btn');
+  if(btn) btn.disabled = true;
+  try{
+    const items = getCanciones();
+    await window.mmCloud.publishCanciones(items);
+    showToast(`Canciones publicadas a la nube (${items.length})`, 'green');
+  }catch(e){
+    console.error('publishCancionesToCloud error', e);
+    showToast('Error al publicar — revisá tu conexión', 'red');
+  }
+  if(btn) btn.disabled = false;
+}
+
+// Llamado por el módulo Firebase al cargar la app, si hay canciones publicadas.
+function applyCloudCanciones(items){
+  try{
+    saveCanciones(items);
+    if(document.getElementById('page-canciones')?.classList.contains('active')) renderCanciones();
+  }catch(e){
+    console.error('applyCloudCanciones error', e);
+  }
+}
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCkL2ON8b5fuxFhV3fI8qgdN2ecp7JtAOU",
+    authDomain: "ministerio-musica-f7949.firebaseapp.com",
+    projectId: "ministerio-musica-f7949",
+    storageBucket: "ministerio-musica-f7949.firebasestorage.app",
+    messagingSenderId: "209930552817",
+    appId: "1:209930552817:web:e696da334990a1b7323050"
+  };
+
+  const CANCIONES_DOC_PATH = ['canciones_lib', 'main'];
+
+  let cloudReady = false, auth = null, db = null;
+  try{
+    const app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+    cloudReady = true;
+  }catch(e){
+    console.error('No se pudo inicializar Firebase — la app sigue funcionando con datos locales', e);
+  }
+
+  window.mmCloud = {
+    user: null,
+    ready(){ return cloudReady; },
+    async signIn(){
+      if(!cloudReady) throw new Error('Firebase no disponible');
+      await signInWithPopup(auth, new GoogleAuthProvider());
+    },
+    async signOutUser(){
+      if(!cloudReady) throw new Error('Firebase no disponible');
+      await signOut(auth);
+    },
+    async fetchCloudCanciones(){
+      if(!cloudReady) return null;
+      try{
+        const snap = await getDoc(doc(db, ...CANCIONES_DOC_PATH));
+        const data = snap.exists() ? snap.data() : null;
+        return (data && Array.isArray(data.items)) ? data.items : null;
+      }catch(e){
+        console.warn('No se pudieron leer canciones de la nube (sigue funcionando con datos locales)', e);
+        return null;
+      }
+    },
+    async publishCanciones(items){
+      if(!cloudReady) throw new Error('Firebase no disponible');
+      if(!auth.currentUser) throw new Error('No hay sesión iniciada');
+      await setDoc(doc(db, ...CANCIONES_DOC_PATH), {
+        items,
+        updatedAt: new Date().toISOString(),
+        updatedBy: auth.currentUser.email || auth.currentUser.uid
+      });
+    }
+  };
+
+  if(cloudReady){
+    onAuthStateChanged(auth, (user)=>{
+      window.mmCloud.user = user;
+      if(typeof window.onCloudAuthChanged === 'function') window.onCloudAuthChanged(user);
+    });
+
+    // Lectura pública al abrir la app: si hay canciones publicadas, poblar la biblioteca local con esas.
+    window.mmCloud.fetchCloudCanciones().then(items=>{
+      if(items && items.length && typeof window.applyCloudCanciones === 'function'){
+        window.applyCloudCanciones(items);
+      }
+    });
+  }else{
+    if(typeof window.onCloudAuthChanged === 'function') window.onCloudAuthChanged(null);
+  }
 </script>
 </body>
 </html>
