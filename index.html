@@ -3662,10 +3662,10 @@ function confirmLetraPicker(){
 
 function _fmtGuionDate(d){
   if(!d) return '—';
-  const [y,m,day]=d.split('-');
-  const dow=new Date(d).getDay();
+  const [y,m,day]=d.split('-').map(Number);
+  const dow=new Date(y,m-1,day).getDay();
   const dias=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-  return `${dias[dow]} ${parseInt(day)} de ${MESES[parseInt(m)-1]} ${y}`;
+  return `${dias[dow]} ${day} de ${MESES[m-1]} ${y}`;
 }
 
 
