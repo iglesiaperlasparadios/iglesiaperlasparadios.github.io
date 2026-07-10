@@ -214,6 +214,14 @@ select option { background: var(--bg3); }
 .search-input input { padding-left: 32px; }
 .canvas-preview { border-radius: 8px; overflow: hidden; border: 1px solid var(--border); margin-top: 10px; }
 .canvas-preview canvas { display: block; width: 100%; height: auto; }
+
+/* CANCIONERO — modo lectura */
+.cancionero-sec-label { font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .08em; margin: 20px 0 8px; }
+.cancionero-sec-label:first-child { margin-top: 0; }
+.cancionero-lyrics { font-family: 'Outfit', sans-serif; font-size: 1.5rem; line-height: 1.7; color: var(--text); white-space: pre-wrap; }
+.cancionero-chords-wrap { overflow-x: auto; }
+.cancionero-chords { font-family: 'SF Mono', 'Consolas', monospace; font-size: 1rem; line-height: 1.7; white-space: pre; color: var(--text); }
+.cancionero-chords .chordline { color: #c05a1f; font-weight: 700; }
 </style>
 </head>
 <body>
@@ -229,6 +237,7 @@ select option { background: var(--bg3); }
     <div class="nav-item active" data-page="mes" onclick="goTo('mes')"><i class="ti ti-calendar-month"></i> Cronograma mensual</div>
     <div class="nav-item" data-page="guion" onclick="goTo('guion')"><i class="ti ti-clipboard-list"></i> Coordinación</div>
     <div class="nav-item" data-page="canciones" onclick="goTo('canciones')"><i class="ti ti-music"></i> Canciones</div>
+    <div class="nav-item" data-page="cancionero" onclick="goTo('cancionero')"><i class="ti ti-book-2"></i> Cancionero</div>
     <div class="nav-item" data-page="listas" onclick="goTo('listas')"><i class="ti ti-playlist"></i> Listas armadas</div>
     <div class="nav-item" data-page="bandas" onclick="goTo('bandas')"><i class="ti ti-users"></i> Bandas</div>
     <div class="nav-item" data-page="participacion" onclick="goTo('participacion')"><i class="ti ti-user-check"></i> Participación</div>
@@ -339,6 +348,37 @@ select option { background: var(--bg3); }
   </div>
   <div class="chip-group" id="filter-chips"></div>
   <div id="canciones-list"></div>
+</div>
+
+<!-- ===== CANCIONERO (modo lectura) ===== -->
+<div class="page" id="page-cancionero">
+  <div id="cancionero-index">
+    <div class="page-title">Cancionero</div>
+    <div class="page-sub">Letras para seguir la alabanza desde tu celular</div>
+    <div class="search-input" style="margin-bottom:10px">
+      <i class="ti ti-search"></i>
+      <input id="cancionero-search" placeholder="Buscar canción..." oninput="renderCancionerIndex()">
+    </div>
+    <div id="cancionero-cards"></div>
+  </div>
+
+  <div id="cancionero-viewer" style="display:none">
+    <button class="btn btn-sm" style="margin-bottom:14px" onclick="backToCancionero()"><i class="ti ti-chevron-left"></i> Volver al cancionero</button>
+    <div class="card" style="padding:20px 22px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+        <div>
+          <div id="cancionero-viewer-title" style="font-family:'Fraunces',serif;font-size:26px;font-weight:700;color:var(--text);line-height:1.2"></div>
+          <div id="cancionero-viewer-meta" style="font-size:13px;color:var(--text2);margin-top:5px"></div>
+        </div>
+        <button class="btn btn-sm" id="cancionero-toggle-chords-btn" onclick="toggleCancionerChords()"><i class="ti ti-guitar-pick"></i> Ver acordes</button>
+      </div>
+      <div id="cancionero-viewer-body"></div>
+    </div>
+    <div class="btn-group" style="justify-content:space-between;margin-top:16px">
+      <button class="btn" onclick="cancionerNav(-1)"><i class="ti ti-chevron-left"></i> Anterior</button>
+      <button class="btn" onclick="cancionerNav(1)">Siguiente <i class="ti ti-chevron-right"></i></button>
+    </div>
+  </div>
 </div>
 
 <!-- ===== LISTAS ===== -->
@@ -936,6 +976,7 @@ function goTo(id){
   document.querySelector(`.nav-item[data-page="${id}"]`)?.classList.add('active');
   if(id==='bandas') renderBandas();
   if(id==='canciones') renderCanciones();
+  if(id==='cancionero') renderCancionero();
   if(id==='listas') renderListas();
   if(id==='participacion') renderParticipacion();
   if(id==='config'){ loadConfigFields(); renderConfigPreview(); }
@@ -1983,6 +2024,124 @@ function renderCanciones(){
         <button class="btn btn-sm btn-icon btn-danger" onclick="deleteCancion('${s.id}')"><i class="ti ti-trash"></i></button>
       </div>
     </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════
+// CANCIONERO — modo lectura para la congregación
+// Solo lee de getCanciones() (misma fuente que "Canciones", ya
+// poblada por la nube). No escribe nada, no duplica datos.
+// ═══════════════════════════════════════════════
+const CHORD  = /^[A-G][#b]?(m|maj|min|M|sus|add|dim|aug)*[0-9]*(sus|add|maj|m|M)?[0-9]*(\/[A-G][#b]?)?$/;
+const REPEAT = /^\((?:x|X)[0-9]+\)$/;
+
+function _tokenOk(tok){
+  tok = tok.replace(/^[.,]+|[.,]+$/g, '');          // saca . o , de los bordes (Am. -> Am)
+  if (tok === '') return true;
+  if (['-','/','//','|','||'].includes(tok)) return true;   // separadores
+  if (REPEAT.test(tok)) return true;                        // (x2), (X2)
+  const parts = tok.split(/[-/]/).filter(p => p !== '');    // F-G, D/F# -> partes
+  return parts.length > 0 && parts.every(p => CHORD.test(p));
+}
+function _hasRealChord(tok){
+  tok = tok.replace(/^[.,]+|[.,]+$/g, '');
+  const parts = tok.split(/[-/]/).filter(p => p !== '');
+  return parts.some(p => CHORD.test(p));
+}
+function isChordLine(l){
+  const toks = l.trim().split(/\s+/).filter(Boolean);
+  if (!toks.length) return false;
+  return toks.every(_tokenOk) && toks.some(_hasRealChord);
+}
+const lyricsOnly = c => c.split('\n').filter(l => !isChordLine(l)).join('\n');
+
+let _cancioneroList = [];   // orden alfabético completo (para Anterior/Siguiente)
+let _cancioneroIdx = -1;    // índice actual dentro de _cancioneroList
+let _cancioneroShowChords = false;
+
+function renderCancionero(){
+  _cancioneroList = getCanciones().slice().sort((a,b)=>a.name.localeCompare(b.name,'es',{sensitivity:'base'}));
+  document.getElementById('cancionero-viewer').style.display='none';
+  document.getElementById('cancionero-index').style.display='';
+  renderCancionerIndex();
+}
+
+function renderCancionerIndex(){
+  const q=(document.getElementById('cancionero-search')?.value||'').toLowerCase();
+  const songs=_cancioneroList.filter(s=>!q||s.name.toLowerCase().includes(q));
+  const el=document.getElementById('cancionero-cards');
+  if(!songs.length){ el.innerHTML='<div class="empty-state"><i class="ti ti-music-off"></i>No hay canciones</div>'; return; }
+  el.innerHTML=songs.map(s=>`
+    <div class="song-lib-item" style="cursor:pointer" onclick="openCancionerViewer('${s.id}')">
+      <div style="flex:1">
+        <span class="song-lib-name">${s.name}</span>
+      </div>
+      ${s.key?`<span class="song-lib-key">${s.key}</span>`:''}
+      <i class="ti ti-chevron-right" style="color:var(--text3)"></i>
+    </div>`).join('');
+}
+
+function openCancionerViewer(id){
+  const idx=_cancioneroList.findIndex(s=>s.id===id);
+  if(idx<0) return;
+  _cancioneroIdx=idx;
+  _cancioneroShowChords=false;
+  document.getElementById('cancionero-index').style.display='none';
+  document.getElementById('cancionero-viewer').style.display='';
+  renderCancionerViewer();
+}
+
+function backToCancionero(){
+  document.getElementById('cancionero-viewer').style.display='none';
+  document.getElementById('cancionero-index').style.display='';
+}
+
+function cancionerNav(dir){
+  if(!_cancioneroList.length) return;
+  _cancioneroIdx=(_cancioneroIdx+dir+_cancioneroList.length)%_cancioneroList.length;
+  _cancioneroShowChords=false;
+  renderCancionerViewer();
+}
+
+function toggleCancionerChords(){
+  _cancioneroShowChords=!_cancioneroShowChords;
+  renderCancionerViewer();
+}
+
+function renderCancionerViewer(){
+  const s=_cancioneroList[_cancioneroIdx];
+  if(!s) return;
+  const esc=str=>(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+
+  document.getElementById('cancionero-viewer-title').textContent=s.name;
+  const metaParts=[];
+  if(s.key) metaParts.push(`Tono: <strong style="color:var(--accent)">${esc(s.key)}</strong>`);
+  if(s.capo) metaParts.push(`Capo: <strong>${esc(s.capo)}</strong>`);
+  document.getElementById('cancionero-viewer-meta').innerHTML=metaParts.join(' &nbsp;·&nbsp; ');
+
+  const btn=document.getElementById('cancionero-toggle-chords-btn');
+  btn.innerHTML=`<i class="ti ti-guitar-pick"></i> ${_cancioneroShowChords?'Ocultar acordes':'Ver acordes'}`;
+
+  const secciones=_getSecciones(s);
+  const body=document.getElementById('cancionero-viewer-body');
+  if(!secciones.length){
+    body.innerHTML='<div class="empty-state"><i class="ti ti-music-off"></i>Esta canción todavía no tiene letra cargada.</div>';
+    return;
+  }
+
+  if(_cancioneroShowChords){
+    body.innerHTML=secciones.map(sec=>{
+      const label=_SEC_TIPO_LABEL[sec.tipo]||(sec.tipo?sec.tipo.charAt(0).toUpperCase()+sec.tipo.slice(1):'');
+      const lines=(sec.contenido||'').split('\n').map(l=>isChordLine(l)?`<span class="chordline">${esc(l)}</span>`:esc(l)).join('\n');
+      return `<div class="cancionero-sec-label">${esc(label)}</div><div class="cancionero-chords-wrap"><div class="cancionero-chords">${lines}</div></div>`;
+    }).join('');
+  } else {
+    body.innerHTML=secciones.map(sec=>{
+      const letra=lyricsOnly(sec.contenido||'').replace(/\n{3,}/g,'\n\n').trim();
+      if(!letra) return ''; // sección solo de acordes (intro/interludio) — se salta en este modo
+      const label=_SEC_TIPO_LABEL[sec.tipo]||(sec.tipo?sec.tipo.charAt(0).toUpperCase()+sec.tipo.slice(1):'');
+      return `<div class="cancionero-sec-label">${esc(label)}</div><div class="cancionero-lyrics">${esc(letra)}</div>`;
+    }).join('');
+  }
 }
 
 // ═══════════════════════════════════════════════
