@@ -2168,6 +2168,21 @@ function _cnTransposeLine(line, n){
 function _cnCleanKey(key){
   return (key||'').replace(/[^A-G#bm]/g,'');
 }
+// respaldo cuando "key" está vacío: raíz del primer acorde de la canción
+function _cnDeduceKeyFromSecciones(secciones){
+  for(const sec of secciones||[]){
+    const lines=(sec.contenido||'').split('\n');
+    for(const line of lines){
+      if(!isChordLine(line)) continue;
+      const toks=line.trim().split(/\s+/).filter(Boolean);
+      for(const tok of toks){
+        const m=tok.match(/^[A-G][#b]?/);
+        if(m) return m[0];
+      }
+    }
+  }
+  return '';
+}
 
 let _cancioneroList = [];   // orden alfabético completo (para Anterior/Siguiente)
 let _cancioneroIdx = -1;    // índice actual dentro de _cancioneroList
@@ -2258,8 +2273,12 @@ function renderCancionerViewer(){
   const btn=document.getElementById('cancionero-toggle-chords-btn');
   btn.innerHTML=`<i class="ti ti-guitar-pick"></i> ${_cancioneroShowChords?'Ocultar acordes':'Ver acordes'}`;
 
+  const secciones=_getSecciones(s);
+
   // Herramientas de acordes: tono que suena vs. formas a tocar (tono - capo)
-  const cleanKey=_cnCleanKey(s.key||'');
+  // El key cargado manda; si está vacío, se deduce de la raíz del primer acorde.
+  let cleanKey=_cnCleanKey(s.key||'');
+  if(!cleanKey) cleanKey=_cnDeduceKeyFromSecciones(secciones);
   const tonoOffset=_cancioneroTonoOffset, capoFret=_cancioneroCapoFret;
   const formasOffset=tonoOffset-capoFret;
   const suenaEn=cleanKey?_cnTransposeLine(cleanKey,tonoOffset):'';
@@ -2278,7 +2297,6 @@ function renderCancionerViewer(){
     capoNoteEl.style.display='none';
   }
 
-  const secciones=_getSecciones(s);
   const body=document.getElementById('cancionero-viewer-body');
   if(!secciones.length){
     body.innerHTML='<div class="empty-state"><i class="ti ti-music-off"></i>Esta canción todavía no tiene letra cargada.</div>';
