@@ -273,6 +273,9 @@ select option { background: var(--bg3); }
 .cancionero-chords-wrap { overflow-x: auto; }
 .cancionero-chords { font-family: 'SF Mono', 'Consolas', monospace; font-size: 1rem; line-height: 1.7; white-space: pre; color: var(--text); }
 .cancionero-chords .chordline { color: #c05a1f; font-weight: 700; }
+/* índice del Cancionero — scopeado, no toca la lista de "Canciones" (editor) */
+#cancionero-index .song-lib-key { display: none; }
+#cancionero-index .song-lib-name { font-size: 15px; }
 </style>
 </head>
 <body>
@@ -429,6 +432,23 @@ select option { background: var(--bg3); }
           <div id="cancionero-viewer-meta" style="font-size:13px;color:var(--text2);margin-top:5px"></div>
         </div>
         <button class="btn btn-sm" id="cancionero-toggle-chords-btn" onclick="toggleCancionerChords()"><i class="ti ti-guitar-pick"></i> Ver acordes</button>
+      </div>
+      <div id="cancionero-chord-tools" style="display:none;flex-direction:column;gap:9px;margin-bottom:16px;padding:11px 14px;background:var(--bg3);border-radius:10px;width:fit-content;min-width:230px">
+        <div id="cancionero-sounds-in" style="font-size:13px;font-weight:600;color:var(--text)">🔊 Suena en —</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;color:var(--text3);width:36px">Tono</span>
+          <button class="btn btn-sm btn-icon" onclick="cancionerTonoChange(-1)" title="Bajar un semitono"><i class="ti ti-minus"></i></button>
+          <span id="cancionero-tono-indicator" style="font-size:13px;font-weight:600;color:var(--accent);min-width:40px;text-align:center">—</span>
+          <button class="btn btn-sm btn-icon" onclick="cancionerTonoChange(1)" title="Subir un semitono"><i class="ti ti-plus"></i></button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;color:var(--text3);width:36px">Capo</span>
+          <button class="btn btn-sm btn-icon" onclick="cancionerCapoChange(-1)" title="Bajar el capo"><i class="ti ti-minus"></i></button>
+          <span id="cancionero-capo-indicator" style="font-size:13px;font-weight:600;color:var(--accent);min-width:40px;text-align:center">0</span>
+          <button class="btn btn-sm btn-icon" onclick="cancionerCapoChange(1)" title="Subir el capo"><i class="ti ti-plus"></i></button>
+          <button class="btn btn-sm btn-icon" onclick="cancionerChordToolsReset()" title="Volver al original" style="margin-left:auto"><i class="ti ti-rotate-2"></i></button>
+        </div>
+        <div id="cancionero-capo-note" style="display:none;font-size:12px;color:#c05a1f;font-weight:600"></div>
       </div>
       <div id="cancionero-viewer-body"></div>
     </div>
@@ -2130,9 +2150,30 @@ function isChordLine(l){
 }
 const lyricsOnly = c => c.split('\n').filter(l => !isChordLine(l)).join('\n');
 
+// Transposición TEMPORAL del visor (solo en pantalla, modo con acordes).
+// Aislada de la transposición del editor (transposeChordsBy/_transposeNote/_isChordLine),
+// que no se toca. No persiste ni publica nada.
+const _NOTES_T = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const _FLATS_T = {Db:'C#',Eb:'D#',Gb:'F#',Ab:'G#',Bb:'A#',Cb:'B',Fb:'E'};
+function _cnTransposeNote(note, n){
+  const base = _FLATS_T[note] || note;
+  const i = _NOTES_T.indexOf(base);
+  if (i === -1) return note;                    // token raro: no lo toca
+  return _NOTES_T[(((i + n) % 12) + 12) % 12];  // modulo seguro (sirve para negativos)
+}
+function _cnTransposeLine(line, n){
+  return line.replace(/([A-G][#b]?)/g, m => _cnTransposeNote(m, n));
+}
+// limpia el campo "Tono" de caracteres raros (ej. "F·#m" -> "F#m") antes de transponerlo
+function _cnCleanKey(key){
+  return (key||'').replace(/[^A-G#bm]/g,'');
+}
+
 let _cancioneroList = [];   // orden alfabético completo (para Anterior/Siguiente)
 let _cancioneroIdx = -1;    // índice actual dentro de _cancioneroList
 let _cancioneroShowChords = false;
+let _cancioneroTonoOffset = 0; // temporal, semitonos — botones "Tono"
+let _cancioneroCapoFret = 0;   // temporal, 0 a 7 — botones "Capo"
 
 function renderCancionero(){
   _cancioneroList = getCanciones().slice().sort((a,b)=>a.name.localeCompare(b.name,'es',{sensitivity:'base'}));
@@ -2161,12 +2202,16 @@ function openCancionerViewer(id){
   if(idx<0) return;
   _cancioneroIdx=idx;
   _cancioneroShowChords=false;
+  _cancioneroTonoOffset=0;
+  _cancioneroCapoFret=0;
   document.getElementById('cancionero-index').style.display='none';
   document.getElementById('cancionero-viewer').style.display='';
   renderCancionerViewer();
 }
 
 function backToCancionero(){
+  _cancioneroTonoOffset=0;
+  _cancioneroCapoFret=0;
   document.getElementById('cancionero-viewer').style.display='none';
   document.getElementById('cancionero-index').style.display='';
 }
@@ -2175,11 +2220,27 @@ function cancionerNav(dir){
   if(!_cancioneroList.length) return;
   _cancioneroIdx=(_cancioneroIdx+dir+_cancioneroList.length)%_cancioneroList.length;
   _cancioneroShowChords=false;
+  _cancioneroTonoOffset=0;
+  _cancioneroCapoFret=0;
   renderCancionerViewer();
 }
 
 function toggleCancionerChords(){
   _cancioneroShowChords=!_cancioneroShowChords;
+  renderCancionerViewer();
+}
+
+function cancionerTonoChange(delta){
+  _cancioneroTonoOffset+=delta;
+  renderCancionerViewer();
+}
+function cancionerCapoChange(delta){
+  _cancioneroCapoFret=Math.min(7,Math.max(0,_cancioneroCapoFret+delta));
+  renderCancionerViewer();
+}
+function cancionerChordToolsReset(){
+  _cancioneroTonoOffset=0;
+  _cancioneroCapoFret=0;
   renderCancionerViewer();
 }
 
@@ -2197,6 +2258,26 @@ function renderCancionerViewer(){
   const btn=document.getElementById('cancionero-toggle-chords-btn');
   btn.innerHTML=`<i class="ti ti-guitar-pick"></i> ${_cancioneroShowChords?'Ocultar acordes':'Ver acordes'}`;
 
+  // Herramientas de acordes: tono que suena vs. formas a tocar (tono - capo)
+  const cleanKey=_cnCleanKey(s.key||'');
+  const tonoOffset=_cancioneroTonoOffset, capoFret=_cancioneroCapoFret;
+  const formasOffset=tonoOffset-capoFret;
+  const suenaEn=cleanKey?_cnTransposeLine(cleanKey,tonoOffset):'';
+  const tonoFormas=cleanKey?_cnTransposeLine(cleanKey,formasOffset):'';
+
+  const toolsPanel=document.getElementById('cancionero-chord-tools');
+  toolsPanel.style.display=_cancioneroShowChords?'flex':'none';
+  document.getElementById('cancionero-sounds-in').textContent='🔊 Suena en '+(suenaEn||'—');
+  document.getElementById('cancionero-tono-indicator').textContent=suenaEn||'—';
+  document.getElementById('cancionero-capo-indicator').textContent=String(capoFret);
+  const capoNoteEl=document.getElementById('cancionero-capo-note');
+  if(capoFret>0){
+    capoNoteEl.style.display='';
+    capoNoteEl.textContent=`🎸 Capo traste ${capoFret} · tocá formas de ${tonoFormas||'—'} (suena igual)`;
+  } else {
+    capoNoteEl.style.display='none';
+  }
+
   const secciones=_getSecciones(s);
   const body=document.getElementById('cancionero-viewer-body');
   if(!secciones.length){
@@ -2207,7 +2288,10 @@ function renderCancionerViewer(){
   if(_cancioneroShowChords){
     body.innerHTML=secciones.map(sec=>{
       const label=_SEC_TIPO_LABEL[sec.tipo]||(sec.tipo?sec.tipo.charAt(0).toUpperCase()+sec.tipo.slice(1):'');
-      const lines=(sec.contenido||'').split('\n').map(l=>isChordLine(l)?`<span class="chordline">${esc(l)}</span>`:esc(l)).join('\n');
+      const lines=(sec.contenido||'').split('\n').map(l=>{
+        if(!isChordLine(l)) return esc(l);
+        return `<span class="chordline">${esc(formasOffset?_cnTransposeLine(l,formasOffset):l)}</span>`;
+      }).join('\n');
       return `<div class="cancionero-sec-label">${esc(label)}</div><div class="cancionero-chords-wrap"><div class="cancionero-chords">${lines}</div></div>`;
     }).join('');
   } else {
