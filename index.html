@@ -51,6 +51,42 @@ body { min-height: 100vh; }
 .nav-item i { font-size: 16px; }
 .main { flex: 1; overflow-y: auto; background: var(--bg); }
 .page { display: none; padding: 24px; max-width: 900px; }
+
+/* MOBILE NAV — hamburguesa + sidebar overlay. Todo dentro del @media: desktop intacto. */
+.mobile-topbar { display: none; }
+.sidebar-backdrop { display: none; }
+@media (max-width: 768px) {
+  .mobile-topbar {
+    display: flex; align-items: center; gap: 10px;
+    position: fixed; top: 0; left: 0; right: 0; height: 52px;
+    background: var(--accent); z-index: 250;
+    padding: 0 14px; box-shadow: 0 2px 8px rgba(15,23,42,.15);
+  }
+  .mobile-topbar-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; border-radius: 8px; border: none; flex-shrink: 0;
+    background: rgba(255,255,255,.16); color: #fff; font-size: 19px; cursor: pointer;
+  }
+  .mobile-topbar-title { font-family: 'Fraunces', serif; font-weight: 600; font-size: 15px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .main { padding-top: 52px; } /* corre todo el contenido debajo de la topbar fija — nada queda tapado */
+
+  .sidebar {
+    position: fixed; top: 0; left: 0; height: 100vh; width: 250px; max-width: 82vw;
+    z-index: 300; /* siempre por encima de todo, incl. la topbar y el backdrop */
+    transform: translateX(-100%);
+    transition: transform .25s ease;
+  }
+  .sidebar.open { transform: translateX(0); box-shadow: 4px 0 24px rgba(0,0,0,.28); }
+
+  .sidebar-backdrop {
+    display: block; position: fixed; inset: 0;
+    background: rgba(15,23,42,.5);
+    z-index: 200; /* por debajo del sidebar y la topbar, por encima del contenido */
+    opacity: 0; pointer-events: none; transition: opacity .2s ease;
+  }
+  .sidebar-backdrop.show { opacity: 1; pointer-events: auto; }
+}
 .page.active { display: block; }
 .page-title { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
 .page-sub { font-size: 13px; color: var(--text3); margin-bottom: 20px; }
@@ -226,6 +262,13 @@ select option { background: var(--bg3); }
 </head>
 <body>
 <div class="shell">
+
+<!-- MOBILE TOPBAR — solo visible en @media(max-width:768px) -->
+<div class="mobile-topbar">
+  <button class="mobile-topbar-btn" id="mobile-topbar-btn" onclick="toggleMobileSidebar()"><i class="ti ti-menu-2"></i></button>
+  <span class="mobile-topbar-title">Ministerio de Música</span>
+</div>
+<div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeMobileSidebar()"></div>
 
 <!-- SIDEBAR -->
 <div class="sidebar">
@@ -983,6 +1026,24 @@ function goTo(id){
   if(id==='guion') renderGuion();
   if(id==='estadisticas') renderEstadisticas();
 }
+
+// ═══════════════════════════════════════════════
+// MOBILE NAV — hamburguesa/overlay, solo layout (no toca goTo)
+// ═══════════════════════════════════════════════
+function toggleMobileSidebar(){
+  const isOpen=document.querySelector('.sidebar').classList.toggle('open');
+  document.getElementById('sidebar-backdrop').classList.toggle('show',isOpen);
+  document.getElementById('mobile-topbar-btn').innerHTML=isOpen?'<i class="ti ti-x"></i>':'<i class="ti ti-menu-2"></i>';
+}
+function closeMobileSidebar(){
+  document.querySelector('.sidebar').classList.remove('open');
+  document.getElementById('sidebar-backdrop').classList.remove('show');
+  document.getElementById('mobile-topbar-btn').innerHTML='<i class="ti ti-menu-2"></i>';
+}
+// cerrar el sidebar al elegir una sección — no modifica los nav-item ni goTo()
+document.querySelectorAll('.nav-item').forEach(n=>n.addEventListener('click',closeMobileSidebar));
+// si la ventana vuelve a ancho desktop con el menú abierto, resetear el estado
+window.addEventListener('resize',()=>{ if(window.innerWidth>768) closeMobileSidebar(); });
 
 // ═══════════════════════════════════════════════
 // CALENDAR
