@@ -2287,7 +2287,6 @@ let _cancioneroScrollLastTs=null;
 let _cancioneroScrollAccum=0;       // posición en punto flotante — scrollTop del DOM redondea a
                                      // entero en cada lectura, así que a velocidades bajas (<60px/s)
                                      // el incremento fraccionario por frame se perdía y nunca avanzaba.
-let _cancioneroScrollResumeAfterTouch=false;
 
 function _cnScrollPxPerSec(level){
   return _CN_SCROLL_LEVELS[Math.min(Math.max(level,1),5)-1];
@@ -2340,27 +2339,12 @@ function _cnUpdateScrollBtn(){
   const btn=document.getElementById('cancionero-scroll-toggle');
   if(btn) btn.innerHTML=_cancioneroScrollPlaying?'<i class="ti ti-player-pause"></i>':'<i class="ti ti-player-play"></i>';
 }
-// pausa mientras el usuario toca/arrastra la letra; retoma al soltar, solo si venía andando
-function _cnScrollPauseForInteraction(){
-  if(_cancioneroScrollPlaying){
-    _cancioneroScrollResumeAfterTouch=true;
-    cancionerScrollPause();
-  }
-}
-function _cnScrollResumeAfterInteraction(){
-  if(_cancioneroScrollResumeAfterTouch){
-    _cancioneroScrollResumeAfterTouch=false;
-    cancionerScrollPlay();
-  }
-}
+// toque simple sobre la letra alterna el auto-scroll (pausa/retoma a la misma velocidad).
+// Un solo tipo de evento ('click') para que un toque cuente como una sola alternancia:
+// el navegador sintetiza un único click por tap y lo cancela si hubo arrastre (swipe manual).
 (function(){
   const body=document.getElementById('cancionero-viewer-body');
-  if(body){
-    body.addEventListener('mousedown',_cnScrollPauseForInteraction);
-    body.addEventListener('touchstart',_cnScrollPauseForInteraction,{passive:true});
-  }
-  document.addEventListener('mouseup',_cnScrollResumeAfterInteraction);
-  document.addEventListener('touchend',_cnScrollResumeAfterInteraction);
+  if(body) body.addEventListener('click',cancionerScrollToggle);
 })();
 
 function renderCancionerViewer(){
