@@ -2279,7 +2279,7 @@ function cancionerChordToolsReset(){
 
 // ── Auto-scroll del visor (temporal, solo en pantalla, solo modo con acordes) ──
 // Velocidad: se recuerda en memoria durante la sesión (nivel 1-5). Andando/pausado: nunca se recuerda.
-const _CN_SCROLL_LEVELS=[10,30,55,85,120]; // px/seg por nivel 1-5
+const _CN_SCROLL_LEVELS=[10,15,30,55,85]; // px/seg por nivel 1-5
 let _cancioneroScrollSpeed=3;       // nivel 1-5, en memoria durante la sesión
 let _cancioneroScrollPlaying=false;
 let _cancioneroScrollRAF=null;
