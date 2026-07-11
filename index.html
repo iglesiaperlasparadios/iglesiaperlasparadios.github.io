@@ -273,6 +273,9 @@ select option { background: var(--bg3); }
 .cancionero-chords-wrap { overflow-x: auto; }
 .cancionero-chords { font-family: 'SF Mono', 'Consolas', monospace; font-size: 1rem; line-height: 1.7; white-space: pre; color: var(--text); }
 .cancionero-chords .chordline { color: #c05a1f; font-weight: 700; }
+.cn-speed-btn { width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--border2); background: var(--bg2); color: var(--text2); font-size: 12px; font-weight: 600; cursor: pointer; }
+.cn-speed-btn:hover { border-color: var(--accent); }
+.cn-speed-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 /* índice del Cancionero — scopeado, no toca la lista de "Canciones" (editor) */
 #cancionero-index .song-lib-key { display: none; }
 #cancionero-index .song-lib-name { font-size: 15px; }
@@ -450,9 +453,16 @@ select option { background: var(--bg3); }
         </div>
         <div id="cancionero-capo-note" style="display:none;font-size:12px;color:#c05a1f;font-weight:600"></div>
       </div>
-      <div id="cancionero-scroll-controls" style="display:none;align-items:center;gap:10px;margin-bottom:16px;padding:9px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:fit-content;min-width:230px;position:sticky;top:10px;z-index:20;box-shadow:0 2px 10px rgba(15,23,42,.10)">
+      <div id="cancionero-scroll-controls" style="display:none;align-items:center;gap:10px;margin-bottom:16px;padding:9px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:fit-content;position:sticky;top:10px;z-index:20;box-shadow:0 2px 10px rgba(15,23,42,.10)">
         <button class="btn btn-sm btn-icon" id="cancionero-scroll-toggle" onclick="cancionerScrollToggle()" title="Auto-scroll"><i class="ti ti-player-play"></i></button>
-        <input type="range" id="cancionero-scroll-speed" min="1" max="100" value="30" oninput="cancionerScrollSpeedChange(this.value)" style="flex:1;min-width:110px" title="Velocidad de desplazamiento">
+        <span style="font-size:11px;color:var(--text3)">Velocidad</span>
+        <div id="cancionero-scroll-levels" style="display:flex;gap:4px">
+          <button class="cn-speed-btn" data-level="1" onclick="cancionerScrollSetLevel(1)">1</button>
+          <button class="cn-speed-btn" data-level="2" onclick="cancionerScrollSetLevel(2)">2</button>
+          <button class="cn-speed-btn" data-level="3" onclick="cancionerScrollSetLevel(3)">3</button>
+          <button class="cn-speed-btn" data-level="4" onclick="cancionerScrollSetLevel(4)">4</button>
+          <button class="cn-speed-btn" data-level="5" onclick="cancionerScrollSetLevel(5)">5</button>
+        </div>
       </div>
       <div id="cancionero-viewer-body"></div>
     </div>
@@ -2268,16 +2278,19 @@ function cancionerChordToolsReset(){
 }
 
 // ── Auto-scroll del visor (temporal, solo en pantalla, solo modo con acordes) ──
-// Velocidad: se recuerda en memoria durante la sesión. Andando/pausado: nunca se recuerda.
-let _cancioneroScrollSpeed=30;      // 1-100, en memoria durante la sesión
+// Velocidad: se recuerda en memoria durante la sesión (nivel 1-5). Andando/pausado: nunca se recuerda.
+const _CN_SCROLL_LEVELS=[10,30,55,85,120]; // px/seg por nivel 1-5
+let _cancioneroScrollSpeed=3;       // nivel 1-5, en memoria durante la sesión
 let _cancioneroScrollPlaying=false;
 let _cancioneroScrollRAF=null;
 let _cancioneroScrollLastTs=null;
+let _cancioneroScrollAccum=0;       // posición en punto flotante — scrollTop del DOM redondea a
+                                     // entero en cada lectura, así que a velocidades bajas (<60px/s)
+                                     // el incremento fraccionario por frame se perdía y nunca avanzaba.
 let _cancioneroScrollResumeAfterTouch=false;
 
-function _cnScrollPxPerSec(speedVal){
-  const min=6, max=140; // lento -> rápido
-  return min+(max-min)*((speedVal-1)/99);
+function _cnScrollPxPerSec(level){
+  return _CN_SCROLL_LEVELS[Math.min(Math.max(level,1),5)-1];
 }
 
 function _cnScrollStep(ts){
@@ -2287,8 +2300,10 @@ function _cnScrollStep(ts){
   if(_cancioneroScrollLastTs==null) _cancioneroScrollLastTs=ts;
   const dt=(ts-_cancioneroScrollLastTs)/1000;
   _cancioneroScrollLastTs=ts;
-  main.scrollTop+=_cnScrollPxPerSec(_cancioneroScrollSpeed)*dt;
-  if(main.scrollTop>=main.scrollHeight-main.clientHeight-1){
+  _cancioneroScrollAccum+=_cnScrollPxPerSec(_cancioneroScrollSpeed)*dt;
+  main.scrollTop=_cancioneroScrollAccum;
+  const maxScroll=main.scrollHeight-main.clientHeight;
+  if(_cancioneroScrollAccum>=maxScroll-1){
     cancionerScrollPause(); // llegó al final — se detiene solo
     return;
   }
@@ -2299,6 +2314,8 @@ function cancionerScrollPlay(){
   if(_cancioneroScrollPlaying||!_cancioneroShowChords) return; // solo corre en modo con acordes
   _cancioneroScrollPlaying=true;
   _cancioneroScrollLastTs=null;
+  const main=document.querySelector('.main');
+  _cancioneroScrollAccum=main?main.scrollTop:0; // resincroniza por si el usuario scrolleó a mano
   _cnUpdateScrollBtn();
   if(_cancioneroScrollRAF==null) _cancioneroScrollRAF=requestAnimationFrame(_cnScrollStep);
 }
@@ -2310,8 +2327,14 @@ function cancionerScrollPause(){
 function cancionerScrollToggle(){
   if(_cancioneroScrollPlaying) cancionerScrollPause(); else cancionerScrollPlay();
 }
-function cancionerScrollSpeedChange(val){
-  _cancioneroScrollSpeed=Number(val);
+function cancionerScrollSetLevel(level){
+  _cancioneroScrollSpeed=level;
+  _cnUpdateScrollLevelButtons();
+}
+function _cnUpdateScrollLevelButtons(){
+  document.querySelectorAll('#cancionero-scroll-levels .cn-speed-btn').forEach(b=>{
+    b.classList.toggle('active', Number(b.dataset.level)===_cancioneroScrollSpeed);
+  });
 }
 function _cnUpdateScrollBtn(){
   const btn=document.getElementById('cancionero-scroll-toggle');
@@ -2371,7 +2394,7 @@ function renderCancionerViewer(){
   document.getElementById('cancionero-tono-indicator').textContent=suenaEn||'—';
   document.getElementById('cancionero-capo-indicator').textContent=String(capoFret);
   document.getElementById('cancionero-scroll-controls').style.display=_cancioneroShowChords?'flex':'none';
-  document.getElementById('cancionero-scroll-speed').value=_cancioneroScrollSpeed;
+  _cnUpdateScrollLevelButtons();
   _cnUpdateScrollBtn();
   const capoNoteEl=document.getElementById('cancionero-capo-note');
   if(capoFret>0){
