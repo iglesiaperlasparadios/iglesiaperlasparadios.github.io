@@ -450,6 +450,10 @@ select option { background: var(--bg3); }
         </div>
         <div id="cancionero-capo-note" style="display:none;font-size:12px;color:#c05a1f;font-weight:600"></div>
       </div>
+      <div id="cancionero-scroll-controls" style="display:none;align-items:center;gap:10px;margin-bottom:16px;padding:9px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:fit-content;min-width:230px;position:sticky;top:10px;z-index:20;box-shadow:0 2px 10px rgba(15,23,42,.10)">
+        <button class="btn btn-sm btn-icon" id="cancionero-scroll-toggle" onclick="cancionerScrollToggle()" title="Auto-scroll"><i class="ti ti-player-play"></i></button>
+        <input type="range" id="cancionero-scroll-speed" min="1" max="100" value="30" oninput="cancionerScrollSpeedChange(this.value)" style="flex:1;min-width:110px" title="Velocidad de desplazamiento">
+      </div>
       <div id="cancionero-viewer-body"></div>
     </div>
     <div class="btn-group" style="justify-content:space-between;margin-top:16px">
@@ -2219,6 +2223,7 @@ function openCancionerViewer(id){
   _cancioneroShowChords=false;
   _cancioneroTonoOffset=0;
   _cancioneroCapoFret=0;
+  cancionerScrollPause();
   document.getElementById('cancionero-index').style.display='none';
   document.getElementById('cancionero-viewer').style.display='';
   renderCancionerViewer();
@@ -2227,6 +2232,7 @@ function openCancionerViewer(id){
 function backToCancionero(){
   _cancioneroTonoOffset=0;
   _cancioneroCapoFret=0;
+  cancionerScrollPause();
   document.getElementById('cancionero-viewer').style.display='none';
   document.getElementById('cancionero-index').style.display='';
 }
@@ -2237,11 +2243,13 @@ function cancionerNav(dir){
   _cancioneroShowChords=false;
   _cancioneroTonoOffset=0;
   _cancioneroCapoFret=0;
+  cancionerScrollPause();
   renderCancionerViewer();
 }
 
 function toggleCancionerChords(){
   _cancioneroShowChords=!_cancioneroShowChords;
+  if(!_cancioneroShowChords) cancionerScrollPause(); // se apaga al pasar a modo sin acordes
   renderCancionerViewer();
 }
 
@@ -2258,6 +2266,79 @@ function cancionerChordToolsReset(){
   _cancioneroCapoFret=0;
   renderCancionerViewer();
 }
+
+// ── Auto-scroll del visor (temporal, solo en pantalla, solo modo con acordes) ──
+// Velocidad: se recuerda en memoria durante la sesión. Andando/pausado: nunca se recuerda.
+let _cancioneroScrollSpeed=30;      // 1-100, en memoria durante la sesión
+let _cancioneroScrollPlaying=false;
+let _cancioneroScrollRAF=null;
+let _cancioneroScrollLastTs=null;
+let _cancioneroScrollResumeAfterTouch=false;
+
+function _cnScrollPxPerSec(speedVal){
+  const min=6, max=140; // lento -> rápido
+  return min+(max-min)*((speedVal-1)/99);
+}
+
+function _cnScrollStep(ts){
+  if(!_cancioneroScrollPlaying){ _cancioneroScrollRAF=null; return; }
+  const main=document.querySelector('.main');
+  if(!main){ _cancioneroScrollRAF=null; return; }
+  if(_cancioneroScrollLastTs==null) _cancioneroScrollLastTs=ts;
+  const dt=(ts-_cancioneroScrollLastTs)/1000;
+  _cancioneroScrollLastTs=ts;
+  main.scrollTop+=_cnScrollPxPerSec(_cancioneroScrollSpeed)*dt;
+  if(main.scrollTop>=main.scrollHeight-main.clientHeight-1){
+    cancionerScrollPause(); // llegó al final — se detiene solo
+    return;
+  }
+  _cancioneroScrollRAF=requestAnimationFrame(_cnScrollStep);
+}
+
+function cancionerScrollPlay(){
+  if(_cancioneroScrollPlaying||!_cancioneroShowChords) return; // solo corre en modo con acordes
+  _cancioneroScrollPlaying=true;
+  _cancioneroScrollLastTs=null;
+  _cnUpdateScrollBtn();
+  if(_cancioneroScrollRAF==null) _cancioneroScrollRAF=requestAnimationFrame(_cnScrollStep);
+}
+function cancionerScrollPause(){
+  _cancioneroScrollPlaying=false;
+  if(_cancioneroScrollRAF!=null){ cancelAnimationFrame(_cancioneroScrollRAF); _cancioneroScrollRAF=null; }
+  _cnUpdateScrollBtn();
+}
+function cancionerScrollToggle(){
+  if(_cancioneroScrollPlaying) cancionerScrollPause(); else cancionerScrollPlay();
+}
+function cancionerScrollSpeedChange(val){
+  _cancioneroScrollSpeed=Number(val);
+}
+function _cnUpdateScrollBtn(){
+  const btn=document.getElementById('cancionero-scroll-toggle');
+  if(btn) btn.innerHTML=_cancioneroScrollPlaying?'<i class="ti ti-player-pause"></i>':'<i class="ti ti-player-play"></i>';
+}
+// pausa mientras el usuario toca/arrastra la letra; retoma al soltar, solo si venía andando
+function _cnScrollPauseForInteraction(){
+  if(_cancioneroScrollPlaying){
+    _cancioneroScrollResumeAfterTouch=true;
+    cancionerScrollPause();
+  }
+}
+function _cnScrollResumeAfterInteraction(){
+  if(_cancioneroScrollResumeAfterTouch){
+    _cancioneroScrollResumeAfterTouch=false;
+    cancionerScrollPlay();
+  }
+}
+(function(){
+  const body=document.getElementById('cancionero-viewer-body');
+  if(body){
+    body.addEventListener('mousedown',_cnScrollPauseForInteraction);
+    body.addEventListener('touchstart',_cnScrollPauseForInteraction,{passive:true});
+  }
+  document.addEventListener('mouseup',_cnScrollResumeAfterInteraction);
+  document.addEventListener('touchend',_cnScrollResumeAfterInteraction);
+})();
 
 function renderCancionerViewer(){
   const s=_cancioneroList[_cancioneroIdx];
@@ -2289,6 +2370,9 @@ function renderCancionerViewer(){
   document.getElementById('cancionero-sounds-in').textContent='🔊 Suena en '+(suenaEn||'—');
   document.getElementById('cancionero-tono-indicator').textContent=suenaEn||'—';
   document.getElementById('cancionero-capo-indicator').textContent=String(capoFret);
+  document.getElementById('cancionero-scroll-controls').style.display=_cancioneroShowChords?'flex':'none';
+  document.getElementById('cancionero-scroll-speed').value=_cancioneroScrollSpeed;
+  _cnUpdateScrollBtn();
   const capoNoteEl=document.getElementById('cancionero-capo-note');
   if(capoFret>0){
     capoNoteEl.style.display='';
