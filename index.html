@@ -2354,9 +2354,13 @@ function renderCancionerViewer(){
 
   document.getElementById('cancionero-viewer-title').textContent=s.name;
   const metaParts=[];
-  if(s.key) metaParts.push(`Tono: <strong style="color:var(--accent)">${esc(s.key)}</strong>`);
-  if(s.capo) metaParts.push(`Capo: <strong>${esc(s.capo)}</strong>`);
-  document.getElementById('cancionero-viewer-meta').innerHTML=metaParts.join(' &nbsp;·&nbsp; ');
+  if(_cancioneroShowChords){
+    if(s.key) metaParts.push(`Tono: <strong style="color:var(--accent)">${esc(s.key)}</strong>`);
+    if(s.capo) metaParts.push(`Capo: <strong>${esc(s.capo)}</strong>`);
+  }
+  const metaEl=document.getElementById('cancionero-viewer-meta');
+  metaEl.innerHTML=metaParts.join(' &nbsp;·&nbsp; ');
+  metaEl.style.display=metaParts.length?'':'none';
 
   const btn=document.getElementById('cancionero-toggle-chords-btn');
   btn.innerHTML=`<i class="ti ti-guitar-pick"></i> ${_cancioneroShowChords?'Ocultar acordes':'Ver acordes'}`;
@@ -2405,7 +2409,16 @@ function renderCancionerViewer(){
     }).join('');
   } else {
     body.innerHTML=secciones.map(sec=>{
-      const letra=lyricsOnly(sec.contenido||'').replace(/_/g,'').replace(/\n{3,}/g,'\n\n').trim();
+      // saca renglones de acorde vacíos (línea cruda vacía seguida de letra) sin tocar
+      // separadores de estrofa legítimos (vacía seguida de otra vacía o de acordes)
+      const rawLines=(sec.contenido||'').split('\n');
+      const kept=rawLines.filter((l,i)=>{
+        if(l.trim()!=='') return true;
+        const next=rawLines[i+1];
+        const nextIsLyric=next!==undefined && next.trim()!=='' && !isChordLine(next);
+        return !nextIsLyric;
+      });
+      const letra=lyricsOnly(kept.join('\n')).replace(/_/g,'').replace(/\n{3,}/g,'\n\n').trim();
       if(!letra) return ''; // sección solo de acordes (intro/interludio) — se salta en este modo
       const label=_SEC_TIPO_LABEL[sec.tipo]||(sec.tipo?sec.tipo.charAt(0).toUpperCase()+sec.tipo.slice(1):'');
       return `<div class="cancionero-sec-label">${esc(label)}</div><div class="cancionero-lyrics">${esc(letra)}</div>`;
