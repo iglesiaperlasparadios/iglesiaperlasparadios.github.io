@@ -2141,7 +2141,7 @@ function renderCanciones(){
 // Solo lee de getCanciones() (misma fuente que "Canciones", ya
 // poblada por la nube). No escribe nada, no duplica datos.
 // ═══════════════════════════════════════════════
-const CHORD  = /^[A-G][#b]?(m|maj|min|M|sus|add|dim|aug)*[0-9]*(sus|add|maj|m|M)?[0-9]*(\/[A-G][#b]?)?$/;
+const CHORD  = /^[A-G][#b]?(m|maj|min|M|sus|add|dim|aug)*[0-9]*(sus|add|maj|m|M)?[0-9]*\+?(\/[A-G][#b]?)?$/;
 const REPEAT = /^\((?:x|X)[0-9]+\)$/;
 
 function _tokenOk(tok){
