@@ -531,6 +531,16 @@ select option { background: var(--bg3); }
   </div>
 
   <div class="card">
+    <div class="card-title">Miembros del ministerio</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Lista de nombres del ministerio (usá el mismo texto que en los roles de los servicios).</div>
+    <div style="display:flex;gap:6px;margin-bottom:12px">
+      <input id="miembro-nuevo" placeholder="Nombre" style="flex:1" onkeydown="if(event.key==='Enter')addMiembro()">
+      <button class="btn btn-sm" onclick="addMiembro()"><i class="ti ti-plus"></i> Agregar</button>
+    </div>
+    <div id="miembros-list"></div>
+  </div>
+
+  <div class="card">
     <div class="card-title">Backup de datos</div>
     <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Descargá una copia completa de todos los datos guardados (canciones, cronogramas, bandas, listas, guiones, participación, configuración) o restaurala en otro navegador o dispositivo.</div>
     <div class="btn-group">
@@ -931,6 +941,14 @@ function getListas(){return db('listas')}
 function saveListas(v){dbSet('listas',v)}
 function getHistorial(){return db('historial')}
 function saveHistorial(v){dbSet('historial',v)}
+function getMiembros(){const v=db('miembros'); return Array.isArray(v)?v:[]}
+function saveMiembros(v){dbSet('miembros',v)}
+// precarga la primera vez (clave nunca creada); si existe (aunque esté vacía o corrupta) no se pisa
+(function(){
+  if(localStorage.getItem('mm_miembros')===null){
+    saveMiembros(['Esteban','Rodri','Joha','Bren','Marcio','Nico','Maxi','Gonza','Gabi','Mauri','Cristian','Hernan']);
+  }
+})();
 function getGuiones(){return db('guiones')}
 function saveGuiones(v){dbSet('guiones',v)}
 // migrate mm_guion_YYYY-MM-DD → mm_guiones
@@ -1071,7 +1089,7 @@ function goTo(id){
   if(id==='cancionero') renderCancionero();
   if(id==='listas') renderListas();
   if(id==='participacion') renderParticipacion();
-  if(id==='config'){ loadConfigFields(); renderConfigPreview(); }
+  if(id==='config'){ loadConfigFields(); renderConfigPreview(); renderMiembros(); }
   if(id==='guion') renderGuion();
   if(id==='estadisticas') renderEstadisticas();
 }
@@ -1693,6 +1711,50 @@ function renderBandas(){
       </div>
     </div>`;
   }).join('')+'</div>';
+}
+
+// ── Miembros del ministerio (Configuración) ──
+function renderMiembros(){
+  const esc=str=>(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  const el=document.getElementById('miembros-list');
+  if(!el) return;
+  const miembros=getMiembros();
+  if(!miembros.length){el.innerHTML='<div class="empty-state"><i class="ti ti-users-off"></i>No hay miembros cargados</div>';return;}
+  el.innerHTML=miembros.map((m,i)=>`
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;background:var(--bg3);border-radius:6px;padding:5px 8px">
+      <input value="${esc(m)}" style="flex:1;border:none;background:transparent;font-size:13px;color:var(--text)" onchange="editMiembro(${i},this.value)">
+      <button class="btn btn-sm btn-icon btn-danger" onclick="deleteMiembro(${i})"><i class="ti ti-x"></i></button>
+    </div>`).join('');
+}
+function addMiembro(){
+  const input=document.getElementById('miembro-nuevo');
+  const name=input.value.trim();
+  if(!name) return;
+  const miembros=getMiembros();
+  if(miembros.includes(name)){ showToast('Ese nombre ya está en la lista','amber'); return; }
+  miembros.push(name);
+  saveMiembros(miembros);
+  input.value='';
+  renderMiembros();
+}
+function editMiembro(i,value){
+  const name=value.trim();
+  const miembros=getMiembros();
+  if(!name || miembros.some((m,idx)=>idx!==i && m===name)){
+    if(!name) showToast('El nombre no puede quedar vacío','amber');
+    else showToast('Ese nombre ya está en la lista','amber');
+    renderMiembros(); // revierte el input al valor guardado
+    return;
+  }
+  miembros[i]=name;
+  saveMiembros(miembros);
+  renderMiembros();
+}
+function deleteMiembro(i){
+  const miembros=getMiembros();
+  miembros.splice(i,1);
+  saveMiembros(miembros);
+  renderMiembros();
 }
 
 // ═══════════════════════════════════════════════
@@ -2975,6 +3037,7 @@ function exportBackup(){
       bandas:    getBandas(),
       canciones: getCanciones(),
       listas:    getListas(),
+      miembros:  getMiembros(),
       guiones,
       mesActual: {
         year:      calYM.y,
@@ -3127,6 +3190,7 @@ function confirmImport(){
   if(d.canciones) saveCanciones(d.canciones);
   if(d.listas)    saveListas(d.listas);
   if(d.historial) saveHistorial(d.historial);
+  if(d.miembros)  saveMiembros(d.miembros);
   if(d.config)    localStorage.setItem('mm_config', JSON.stringify(d.config));
   if(d.guiones){
     saveGuiones(d.guiones.map(g=>({id:g.id||g.date,date:g.date||'',title:g.title||'',blocks:g.blocks||[]})));
