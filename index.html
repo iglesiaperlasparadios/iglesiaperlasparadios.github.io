@@ -1648,25 +1648,58 @@ function renderParticipacionMes(){
 
   const burbujas=miembros.map(nombre=>{
     const key=nombre.trim().toLowerCase();
-    return {nombre, domingos:domingosPorPersona[key]?domingosPorPersona[key].size:0, puestos:puestosPorPersona[key]||0};
+    const set=domingosPorPersona[key]||new Set();
+    return {nombre, domingos:set.size, puestos:puestosPorPersona[key]||0, set};
   });
   burbujas.sort((a,b)=> b.domingos-a.domingos || b.puestos-a.puestos || a.nombre.localeCompare(b.nombre,'es'));
 
-  document.getElementById('participacion-mes-header').textContent=
-    `${n} domingo${n===1?'':'s'} · ${miembros.length} persona${miembros.length===1?'':'s'}`;
+  // promedio de domingos por persona, para el color por carga (relativo al mes, no fijo)
+  const totalDomingos=burbujas.reduce((acc,b)=>acc+b.domingos,0);
+  const avg=totalDomingos/miembros.length;
+  const masCargado=burbujas.length?burbujas[0].nombre:'—';
+  const sinLugar=burbujas.filter(b=>b.domingos===0).length;
 
+  const statBlock=(label,value)=>`<div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">${label}</div><div style="font-size:16px;font-weight:700;color:var(--text)">${value}</div></div>`;
+  document.getElementById('participacion-mes-header').innerHTML=
+    `<div style="display:flex;flex-wrap:wrap;gap:16px 28px">`
+    +statBlock('Domingos del mes',n)
+    +statBlock('Promedio por persona',avg.toFixed(1))
+    +statBlock('Más cargado',esc(masCargado))
+    +statBlock('Sin lugar',sinLugar)
+    +`</div>`;
+
+  // anillo de progreso (SVG, stroke-dasharray) — mismo tamaño de burbuja que antes (60px)
+  const R=30, STROKE=4, SIZE=(R+STROKE)*2, CIRC=2*Math.PI*R;
+  const CATS={
+    cero: {ring:'var(--border2)', bg:'transparent',        fg:'var(--text3)', border:'var(--border2)'},
+    ambar:{ring:'var(--amber)',   bg:'var(--amber-bg)',    fg:'var(--amber)', border:'var(--amber)'},
+    azul: {ring:'var(--accent)',  bg:'var(--accent-bg)',   fg:'var(--accent)',border:'var(--accent)'},
+    verde:{ring:'var(--green)',   bg:'var(--green-bg)',    fg:'var(--green)', border:'var(--green)'}
+  };
   document.getElementById('participacion-mes-bubbles').innerHTML=burbujas.map(b=>{
-    const enTodos=b.domingos===n, enCero=b.domingos===0;
-    const circleStyle=enTodos
-      ? 'background:var(--accent);color:#fff;border:2px solid var(--accent)'
-      : enCero
-        ? 'background:transparent;color:var(--text3);border:2px dashed var(--border2);opacity:.55'
-        : 'background:var(--bg3);color:var(--text);border:2px solid var(--border)';
-    return `<div style="display:flex;flex-direction:column;align-items:center;gap:5px;width:72px">
-      <div style="width:60px;height:60px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Fraunces',serif;${circleStyle}">
-        <span style="font-size:20px;font-weight:700;line-height:1">${b.domingos}</span>
-        <span style="font-size:10px;font-weight:600;opacity:.75">${b.puestos}p</span>
+    const cat = b.domingos===0 ? 'cero'
+      : b.domingos>avg+0.5 ? 'ambar'
+      : b.domingos<avg-0.5 ? 'azul'
+      : 'verde';
+    const c=CATS[cat];
+    const frac=n?b.domingos/n:0;
+    const dashoffset=(CIRC*(1-frac)).toFixed(2);
+    const dots=Array.from({length:n},(_,i)=>b.set.has(i)
+      ? `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;margin:0 1.5px;background:${c.fg}"></span>`
+      : `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;margin:0 1.5px;border:1px solid var(--border2)"></span>`
+    ).join('');
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:6px;width:76px">
+      <div style="position:relative;width:${SIZE}px;height:${SIZE}px">
+        <svg width="${SIZE}" height="${SIZE}" style="position:absolute;top:0;left:0;transform:rotate(-90deg)">
+          <circle cx="${SIZE/2}" cy="${SIZE/2}" r="${R}" fill="none" stroke="var(--border)" stroke-width="${STROKE}"/>
+          <circle cx="${SIZE/2}" cy="${SIZE/2}" r="${R}" fill="none" stroke="${c.ring}" stroke-width="${STROKE}" stroke-linecap="round" stroke-dasharray="${CIRC.toFixed(2)}" stroke-dashoffset="${dashoffset}"/>
+        </svg>
+        <div style="position:absolute;top:${STROKE}px;left:${STROKE}px;width:${SIZE-STROKE*2}px;height:${SIZE-STROKE*2}px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Fraunces',serif;background:${c.bg};color:${c.fg};border:${b.domingos===0?`2px dashed ${c.border}`:`1px solid ${c.border}`};${b.domingos===0?'opacity:.65':''}">
+          <span style="font-size:20px;font-weight:700;line-height:1">${b.domingos}</span>
+          <span style="font-size:10px;font-weight:600;opacity:.75">${b.puestos}p</span>
+        </div>
       </div>
+      <div>${dots}</div>
       <span style="font-size:11px;text-align:center;color:var(--text2);line-height:1.2">${esc(b.nombre)}</span>
     </div>`;
   }).join('');
