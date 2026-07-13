@@ -1254,7 +1254,7 @@ function renderServices(){
             <div class="divider" style="margin:10px 0"></div>
             <div style="font-size:10px;font-weight:700;color:${SEC_COLORS.principales};text-transform:uppercase;letter-spacing:.10em;margin-bottom:7px">${SEC_EMOJIS.principales} Canciones</div>
             <div id="ss-${i}-principales">
-              ${(s.songs['principales']||[]).map((sg,si2)=>renderSongItem(i,'principales',si2,sg,SEC_COLORS.principales)).join('')}
+              ${(s.songs['principales']||[]).map((sg,si2,arr)=>renderSongItem(i,'principales',si2,sg,SEC_COLORS.principales,arr.length)).join('')}
             </div>
             <button class="btn btn-sm" style="margin-top:4px;width:100%;border-color:${SEC_COLORS.principales}44;color:${SEC_COLORS.principales}" onclick="openPicker(${i},'principales')"><i class="ti ti-plus"></i> Agregar</button>
             ${['cena','ofrenda','final','intervalo'].map(sec=>{
@@ -1262,7 +1262,7 @@ function renderServices(){
               return `<div style="margin-top:10px;background:${c}08;border:1px solid ${c}22;border-radius:10px;padding:9px 12px">
                 <div style="font-size:9px;font-weight:700;color:${c};text-transform:uppercase;letter-spacing:.10em;margin-bottom:6px">${SEC_EMOJIS[sec]||''} ${SEC_LABELS[sec]}</div>
                 <div id="ss-${i}-${sec}">
-                  ${(s.songs[sec]||[]).map((sg,si2)=>renderSongItem(i,sec,si2,sg,c)).join('')}
+                  ${(s.songs[sec]||[]).map((sg,si2,arr)=>renderSongItem(i,sec,si2,sg,c,arr.length)).join('')}
                 </div>
                 <button class="btn btn-sm" style="margin-top:4px;width:100%;border-color:${c}44;color:${c};font-size:11px" onclick="openPicker(${i},'${sec}')"><i class="ti ti-plus"></i> Agregar</button>
               </div>`;
@@ -1276,7 +1276,7 @@ function renderServices(){
   monthServices.forEach((s,i)=>{ if(s.open) equalizeCronoPanel(document.getElementById('hist-panel-'+i)); });
 }
 
-function renderSongItem(si,sec,idx,sg,sectionColor=null){
+function renderSongItem(si,sec,idx,sg,sectionColor=null,total=1){
   const itemBg=sectionColor?sectionColor+'12':'var(--bg3)';
   const keyColor=sectionColor||'var(--accent)';
   return `<div class="song-item" id="sitem-${si}-${sec}-${idx}" style="background:${itemBg};align-items:center;gap:5px">
@@ -1284,8 +1284,21 @@ function renderSongItem(si,sec,idx,sg,sectionColor=null){
     ${sg.key?`<span class="song-item-key" style="color:${keyColor};flex-shrink:0">${sg.key}</span>`:''}
     ${sg.nueva?`<span class="badge badge-green" style="font-size:10px;flex-shrink:0">Nueva</span>`:''}
     <input style="flex:1;min-width:50px;height:20px;font-size:10px;color:#78716c;background:#fefce8;border:1px solid #fef08a;border-radius:4px;font-style:italic;padding:0 5px" placeholder="nota..." value="${sg.note||''}" onchange="updateSongNote(${si},'${sec}',${idx},this.value)">
+    <button class="btn btn-sm btn-icon" style="flex-shrink:0" onclick="moveSong(${si},'${sec}',${idx},-1)"${idx===0?' disabled':''} title="Subir"><i class="ti ti-chevron-up"></i></button>
+    <button class="btn btn-sm btn-icon" style="flex-shrink:0" onclick="moveSong(${si},'${sec}',${idx},1)"${idx===total-1?' disabled':''} title="Bajar"><i class="ti ti-chevron-down"></i></button>
     <button class="btn btn-sm btn-icon btn-danger" style="flex-shrink:0" onclick="removeSong(${si},'${sec}',${idx})"><i class="ti ti-x"></i></button>
   </div>`;
+}
+
+function moveSong(si,sec,idx,dir){
+  const arr=monthServices[si].songs[sec];
+  const ni=idx+dir; if(ni<0||ni>=arr.length) return;
+  [arr[idx],arr[ni]]=[arr[ni],arr[idx]];
+  const wrap=document.getElementById(`ss-${si}-${sec}`);
+  if(wrap) wrap.innerHTML=arr.map((sg,i)=>renderSongItem(si,sec,i,sg,SEC_COLORS[sec],arr.length)).join('');
+  saveMesState();
+  const nextPanel = document.getElementById('hist-panel-'+(si+1));
+  if(nextPanel){ nextPanel.innerHTML = renderHistPanel(si+1); equalizeCronoPanel(nextPanel); }
 }
 
 function renderHistPanel(serviceIdx){
@@ -1511,7 +1524,7 @@ function applyLista(si,id){
 function refreshSongsSection(si){
   SECCIONES.forEach(sec=>{
     const wrap=document.getElementById(`ss-${si}-${sec}`);
-    if(wrap) wrap.innerHTML=(monthServices[si].songs[sec]||[]).map((sg,idx)=>renderSongItem(si,sec,idx,sg,SEC_COLORS[sec])).join('');
+    if(wrap) wrap.innerHTML=(monthServices[si].songs[sec]||[]).map((sg,idx,arr)=>renderSongItem(si,sec,idx,sg,SEC_COLORS[sec],arr.length)).join('');
   });
 }
 
@@ -1522,7 +1535,7 @@ function updateSongNote(si,sec,idx,val){
 function removeSong(si,sec,idx){
   monthServices[si].songs[sec].splice(idx,1);
   const wrap=document.getElementById(`ss-${si}-${sec}`);
-  if(wrap) wrap.innerHTML=monthServices[si].songs[sec].map((sg,i)=>renderSongItem(si,sec,i,sg,SEC_COLORS[sec])).join('');
+  if(wrap) wrap.innerHTML=monthServices[si].songs[sec].map((sg,i,arr)=>renderSongItem(si,sec,i,sg,SEC_COLORS[sec],arr.length)).join('');
   saveMesState();
   // refresh mirror of next service
   const nextPanel = document.getElementById('hist-panel-'+(si+1));
