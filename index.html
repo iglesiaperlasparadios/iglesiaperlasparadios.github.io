@@ -385,6 +385,13 @@ select option { background: var(--bg3); }
     </div>
     <div id="preview-wrap" style="display:none" class="canvas-preview"><canvas id="cv-preview"></canvas></div>
   </div>
+
+  <div class="card" id="participacion-mes-card" style="display:none">
+    <div class="card-title">Resumen de participación</div>
+    <div id="participacion-mes-header" style="font-size:12px;color:var(--text3);margin-bottom:14px"></div>
+    <div id="participacion-mes-bubbles" style="display:flex;flex-wrap:wrap;gap:18px 14px"></div>
+    <div id="participacion-mes-chivato" style="display:none;margin-top:14px"></div>
+  </div>
 </div>
 
 <!-- ===== BANDAS ===== -->
@@ -1597,21 +1604,83 @@ function confirmPicker(){
 // ALERTS
 // ═══════════════════════════════════════════════
 function checkAlerts(){
+  renderParticipacionMes();
   const n=monthServices.length;
   if(n<3){document.getElementById('alerts-mes').innerHTML='';return;}
   const all={};
   monthServices.forEach((s,i)=>{
     ROLE_IDS.forEach(([,id])=>{const v=(s.roles[id]||'').trim();if(v){if(!all[v])all[v]=[];all[v].push(i);}});
   });
-  const ausentes=[], cargados=[];
+  const ausentes=[];
   Object.entries(all).forEach(([name,idxs])=>{
     for(let i=0;i<=n-3;i++){if(!idxs.includes(i)&&!idxs.includes(i+1)&&!idxs.includes(i+2)&&!ausentes.includes(name))ausentes.push(name);}
-    if(idxs.length>=n&&n>=3&&!cargados.includes(name))cargados.push(name);
   });
   let html='';
   if(ausentes.length)html+=`<div class="alert alert-amber"><i class="ti ti-alert-triangle"></i><div><strong style="display:block;margin-bottom:3px">Sin servicio 3 semanas seguidas</strong>${ausentes.map(n=>`<span class="badge badge-amber" style="margin:2px">${n}</span>`).join('')}</div></div>`;
-  if(cargados.length)html+=`<div class="alert alert-red"><i class="ti ti-battery-4"></i><div><strong style="display:block;margin-bottom:3px">Participan en todos los servicios — revisar carga</strong>${cargados.map(n=>`<span class="badge badge-red" style="margin:2px">${n}</span>`).join('')}</div></div>`;
   document.getElementById('alerts-mes').innerHTML=html;
+}
+
+// ── Resumen de participación (Cronograma / Mes completo) ──
+// Domingos distintos por persona (no puestos) sobre la LISTA DE MIEMBROS (mm_miembros).
+// Vive en la página, fuera de #gen-wrap y de buildMonthHTML/htmlToCanvas: nunca aparece
+// en la imagen generada (ese pipeline arma su propio HTML en un nodo offscreen aparte).
+function renderParticipacionMes(){
+  const card=document.getElementById('participacion-mes-card');
+  if(!card) return;
+  const miembros=getMiembros();
+  const n=monthServices.length;
+  if(!n || !miembros.length){ card.style.display='none'; return; }
+  card.style.display='';
+  const esc=str=>(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+
+  const domingosPorPersona={}, puestosPorPersona={}, nombresVistos={};
+  monthServices.forEach((s,i)=>{
+    ROLE_IDS.forEach(([,id])=>{
+      const raw=(s.roles[id]||'').trim();
+      if(!raw) return;
+      const key=raw.toLowerCase();
+      nombresVistos[key]=nombresVistos[key]||raw;
+      if(!domingosPorPersona[key]) domingosPorPersona[key]=new Set();
+      domingosPorPersona[key].add(i);
+      puestosPorPersona[key]=(puestosPorPersona[key]||0)+1;
+    });
+  });
+
+  const burbujas=miembros.map(nombre=>{
+    const key=nombre.trim().toLowerCase();
+    return {nombre, domingos:domingosPorPersona[key]?domingosPorPersona[key].size:0, puestos:puestosPorPersona[key]||0};
+  });
+  burbujas.sort((a,b)=> b.domingos-a.domingos || b.puestos-a.puestos || a.nombre.localeCompare(b.nombre,'es'));
+
+  document.getElementById('participacion-mes-header').textContent=
+    `${n} domingo${n===1?'':'s'} · ${miembros.length} persona${miembros.length===1?'':'s'}`;
+
+  document.getElementById('participacion-mes-bubbles').innerHTML=burbujas.map(b=>{
+    const enTodos=b.domingos===n, enCero=b.domingos===0;
+    const circleStyle=enTodos
+      ? 'background:var(--accent);color:#fff;border:2px solid var(--accent)'
+      : enCero
+        ? 'background:transparent;color:var(--text3);border:2px dashed var(--border2);opacity:.55'
+        : 'background:var(--bg3);color:var(--text);border:2px solid var(--border)';
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:5px;width:72px">
+      <div style="width:60px;height:60px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Fraunces',serif;${circleStyle}">
+        <span style="font-size:20px;font-weight:700;line-height:1">${b.domingos}</span>
+        <span style="font-size:10px;font-weight:600;opacity:.75">${b.puestos}p</span>
+      </div>
+      <span style="font-size:11px;text-align:center;color:var(--text2);line-height:1.2">${esc(b.nombre)}</span>
+    </div>`;
+  }).join('');
+
+  const miembrosKeys=new Set(miembros.map(m=>m.trim().toLowerCase()));
+  const faltantes=Object.keys(nombresVistos).filter(k=>!miembrosKeys.has(k)).map(k=>nombresVistos[k]);
+  const chivato=document.getElementById('participacion-mes-chivato');
+  if(faltantes.length){
+    chivato.style.display='';
+    chivato.innerHTML=`<div class="alert alert-amber"><i class="ti ti-alert-triangle"></i><div><strong style="display:block;margin-bottom:3px">Estos nombres están en los servicios pero no en tu lista de Miembros</strong>${faltantes.map(n=>`<span class="badge badge-amber" style="margin:2px">${esc(n)}</span>`).join('')}<div style="margin-top:4px">Revisá que estén bien escritos.</div></div></div>`;
+  } else {
+    chivato.style.display='none';
+    chivato.innerHTML='';
+  }
 }
 
 // ═══════════════════════════════════════════════
