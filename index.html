@@ -3362,6 +3362,7 @@ document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click
 // ═══════════════════════════════════════════════
 function renderEstadisticas(){
   const el=document.getElementById('stats-content'); if(!el) return;
+  const esc=str=>(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
 
   // Recopilar todos los servicios de todos los meses guardados
   const allSvc=[];
@@ -3393,8 +3394,16 @@ function renderEstadisticas(){
   });
 
   const fmtDate=d=>d?`${MESES[d.getMonth()].slice(0,3)} ${d.getFullYear()}`:'—';
+  const fmtRelativo=d=>{
+    if(!d) return '—';
+    const dias=Math.max(0,Math.floor((now-d)/86400000));
+    if(dias<7) return dias<=0?'esta semana':`hace ${dias} día${dias===1?'':'s'}`;
+    if(dias<30){const sem=Math.floor(dias/7);return `hace ${sem} semana${sem===1?'':'s'}`;}
+    if(dias<365){const mes=Math.floor(dias/30);return `hace ${mes} mes${mes===1?'':'es'}`;}
+    const an=Math.floor(dias/365);return `hace ${an} año${an===1?'':'s'}`;
+  };
 
-  // ── Sección 1: canciones más tocadas ────────
+  // ── Sección 1: canciones más tocadas ──── (mismo conteo; solo visual: barra + fecha relativa)
   const songMap={};
   filtered.forEach(s=>s.songs.forEach(sg=>{
     const k=sg.name.toLowerCase();
@@ -3403,48 +3412,122 @@ function renderEstadisticas(){
     if(!songMap[k].lastDate||s.date>songMap[k].lastDate) songMap[k].lastDate=s.date;
   }));
   const songStats=Object.values(songMap).sort((a,b)=>b.count-a.count).slice(0,20);
+  const maxSong=songStats[0]?.count||1;
   const sec1=songStats.length
-    ?`<div style="display:flex;flex-direction:column;gap:5px">${songStats.map((s,i)=>{
-        const badge=s.count>=8?'badge-red':s.count>=4?'badge-amber':'badge-green';
-        return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg3);border-radius:7px;border:1px solid var(--border)">
+    ?`<div style="display:flex;flex-direction:column;gap:9px">${songStats.map((s,i)=>{
+        const pct=Math.round(s.count/maxSong*100);
+        return `<div style="display:flex;align-items:center;gap:10px">
           <span style="font-size:11px;color:var(--text3);width:18px;text-align:right;flex-shrink:0">${i+1}</span>
           <div style="flex:1;min-width:0">
-            <div style="font-size:13px;font-weight:600;color:var(--text)">${s.name}</div>
-            <div style="font-size:11px;color:var(--text3)">${s.key?s.key+' · ':''}Última: ${fmtDate(s.lastDate)}</div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+              <span style="font-size:13px;font-weight:600;color:var(--text)">${esc(s.name)}${s.key?` <span style="font-size:11px;font-weight:500;color:var(--text3)">· ${esc(s.key)}</span>`:''}</span>
+              <span style="font-size:11px;color:var(--text3);flex-shrink:0">${s.count}× · ${fmtRelativo(s.lastDate)}</span>
+            </div>
+            <div style="background:var(--bg3);border-radius:4px;height:6px;margin-top:5px;overflow:hidden">
+              <div style="height:100%;width:${pct}%;background:var(--accent);border-radius:4px;min-width:3px"></div>
+            </div>
           </div>
-          <span class="badge ${badge}">${s.count}×</span>
         </div>`;
       }).join('')}</div>`
     :`<div style="font-size:13px;color:var(--text3)">Sin canciones en el rango seleccionado</div>`;
 
-  // ── Sección 2: músicos más activos ──────────
+  // ── Sección 2: músicos — servicios distintos (no puestos) sobre la lista de Miembros ──
+  const miembros=getMiembros();
+  // orden cronológico propio de esta sección (allSvc/filtered quedan sin tocar) para
+  // que los índices de servicio usados en los puntitos y el Set de "servicios" sean estables
+  const filteredChrono=[...filtered].sort((a,b)=>a.date-b.date);
   const musMap={};
-  filtered.forEach(s=>{
+  let emptyRoles=0;
+  filteredChrono.forEach((s,i)=>{
     ROLE_IDS.forEach(([label,id])=>{
-      const name=(s.roles[id]||'').trim(); if(!name) return;
-      if(!musMap[name]) musMap[name]={name,roles:[],count:0,months:new Set()};
-      musMap[name].count++;
-      musMap[name].months.add(`${s.year}-${s.month}`);
-      if(!musMap[name].roles.includes(label)) musMap[name].roles.push(label);
+      const name=(s.roles[id]||'').trim();
+      if(!name){ emptyRoles++; return; }
+      const key=name.toLowerCase();
+      if(!musMap[key]) musMap[key]={name,servicios:new Set(),puestos:0,roles:[]};
+      musMap[key].servicios.add(i);
+      musMap[key].puestos++;
+      if(!musMap[key].roles.includes(label)) musMap[key].roles.push(label);
     });
   });
-  const musStats=Object.values(musMap).sort((a,b)=>b.count-a.count);
-  const totalFiltered=filtered.length;
-  const sec2=musStats.length
-    ?`<div style="display:flex;flex-direction:column;gap:5px">${musStats.map((m,i)=>{
-        const overload=totalFiltered>2&&m.count>=totalFiltered;
-        return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg3);border-radius:7px;border:1px solid ${overload?'var(--red)':'var(--border)'}">
-          <span style="font-size:11px;color:var(--text3);width:18px;text-align:right;flex-shrink:0">${i+1}</span>
-          <div style="flex:1;min-width:0">
-            <div style="font-size:13px;font-weight:600;color:var(--text)">${m.name}${overload?` <i class="ti ti-alert-triangle" style="font-size:13px;color:var(--red)" title="Participó en todos los servicios del rango"></i>`:''}</div>
-            <div style="font-size:11px;color:var(--text3)">${m.roles.slice(0,3).join(', ')}</div>
-          </div>
-          <span class="badge ${overload?'badge-red':'badge-gray'}">${m.count} serv.</span>
-        </div>`;
-      }).join('')}</div>`
-    :`<div style="font-size:13px;color:var(--text3)">Sin datos de participación en el rango</div>`;
 
-  // ── Sección 3: tonalidades más usadas ───────
+  const miembrosKeys=new Set(miembros.map(m=>m.trim().toLowerCase()));
+  const burbujas=miembros.map(nombre=>{
+    const key=nombre.trim().toLowerCase();
+    const rec=musMap[key];
+    return {nombre, servicios:rec?rec.servicios.size:0, puestos:rec?rec.puestos:0, set:rec?rec.servicios:new Set()};
+  });
+  burbujas.sort((a,b)=> b.servicios-a.servicios || b.puestos-a.puestos || a.nombre.localeCompare(b.nombre,'es'));
+  const faltantesMus=Object.keys(musMap).filter(k=>!miembrosKeys.has(k)).map(k=>musMap[k].name);
+
+  const totalServiciosRango=filteredChrono.length;
+  const sumaServiciosMiembros=burbujas.reduce((acc,b)=>acc+b.servicios,0);
+  const promedioMus=miembros.length?sumaServiciosMiembros/miembros.length:0;
+  const masCargadoMus=burbujas.length?burbujas[0].nombre:'—';
+  const sinLugarMus=burbujas.filter(b=>b.servicios===0).length;
+
+  // ── Verificación en consola: audita el conteo, no lo cambia ──
+  {
+    const todasLasPersonas=Object.values(musMap).map(rec=>({nombre:rec.name,servicios:rec.servicios.size,puestos:rec.puestos}));
+    const totalPuestos=todasLasPersonas.reduce((acc,p)=>acc+p.puestos,0);
+    const totalSlots=totalServiciosRango*ROLE_IDS.length;
+    console.group(`[Estadísticas] Verificación — Músicos (rango: ${range})`);
+    console.log('servicios en filtered:', totalServiciosRango);
+    console.table(todasLasPersonas);
+    console.log('suma total de puestos:', totalPuestos, '· roles vacíos:', emptyRoles);
+    console.log(`chequeo: puestos(${totalPuestos}) + vacíos(${emptyRoles}) === filtered.length×10(${totalSlots}) ->`, (totalPuestos+emptyRoles)===totalSlots);
+    if((totalPuestos+emptyRoles)!==totalSlots) console.warn('[Estadísticas] BUG: la suma no cierra');
+    const excedidos=todasLasPersonas.filter(p=>p.servicios>totalServiciosRango);
+    if(excedidos.length) console.warn('[Estadísticas] BUG: alguien tiene más "servicios distintos" que filtered.length', excedidos);
+    console.groupEnd();
+  }
+
+  const statBlock=(label,value)=>`<div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">${label}</div><div style="font-size:16px;font-weight:700;color:var(--text)">${value}</div></div>`;
+  const R=30, STROKE=4, SIZE=(R+STROKE)*2, CIRC=2*Math.PI*R;
+  const CATS={
+    cero: {ring:'var(--border2)', bg:'transparent',      fg:'var(--text3)', border:'var(--border2)'},
+    ambar:{ring:'var(--amber)',   bg:'var(--amber-bg)',  fg:'var(--amber)', border:'var(--amber)'},
+    azul: {ring:'var(--accent)',  bg:'var(--accent-bg)', fg:'var(--accent)',border:'var(--accent)'},
+    verde:{ring:'var(--green)',   bg:'var(--green-bg)',  fg:'var(--green)', border:'var(--green)'}
+  };
+  const bubblesHtml=burbujas.map(b=>{
+    const pct=totalServiciosRango?b.servicios/totalServiciosRango:0;
+    const cat=b.servicios===0?'cero':pct>0.8?'ambar':pct>=0.4?'verde':'azul';
+    const c=CATS[cat];
+    const dashoffset=(CIRC*(1-pct)).toFixed(2);
+    const dots=Array.from({length:totalServiciosRango},(_,i)=>b.set.has(i)
+      ? `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;margin:1.5px;background:${c.fg}"></span>`
+      : `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;margin:1.5px;border:1px solid var(--border2)"></span>`
+    ).join('');
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:6px;width:76px">
+      <div style="position:relative;width:${SIZE}px;height:${SIZE}px">
+        <svg width="${SIZE}" height="${SIZE}" style="position:absolute;top:0;left:0;transform:rotate(-90deg)">
+          <circle cx="${SIZE/2}" cy="${SIZE/2}" r="${R}" fill="none" stroke="var(--border)" stroke-width="${STROKE}"/>
+          <circle cx="${SIZE/2}" cy="${SIZE/2}" r="${R}" fill="none" stroke="${c.ring}" stroke-width="${STROKE}" stroke-linecap="round" stroke-dasharray="${CIRC.toFixed(2)}" stroke-dashoffset="${dashoffset}"/>
+        </svg>
+        <div style="position:absolute;top:${STROKE}px;left:${STROKE}px;width:${SIZE-STROKE*2}px;height:${SIZE-STROKE*2}px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Fraunces',serif;background:${c.bg};color:${c.fg};border:${b.servicios===0?`2px dashed ${c.border}`:`1px solid ${c.border}`};${b.servicios===0?'opacity:.65':''}">
+          <span style="font-size:20px;font-weight:700;line-height:1">${b.servicios}</span>
+          <span style="font-size:10px;font-weight:600;opacity:.75">${b.puestos}p</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;justify-content:center;max-width:76px">${dots}</div>
+      <span style="font-size:11px;text-align:center;color:var(--text2);line-height:1.2">${esc(b.nombre)}</span>
+    </div>`;
+  }).join('');
+
+  const chivatoMusHtml=faltantesMus.length
+    ?`<div class="alert alert-amber" style="margin-top:14px"><i class="ti ti-alert-triangle"></i><div><strong style="display:block;margin-bottom:3px">Estos nombres están en los servicios pero no en tu lista de Miembros</strong>${faltantesMus.map(n=>`<span class="badge badge-amber" style="margin:2px">${esc(n)}</span>`).join('')}<div style="margin-top:4px">Revisá que estén bien escritos.</div></div></div>`
+    :'';
+
+  const sec2=miembros.length
+    ?`<div style="display:flex;flex-wrap:wrap;gap:16px 28px;margin-bottom:16px">`
+      +statBlock('Servicios en el rango',totalServiciosRango)
+      +statBlock('Promedio por persona',promedioMus.toFixed(1))
+      +statBlock('Más cargado',esc(masCargadoMus))
+      +statBlock('Sin lugar',sinLugarMus)
+      +`</div><div style="display:flex;flex-wrap:wrap;gap:18px 14px">${bubblesHtml}</div>${chivatoMusHtml}`
+    :`<div style="font-size:13px;color:var(--text3)">Cargá la lista de Miembros en Configuración para ver este resumen</div>`;
+
+  // ── Sección 3: tonalidades más usadas ─── (mismo conteo; barras ordenadas)
   const keyMap={};
   filtered.forEach(s=>s.songs.forEach(sg=>{
     const k=(sg.key||'').trim()||'—';
@@ -3455,7 +3538,7 @@ function renderEstadisticas(){
   const sec3=keyStats.length
     ?`<div style="display:flex;flex-direction:column;gap:8px">${keyStats.map(k=>`
         <div style="display:flex;align-items:center;gap:10px">
-          <div style="width:44px;font-size:12px;font-weight:700;color:var(--accent);text-align:right;flex-shrink:0">${k.key}</div>
+          <div style="width:44px;font-size:12px;font-weight:700;color:var(--accent);text-align:right;flex-shrink:0">${esc(k.key)}</div>
           <div style="flex:1;background:var(--bg3);border-radius:4px;height:20px;overflow:hidden">
             <div style="height:100%;width:${Math.round(k.count/maxKey*100)}%;background:var(--accent);border-radius:4px;min-width:3px"></div>
           </div>
@@ -3463,7 +3546,7 @@ function renderEstadisticas(){
         </div>`).join('')}</div>`
     :`<div style="font-size:13px;color:var(--text3)">Sin canciones con tonalidad registrada</div>`;
 
-  // ── Sección 4: no usadas en 60 días ─────────
+  // ── Sección 4: no usadas en 60 días ───────── (SIN TOCAR: lógica sobre allSvc, sin filtro de rango)
   const cut60=new Date(); cut60.setDate(cut60.getDate()-60);
   const recent60Names=new Set(allSvc.filter(s=>s.date>=cut60).flatMap(s=>s.songs.map(sg=>sg.name.toLowerCase())));
   const unused=getCanciones()
