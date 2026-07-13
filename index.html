@@ -279,6 +279,17 @@ select option { background: var(--bg3); }
 /* índice del Cancionero — scopeado, no toca la lista de "Canciones" (editor) */
 #cancionero-index .song-lib-key { display: none; }
 #cancionero-index .song-lib-name { font-size: 15px; }
+
+/* ESTADÍSTICAS — grilla dashboard (12 columnas, colapsa a 1 en mobile) */
+.stats-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+.stats-grid > .card { margin-bottom: 0; }
+.stats-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 18px; }
+.stats-rotar { grid-column: span 7; }
+.stats-tonos { grid-column: span 5; }
+.stats-repertorio, .stats-equipo { grid-column: 1 / -1; }
+@media (max-width: 860px) {
+  .stats-rotar, .stats-tonos { grid-column: 1 / -1; }
+}
 </style>
 </head>
 <body>
@@ -3406,17 +3417,11 @@ function renderEstadisticas(){
     return true;
   });
 
-  const fmtDate=d=>d?`${MESES[d.getMonth()].slice(0,3)} ${d.getFullYear()}`:'—';
-  const fmtRelativo=d=>{
-    if(!d) return '—';
-    const dias=Math.max(0,Math.floor((now-d)/86400000));
-    if(dias<7) return dias<=0?'esta semana':`hace ${dias} día${dias===1?'':'s'}`;
-    if(dias<30){const sem=Math.floor(dias/7);return `hace ${sem} semana${sem===1?'':'s'}`;}
-    if(dias<365){const mes=Math.floor(dias/30);return `hace ${mes} mes${mes===1?'':'es'}`;}
-    const an=Math.floor(dias/365);return `hace ${an} año${an===1?'':'s'}`;
-  };
+  // fecha con precisión real: mm_mes_* solo guarda año/mes, nunca el día — por eso nunca
+  // mostramos "hace X días", eso implicaría una precisión que no tenemos.
+  const fmtDate=d=>d?`${MESES[d.getMonth()]} ${d.getFullYear()}`:'—';
 
-  // ── Sección 1: canciones más tocadas ──── (mismo conteo; solo visual: barra + fecha relativa)
+  // ── Datos de canciones (conteo sin cambios; se usa en el KPI, en "Repertorio" y en "Para rotar") ──
   const songMap={};
   filtered.forEach(s=>s.songs.forEach(sg=>{
     const k=sg.name.toLowerCase();
@@ -3426,23 +3431,7 @@ function renderEstadisticas(){
   }));
   const songStats=Object.values(songMap).sort((a,b)=>b.count-a.count).slice(0,20);
   const maxSong=songStats[0]?.count||1;
-  const sec1=songStats.length
-    ?`<div style="display:flex;flex-direction:column;gap:9px">${songStats.map((s,i)=>{
-        const pct=Math.round(s.count/maxSong*100);
-        return `<div style="display:flex;align-items:center;gap:10px">
-          <span style="font-size:11px;color:var(--text3);width:18px;text-align:right;flex-shrink:0">${i+1}</span>
-          <div style="flex:1;min-width:0">
-            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
-              <span style="font-size:13px;font-weight:600;color:var(--text)">${esc(s.name)}${s.key?` <span style="font-size:11px;font-weight:500;color:var(--text3)">· ${esc(s.key)}</span>`:''}</span>
-              <span style="font-size:11px;color:var(--text3);flex-shrink:0">${s.count}× · ${fmtRelativo(s.lastDate)}</span>
-            </div>
-            <div style="background:var(--bg3);border-radius:4px;height:6px;margin-top:5px;overflow:hidden">
-              <div style="height:100%;width:${pct}%;background:var(--accent);border-radius:4px;min-width:3px"></div>
-            </div>
-          </div>
-        </div>`;
-      }).join('')}</div>`
-    :`<div style="font-size:13px;color:var(--text3)">Sin canciones en el rango seleccionado</div>`;
+  const distinctUsedInRange=Object.keys(songMap).length;
 
   // ── Sección 2: músicos — servicios distintos (no puestos) sobre la lista de Miembros ──
   const miembros=getMiembros();
@@ -3559,25 +3548,82 @@ function renderEstadisticas(){
         </div>`).join('')}</div>`
     :`<div style="font-size:13px;color:var(--text3)">Sin canciones con tonalidad registrada</div>`;
 
-  // ── Sección 4: no usadas en 60 días ───────── (SIN TOCAR: lógica sobre allSvc, sin filtro de rango)
+  // ── Sección 4 (base de "Para rotar"): no usadas en 60 días ── (SIN TOCAR: lógica sobre allSvc, sin filtro de rango)
   const cut60=new Date(); cut60.setDate(cut60.getDate()-60);
   const recent60Names=new Set(allSvc.filter(s=>s.date>=cut60).flatMap(s=>s.songs.map(sg=>sg.name.toLowerCase())));
   const unused=getCanciones()
     .filter(c=>!recent60Names.has(c.name.toLowerCase()))
     .sort((a,b)=>a.name.localeCompare(b.name,'es',{sensitivity:'base'}));
-  const sec4=unused.length
-    ?`<div style="display:flex;flex-direction:column;gap:5px">${unused.map(c=>`
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg3);border-radius:7px;border:1px solid var(--border)">
-          <div style="flex:1;min-width:0">
-            <div style="font-size:13px;font-weight:600;color:var(--text)">${c.name}</div>
-            <div style="font-size:11px;color:var(--text3)">${[c.key,c.author].filter(Boolean).join(' · ')}</div>
-          </div>
-          ${c.usosCount?`<span class="badge badge-gray" title="Veces usada en total">${c.usosCount}× hist.</span>`:`<span class="badge badge-gray">nunca usada</span>`}
-          <button class="btn btn-sm btn-icon" onclick="goTo('canciones');setTimeout(()=>openCancionModal('${c.id}'),100)" title="Editar canción"><i class="ti ti-edit"></i></button>
-        </div>`).join('')}</div>`
+
+  // ── KPIs: repertorio activo = canciones con usosCount>0 (histórico) sobre el total ──
+  const totalCancionesArr=getCanciones();
+  const totalCancionesCount=totalCancionesArr.length;
+  const activeCount=totalCancionesArr.filter(c=>c.usosCount>0).length;
+  const nuncaUsadasCount=totalCancionesCount-activeCount;
+
+  // ── Verificación en consola: audita el conteo de repertorio, no lo cambia ──
+  {
+    console.group(`[Estadísticas] Verificación — Repertorio (rango: ${range})`);
+    console.log('servicios en el rango:', totalServiciosRango);
+    console.log(`canciones distintas usadas (rango): ${distinctUsedInRange} — repertorio activo (histórico): ${activeCount} de ${totalCancionesCount}`);
+    console.log('nunca usadas (histórico):', nuncaUsadasCount);
+    const cierra=(distinctUsedInRange+nuncaUsadasCount)<=totalCancionesCount;
+    console.log(`chequeo: usadas en rango(${distinctUsedInRange}) + nunca usadas(${nuncaUsadasCount}) <= total(${totalCancionesCount}) ->`, cierra);
+    if(!cierra) console.warn('[Estadísticas] BUG: la cuenta de repertorio no cierra');
+    console.table(songStats.slice(0,8).map(s=>({nombre:s.name,conteo:s.count})));
+    console.groupEnd();
+  }
+
+  // ── "Para rotar": mismo listado de unused, reordenado (nunca usadas primero, después las más antiguas) ──
+  const lastUsedGlobal={};
+  allSvc.forEach(s=>s.songs.forEach(sg=>{
+    const k=sg.name.toLowerCase();
+    if(!lastUsedGlobal[k]||s.date>lastUsedGlobal[k]) lastUsedGlobal[k]=s.date;
+  }));
+  const rotarSorted=[...unused].sort((a,b)=>{
+    const aNunca=a.usosCount?1:0, bNunca=b.usosCount?1:0;
+    if(aNunca!==bNunca) return aNunca-bNunca;
+    const aDate=lastUsedGlobal[a.name.toLowerCase()]||new Date(0);
+    const bDate=lastUsedGlobal[b.name.toLowerCase()]||new Date(0);
+    return aDate-bDate;
+  });
+  const rotarRow=c=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg3);border-radius:7px;border:1px solid var(--border)">
+    <div style="flex:1;min-width:0">
+      <div style="font-size:13px;font-weight:600;color:var(--text)">${esc(c.name)}</div>
+      <div style="font-size:11px;color:var(--text3)">${[c.key,c.author].filter(Boolean).map(esc).join(' · ')||'—'}</div>
+    </div>
+    ${c.usosCount?`<span class="badge badge-gray" title="Veces usada en total">${c.usosCount}× hist.</span>`:`<span class="badge badge-gray">nunca usada</span>`}
+    <button class="btn btn-sm btn-icon" onclick="goTo('canciones');setTimeout(()=>openCancionModal('${c.id}'),100)" title="Editar canción"><i class="ti ti-edit"></i></button>
+  </div>`;
+  const rotarPrimeras=rotarSorted.slice(0,10), rotarResto=rotarSorted.slice(10);
+  const secRotar=rotarSorted.length
+    ?`<div style="display:flex;flex-direction:column;gap:5px">${rotarPrimeras.map(rotarRow).join('')}</div>`
+      +(rotarResto.length
+        ?`<div id="stats-rotar-resto" style="display:none;flex-direction:column;gap:5px;margin-top:5px">${rotarResto.map(rotarRow).join('')}</div>
+          <button class="btn btn-sm" style="margin-top:8px" onclick="document.getElementById('stats-rotar-resto').style.display='flex';this.remove()">Ver todas (${rotarSorted.length})</button>`
+        :'')
     :`<div style="font-size:13px;color:var(--green)"><i class="ti ti-circle-check"></i> ¡Todas las canciones se usaron en los últimos 60 días!</div>`;
 
-  // ── Render final ─────────────────────────────
+  // ── "Repertorio": top de canciones (mismo songStats de arriba) como heatmap — casi todo vale 1×,
+  // una barra no comunica nada ahí; una celda más oscura sí. rgb fijo = var(--accent) (#2563a8).
+  const heatCell=s=>{
+    const alpha=maxSong>1?0.15+0.65*((s.count-1)/(maxSong-1)):0.5;
+    const claro=alpha<0.45;
+    return `<div style="background:rgba(37,99,168,${alpha.toFixed(2)});color:${claro?'var(--text)':'#fff'};border-radius:8px;padding:10px 12px;min-width:0">
+      <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(s.name)}</div>
+      <div style="font-size:11px;opacity:.85;margin-top:2px">${s.key?esc(s.key)+' · ':''}${s.count}× · ${fmtDate(s.lastDate)}</div>
+    </div>`;
+  };
+  const repertorioPrimeras=songStats.slice(0,8), repertorioResto=songStats.slice(8);
+  const secRepertorio=songStats.length
+    ?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px">${repertorioPrimeras.map(heatCell).join('')}</div>`
+      +(repertorioResto.length
+        ?`<div id="stats-repertorio-resto" style="display:none;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-top:8px">${repertorioResto.map(heatCell).join('')}</div>
+          <button class="btn btn-sm" style="margin-top:8px" onclick="const r=document.getElementById('stats-repertorio-resto');r.style.display='grid';this.remove()">Ver todas (${songStats.length})</button>`
+        :'')
+    :`<div style="font-size:13px;color:var(--text3)">Sin canciones en el rango seleccionado</div>`;
+
+  // ── Render final: grilla de 12 columnas (ver .stats-grid en <style>) ──
   el.innerHTML=`
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
       <select id="stats-range" style="width:auto" onchange="renderEstadisticas()">
@@ -3587,13 +3633,32 @@ function renderEstadisticas(){
       </select>
       <span style="font-size:12px;color:var(--text3)">${filtered.length} servicio${filtered.length!==1?'s':''} en el rango</span>
     </div>
-    <div class="card"><div class="card-title">Canciones más tocadas</div>${sec1}</div>
-    <div class="card"><div class="card-title">Músicos más activos</div>${sec2}</div>
-    <div class="card"><div class="card-title">Tonalidades más usadas</div>${sec3}</div>
-    <div class="card">
-      <div class="card-title">Sin uso en los últimos 60 días</div>
-      <div class="page-sub" style="margin-bottom:12px;font-size:11px">Basado en todo el historial guardado · Filtro de rango no aplica</div>
-      ${sec4}
+    <div class="stats-grid">
+      <div class="card" style="grid-column:1/-1">
+        <div class="stats-kpis">
+          ${statBlock('Servicios en el rango',totalServiciosRango)}
+          ${statBlock('Canciones distintas usadas',distinctUsedInRange)}
+          ${statBlock('Repertorio activo',`${activeCount} de ${totalCancionesCount}`)}
+          ${statBlock('Sin lugar',sinLugarMus)}
+        </div>
+      </div>
+      <div class="card stats-rotar">
+        <div class="card-title">Para rotar</div>
+        <div class="page-sub" style="margin-bottom:12px;font-size:11px">Sin uso en los últimos 60 días · nunca usadas primero · filtro de rango no aplica</div>
+        ${secRotar}
+      </div>
+      <div class="card stats-tonos">
+        <div class="card-title">Tonalidades más usadas</div>
+        ${sec3}
+      </div>
+      <div class="card stats-repertorio">
+        <div class="card-title">Repertorio</div>
+        ${secRepertorio}
+      </div>
+      <div class="card stats-equipo">
+        <div class="card-title">Equipo</div>
+        ${sec2}
+      </div>
     </div>`;
 }
 
