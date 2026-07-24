@@ -3900,15 +3900,19 @@ function importFromCronograma(){
   if(!svc){showToast('No hay servicio en esa fecha','amber');return;}
   if(guionBlocks.length&&!confirm('Este guión ya tiene contenido.\n¿Reemplazar con las canciones del cronograma?')) return;
   const canciones=getCanciones(), newBlocks=[];
-  [{sec:'principales',evento:null},{sec:'cena',evento:'santa-cena'},{sec:'ofrenda',evento:'ofrenda'},{sec:'intervalo',evento:'anuncio'},{sec:'final',evento:'altar'}]
-    .forEach(({sec,evento})=>{
-      const songs=svc.songs?.[sec]||[]; if(!songs.length) return;
-      if(evento) newBlocks.push({type:'evento',id:Date.now().toString()+Math.random().toString(36).slice(2),eventType:evento,detail:''});
-      songs.forEach(sg=>{
-        const c=canciones.find(c=>c.id===sg.id)||(sg.name?canciones.find(c=>c.name===sg.name):null);
-        if(c) newBlocks.push({type:'cancion',id:Date.now().toString()+Math.random().toString(36).slice(2),songId:c.id});
-      });
-    });
+  const pushEvento=evento=>newBlocks.push({type:'evento',id:Date.now().toString()+Math.random().toString(36).slice(2),eventType:evento,detail:''});
+  const pushSongs=sec=>(svc.songs?.[sec]||[]).forEach(sg=>{
+    const c=canciones.find(c=>c.id===sg.id)||(sg.name?canciones.find(c=>c.name===sg.name):null);
+    if(c) newBlocks.push({type:'cancion',id:Date.now().toString()+Math.random().toString(36).slice(2),songId:c.id});
+  });
+  pushEvento('bienvenida');
+  pushSongs('principales');
+  if((svc.songs?.cena||[]).length){ pushEvento('santa-cena'); pushSongs('cena'); }
+  if((svc.songs?.ofrenda||[]).length){ pushEvento('ofrenda'); pushSongs('ofrenda'); }
+  pushEvento('anuncio');
+  pushEvento('predicacion');
+  pushEvento('cierre-pred');
+  pushSongs('final');
   guionBlocks=newBlocks; renderGuionBlocksUI(); _updateGuionGenWrap(); autoSaveGuion();
   showToast(newBlocks.filter(b=>b.type==='cancion').length+' canciones importadas del cronograma','green');
 }
@@ -4083,6 +4087,7 @@ const _EVENTO_TIPOS=[
   {value:'cancion-esp',    emoji:'🎤', label:'Canción Especial',   bg:'#fdf2f8', border:'#db2777'},
   {value:'presentacion',   emoji:'🌟', label:'Presentación',       bg:'#fffbeb', border:'#d97706'},
   {value:'cierre-pred',    emoji:'🔖', label:'Cierre Predicación', bg:'#f0f9ff', border:'#0369a1'},
+  {value:'desayuno',       emoji:'🥐', label:'Desayuno',           bg:'#fff1e6', border:'#c2410c'},
 ];
 const _BTYPE_COLOR={texto:'#2563a8',versiculo:'#1a7070',oracion:'#6b3fa0',evento:'#a16207'};
 
