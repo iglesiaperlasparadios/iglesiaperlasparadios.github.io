@@ -4090,6 +4090,7 @@ const _EVENTO_TIPOS=[
   {value:'desayuno',       emoji:'🥐', label:'Desayuno',           bg:'#fff1e6', border:'#c2410c'},
 ];
 const _BTYPE_COLOR={texto:'#2563a8',versiculo:'#1a7070',oracion:'#6b3fa0',evento:'#a16207'};
+const _EVENTO_SEQ_ESPECIAL=['anuncio','predicacion','cierre-pred'];
 
 function _blockAccent(b, idx){
   if(b.type==='cancion'){
@@ -4134,41 +4135,144 @@ function _blockPreviewText(b){
   const t=b.content||''; return `<span style="font-size:12px;color:var(--text2)">${t.substring(0,120).replace(/\n/g,' ')}${t.length>120?'…':''}</span>`;
 }
 
+function _ctrlBtnHTML(icon,onclick,disabled,danger){
+  const color=danger?'#dc2626':'var(--text3)';
+  if(disabled) return `<button disabled style="width:32px;height:32px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;background:none;border:none;border-radius:6px;cursor:default;color:${color};opacity:.3"><i class="ti ${icon}" style="font-size:15px"></i></button>`;
+  return `<button onclick="${onclick}" style="width:32px;height:32px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;background:none;border:none;border-radius:6px;cursor:pointer;color:${color}" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='none'"><i class="ti ${icon}" style="font-size:15px"></i></button>`;
+}
+
+function _blockCtrlBtnsHTML(idx){
+  return `<div style="display:flex;gap:0;flex-shrink:0">
+    ${_ctrlBtnHTML('ti-chevron-up',`moveGuionBlock(${idx},-1)`,idx===0)}
+    ${_ctrlBtnHTML('ti-chevron-down',`moveGuionBlock(${idx},1)`,idx===guionBlocks.length-1)}
+    ${_ctrlBtnHTML('ti-edit',`openEditGuionBlock(${idx})`,false)}
+    ${_ctrlBtnHTML('ti-trash',`deleteGuionBlock(${idx})`,false,true)}
+  </div>`;
+}
+
+function _renderEventoSegmentHTML(b, idx, opts){
+  const et=_EVENTO_TIPOS.find(e=>e.value===b.eventType)||_EVENTO_TIPOS[0];
+  const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const hasDetail=(b.detail||'').trim();
+  const detailHTML=hasDetail
+    ?`<span style="font-size:12px;color:var(--text2)">${esc(b.detail)}</span>`
+    :`<span onclick="openEditGuionBlock(${idx})" style="font-size:12px;font-style:italic;color:var(--text3);cursor:pointer">agregar responsable</span>`;
+  return `<div style="background:${et.bg};border-left:5px solid ${et.border};border-radius:${opts.radius};${opts.borderTopDivider?`border-top:1px solid ${et.border}33;`:''}padding:9px 12px;display:flex;align-items:center;gap:10px;margin-bottom:${opts.marginBottom}">
+    <div style="flex:1;min-width:0;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
+      <span style="font-size:14px;font-weight:700;color:#1e293b;white-space:nowrap">${et.emoji} ${esc(et.label)}</span>
+      ${detailHTML}
+    </div>
+    ${_blockCtrlBtnsHTML(idx)}
+  </div>`;
+}
+
+function _renderEventoGroupHTML(events){
+  if(events.length===1){
+    return _renderEventoSegmentHTML(events[0].block, events[0].idx, {radius:'10px',marginBottom:'10px'});
+  }
+  const segs=events.map((e,i)=>_renderEventoSegmentHTML(e.block, e.idx, {
+    radius: i===0?'10px 10px 0 0':(i===events.length-1?'0 0 10px 10px':'0'),
+    borderTopDivider: i>0,
+    marginBottom:'0'
+  })).join('');
+  return `<div style="margin-bottom:10px">${segs}</div>`;
+}
+
+function _renderCancionRowHTML(b, idx){
+  const c=getLetras().find(l=>l.id===b.songId);
+  const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const isExpanded=_expandedBlocks.has(b.id);
+  const nameHTML=c
+    ?`<span style="font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.name)}</span>`
+    :`<span style="font-size:13px;font-style:italic;color:var(--text3)">Canción no encontrada</span>`;
+  const keyBadge=(c&&(c.key||c.capo))
+    ?`<span style="font-size:11px;color:var(--text2);background:var(--bg3);border-radius:4px;padding:1px 7px;flex-shrink:0;white-space:nowrap">${esc(c.key||'')}${c.key&&c.capo?' · ':''}${esc(c.capo||'')}</span>`
+    :'';
+  const notasBtn=`<button onclick="toggleExpandBlock('${b.id}')" title="Notas/acordes" style="width:32px;height:32px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;background:none;border:none;border-radius:6px;cursor:pointer;color:${isExpanded?'#ec4899':'var(--text3)'}" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='none'"><i class="ti ti-notes" style="font-size:15px"></i></button>`;
+  const expandedHTML=isExpanded
+    ?`<div style="border-top:1px solid var(--border);margin:2px 0 8px;padding-top:10px">${_renderBlockSectionsDOMWithNotes(b,idx,c)}</div>`
+    :'';
+  return `<div>
+    <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">
+      <i class="ti ti-music" style="font-size:13px;color:var(--text3);flex-shrink:0"></i>
+      <div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;overflow:hidden">
+        ${nameHTML}
+        ${keyBadge}
+      </div>
+      ${notasBtn}
+      ${_blockCtrlBtnsHTML(idx)}
+    </div>
+    ${expandedHTML}
+  </div>`;
+}
+
+function _renderOtherBlockHTML(b, idx){
+  const color=_blockAccent(b,idx);
+  return `<div class="card" style="border-left:4px solid ${color};margin-bottom:8px;padding:10px 14px">
+    <div style="display:flex;align-items:flex-start;gap:10px">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+          <span style="font-size:10px;font-weight:700;color:${color};letter-spacing:.08em;text-transform:uppercase">${_BTYPE_LABEL[b.type]||b.type}${_blockBgDot(b)}</span>
+          <span style="font-size:13px;font-weight:600;color:var(--text)">${_blockHeading(b)}</span>
+        </div>
+        <div>${_blockPreviewText(b)}</div>
+      </div>
+      <div style="display:flex;gap:4px;flex-shrink:0">
+        <button class="btn btn-sm btn-icon" onclick="moveGuionBlock(${idx},-1)"${idx===0?' disabled':''}><i class="ti ti-chevron-up"></i></button>
+        <button class="btn btn-sm btn-icon" onclick="moveGuionBlock(${idx},1)"${idx===guionBlocks.length-1?' disabled':''}><i class="ti ti-chevron-down"></i></button>
+        <button class="btn btn-sm btn-icon" onclick="openEditGuionBlock(${idx})"><i class="ti ti-edit"></i></button>
+        <button class="btn btn-sm btn-icon btn-danger" onclick="deleteGuionBlock(${idx})"><i class="ti ti-trash"></i></button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function _groupGuionBlocks(){
+  const groups=[]; let i=0;
+  while(i<guionBlocks.length){
+    const b=guionBlocks[i];
+    if(b.type==='evento'){
+      let events=[{block:b,idx:i}];
+      const seq=_EVENTO_SEQ_ESPECIAL;
+      if(b.eventType===seq[0]
+        &&guionBlocks[i+1]?.type==='evento'&&guionBlocks[i+1].eventType===seq[1]
+        &&guionBlocks[i+2]?.type==='evento'&&guionBlocks[i+2].eventType===seq[2]){
+        events=[{block:b,idx:i},{block:guionBlocks[i+1],idx:i+1},{block:guionBlocks[i+2],idx:i+2}];
+        i+=3;
+      } else { i+=1; }
+      const songs=[];
+      while(i<guionBlocks.length&&guionBlocks[i].type==='cancion'){ songs.push({block:guionBlocks[i],idx:i}); i++; }
+      groups.push({kind:'event',events,songs});
+    } else if(b.type==='cancion'){
+      const songs=[{block:b,idx:i}]; i++;
+      while(i<guionBlocks.length&&guionBlocks[i].type==='cancion'){ songs.push({block:guionBlocks[i],idx:i}); i++; }
+      groups.push({kind:'songsOnly',songs});
+    } else {
+      groups.push({kind:'other',block:b,idx:i}); i++;
+    }
+  }
+  return groups;
+}
+
+function _renderGuionGroupHTML(group){
+  if(group.kind==='other') return _renderOtherBlockHTML(group.block, group.idx);
+  if(group.kind==='songsOnly'){
+    return `<div style="margin-bottom:10px">${group.songs.map(({block,idx})=>_renderCancionRowHTML(block,idx)).join('')}</div>`;
+  }
+  const barHTML=_renderEventoGroupHTML(group.events);
+  const songsHTML=group.songs.length
+    ?`<div style="margin-left:17px;padding-left:13px;border-left:2px solid var(--border)">${group.songs.map(({block,idx})=>_renderCancionRowHTML(block,idx)).join('')}</div>`
+    :'';
+  return `<div style="margin-bottom:${group.songs.length?'14px':'10px'}">${barHTML}${songsHTML}</div>`;
+}
+
 function renderGuionBlocksUI(){
   const wrap=document.getElementById('guion-blocks-wrap'); if(!wrap) return;
   if(!guionBlocks.length){
     wrap.innerHTML='<div class="empty-state" style="margin:8px 0"><i class="ti ti-layout-list"></i>Agregá bloques para armar el guión</div>';
     return;
   }
-  wrap.innerHTML=guionBlocks.map((b,idx)=>{
-    const color=_blockAccent(b,idx);
-    const isExpanded=b.type==='cancion'&&_expandedBlocks.has(b.id);
-    const notasBtn=b.type==='cancion'
-      ?`<button onclick="toggleExpandBlock('${b.id}')" style="font-size:11px;color:#ec4899;background:none;border:1px solid #ec4899;border-radius:5px;padding:2px 7px;cursor:pointer;line-height:1.5;margin-top:5px">📌 notas ${isExpanded?'▲':'▼'}</button>`
-      :'';
-    const expandedHTML=isExpanded
-      ?`<div style="border-top:1px solid var(--border);margin-top:10px;padding-top:10px">${_renderBlockSectionsDOMWithNotes(b,idx,getLetras().find(l=>l.id===b.songId))}</div>`
-      :'';
-    return `<div class="card" style="border-left:4px solid ${color};margin-bottom:8px;padding:10px 14px">
-      <div style="display:flex;align-items:flex-start;gap:10px">
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
-            <span style="font-size:10px;font-weight:700;color:${color};letter-spacing:.08em;text-transform:uppercase">${_BTYPE_LABEL[b.type]||b.type}${_blockBgDot(b)}</span>
-            <span style="font-size:13px;font-weight:600;color:var(--text)">${_blockHeading(b)}</span>
-          </div>
-          <div>${_blockPreviewText(b)}</div>
-          ${notasBtn}
-        </div>
-        <div style="display:flex;gap:4px;flex-shrink:0">
-          <button class="btn btn-sm btn-icon" onclick="moveGuionBlock(${idx},-1)"${idx===0?' disabled':''}><i class="ti ti-chevron-up"></i></button>
-          <button class="btn btn-sm btn-icon" onclick="moveGuionBlock(${idx},1)"${idx===guionBlocks.length-1?' disabled':''}><i class="ti ti-chevron-down"></i></button>
-          <button class="btn btn-sm btn-icon" onclick="openEditGuionBlock(${idx})"><i class="ti ti-edit"></i></button>
-          <button class="btn btn-sm btn-icon btn-danger" onclick="deleteGuionBlock(${idx})"><i class="ti ti-trash"></i></button>
-        </div>
-      </div>
-      ${expandedHTML}
-    </div>`;
-  }).join('');
+  wrap.innerHTML=_groupGuionBlocks().map(_renderGuionGroupHTML).join('');
 }
 
 // ── Notas de sección ──────────────────────────
