@@ -337,6 +337,7 @@ select option { background: var(--bg3); }
 }
 #page-estadisticas .stats-section-title { font-size: 15px; font-weight: 600; color: var(--stats-text); margin-bottom: 4px; }
 #page-estadisticas .stats-section-sub { font-size: 12px; color: var(--stats-text-secondary); margin-bottom: 14px; }
+#page-estadisticas .stats-rotar-lista { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; }
 #page-estadisticas .stats-badge {
   display: inline-flex; align-items: center; gap: 4px;
   font-size: 12px; font-weight: 500; padding: 3px 8px; border-radius: var(--stats-radius-sm);
@@ -365,8 +366,8 @@ select option { background: var(--bg3); }
 #page-estadisticas .stats-line-chart-valor { font-size: 13px; font-weight: 700; fill: var(--stats-text); font-variant-numeric: tabular-nums; }
 #page-estadisticas .stats-line-chart-eje { font-size: 11px; font-weight: 500; fill: var(--stats-text-secondary); }
 #page-estadisticas .stats-line-chart-resumen { font-size: 13px; color: var(--stats-text-secondary); margin-top: 4px; }
-#page-estadisticas .stats-bar-chart { display: flex; flex-direction: column; gap: 14px; }
-#page-estadisticas .stats-bar-chart-fila { display: grid; grid-template-columns: minmax(120px,.9fr) 1fr 28px; align-items: center; gap: 10px; }
+#page-estadisticas .stats-bar-chart { display: grid; grid-template-columns: max-content minmax(0, 1fr) 32px; align-items: center; column-gap: 14px; row-gap: 14px; }
+#page-estadisticas .stats-bar-chart-fila { display: contents; }
 #page-estadisticas .stats-bar-chart-label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--stats-text); min-width: 0; }
 #page-estadisticas .stats-bar-chart-icon { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; flex-shrink: 0; }
 #page-estadisticas .stats-bar-chart-track { height: 16px; border-radius: var(--stats-radius-full); background: var(--stats-bg); overflow: hidden; }
@@ -3797,13 +3798,13 @@ function renderEstadisticas(){
     ${c.usosCount?`<span class="stats-badge stats-badge--neutral" title="Veces usada en total">${c.usosCount}× hist.</span>`:`<span class="stats-badge stats-badge--warning">nunca usada</span>`}
     <button onclick="goTo('canciones');setTimeout(()=>openCancionModal('${c.id}'),100)" title="Editar canción" style="width:32px;height:32px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;background:none;border:none;border-radius:8px;cursor:pointer;color:var(--stats-primary)"><i class="ti ti-edit" style="font-size:15px"></i></button>
   </div>`;
-  const rotarPrimeras=rotarSorted.slice(0,10), rotarResto=rotarSorted.slice(10);
+  const rotarPrimeras=rotarSorted.slice(0,20), rotarResto=rotarSorted.slice(20);
   const verTodasBtn=(n,onclick)=>`<button onclick="${onclick}" style="margin-top:10px;background:none;border:1.5px solid var(--stats-border);color:var(--stats-primary);font-family:'Inter',sans-serif;font-size:13px;font-weight:600;padding:8px 14px;border-radius:var(--stats-radius-full);cursor:pointer">Ver todas (${n})</button>`;
   const secRotar=rotarSorted.length
-    ?`<div style="display:flex;flex-direction:column;gap:6px">${rotarPrimeras.map(rotarRow).join('')}</div>`
+    ?`<div class="stats-rotar-lista">${rotarPrimeras.map(rotarRow).join('')}</div>`
       +(rotarResto.length
-        ?`<div id="stats-rotar-resto" style="display:none;flex-direction:column;gap:6px;margin-top:6px">${rotarResto.map(rotarRow).join('')}</div>
-          ${verTodasBtn(rotarSorted.length,"document.getElementById('stats-rotar-resto').style.display='flex';this.remove()")}`
+        ?`<div id="stats-rotar-resto" class="stats-rotar-lista" style="display:none;margin-top:10px">${rotarResto.map(rotarRow).join('')}</div>
+          ${verTodasBtn(rotarSorted.length,"document.getElementById('stats-rotar-resto').style.display='grid';this.remove()")}`
         :'')
     :`<div style="font-size:13px;color:var(--stats-success)"><i class="ti ti-circle-check"></i> ¡Todas las canciones se usaron en los últimos 60 días!</div>`;
 
