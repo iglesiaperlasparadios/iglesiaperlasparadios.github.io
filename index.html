@@ -378,6 +378,23 @@ select option { background: var(--bg3); }
 #page-estadisticas .stats-bar-chart-track-v { width: 16px; height: 120px; border-radius: var(--stats-radius-full); background: var(--stats-bg); overflow: hidden; display: flex; align-items: flex-end; }
 #page-estadisticas .stats-bar-chart-fill-v { width: 100%; border-radius: var(--stats-radius-full); height: var(--stats-barra-pct,0%); background: var(--stats-primary); animation: stats-barra-grow-v 650ms var(--stats-ease) both; }
 #page-estadisticas .stats-bar-chart-corto { font-size: 12px; font-weight: 500; color: var(--stats-text-secondary); text-align: center; }
+#page-estadisticas .stats-equipo-row { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--stats-border-soft); }
+#page-estadisticas .stats-equipo-row:last-of-type { border-bottom: none; }
+#page-estadisticas .stats-equipo-nombre { width: 100px; flex-shrink: 0; font-size: 13px; font-weight: 600; color: var(--stats-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#page-estadisticas .stats-equipo-tira { flex: 1; min-width: 0; display: flex; overflow-x: auto; }
+#page-estadisticas .stats-equipo-grupo { display: flex; flex-direction: column; align-items: center; gap: 3px; margin-right: 14px; flex-shrink: 0; }
+#page-estadisticas .stats-equipo-mes { font-size: 9px; font-weight: 600; color: var(--stats-text-secondary); text-transform: uppercase; letter-spacing: .04em; }
+#page-estadisticas .stats-equipo-dots { display: flex; flex-wrap: nowrap; gap: 3px; }
+#page-estadisticas .stats-equipo-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+#page-estadisticas .stats-equipo-valor { width: 66px; flex-shrink: 0; text-align: right; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+@media (max-width: 600px) {
+  #page-estadisticas .stats-equipo-nombre { width: 68px; font-size: 12px; }
+  #page-estadisticas .stats-equipo-grupo { margin-right: 8px; gap: 2px; }
+  #page-estadisticas .stats-equipo-dots { gap: 2px; }
+  #page-estadisticas .stats-equipo-dot { width: 6px; height: 6px; }
+  #page-estadisticas .stats-equipo-mes { font-size: 8px; }
+  #page-estadisticas .stats-equipo-valor { width: 50px; font-size: 12px; }
+}
 </style>
 </head>
 <body>
@@ -3665,12 +3682,8 @@ function renderEstadisticas(){
     return {nombre, servicios:rec?rec.servicios.size:0, puestos:rec?rec.puestos:0, set:rec?rec.servicios:new Set()};
   });
   burbujas.sort((a,b)=> b.servicios-a.servicios || b.puestos-a.puestos || a.nombre.localeCompare(b.nombre,'es'));
-  const faltantesMus=Object.keys(musMap).filter(k=>!miembrosKeys.has(k)).map(k=>musMap[k].name);
 
   const totalServiciosRango=filteredChrono.length;
-  const sumaServiciosMiembros=burbujas.reduce((acc,b)=>acc+b.servicios,0);
-  const promedioMus=miembros.length?sumaServiciosMiembros/miembros.length:0;
-  const masCargadoMus=burbujas.length?burbujas[0].nombre:'—';
   const sinLugarMus=burbujas.filter(b=>b.servicios===0).length;
 
   // ── Verificación en consola: audita el conteo, no lo cambia ──
@@ -3689,58 +3702,97 @@ function renderEstadisticas(){
     console.groupEnd();
   }
 
-  const statBlock=(label,value)=>`<div><div style="font-size:11px;font-weight:500;color:var(--stats-text-secondary);text-transform:uppercase;letter-spacing:.04em">${label}</div><div style="font-size:18px;font-weight:700;color:var(--stats-text);margin-top:2px">${value}</div></div>`;
   const metricCard=(label,value)=>`<div class="stats-metric-card"><div class="stats-metric-card-valor">${esc(String(value))}</div><div class="stats-metric-card-label">${esc(String(label))}</div></div>`;
-  const R=30, STROKE=4, SIZE=(R+STROKE)*2, CIRC=2*Math.PI*R;
   const CATS={
-    cero: {ring:'var(--stats-border)',       bg:'transparent',              fg:'var(--stats-text-secondary)', border:'var(--stats-border)'},
-    ambar:{ring:'var(--stats-warning)',      bg:'var(--stats-warning-bg)',  fg:'var(--stats-warning)',        border:'var(--stats-warning)'},
-    azul: {ring:'var(--stats-primary)',      bg:'var(--stats-primary-light)',fg:'var(--stats-primary)',       border:'var(--stats-primary)'},
-    verde:{ring:'var(--stats-success)',      bg:'var(--stats-success-bg)',  fg:'var(--stats-success)',        border:'var(--stats-success)'}
+    cero: {fg:'var(--stats-text-secondary)'},
+    ambar:{fg:'var(--stats-warning)'},
+    azul: {fg:'var(--stats-primary)'},
+    verde:{fg:'var(--stats-success)'}
   };
-  const bubblesHtml=burbujas.map(b=>{
-    const pct=totalServiciosRango?b.servicios/totalServiciosRango:0;
+
+  // ── Equipo: tabla de bolitas por domingo — ventana FIJA (3 meses atrás + actual + 1 adelante),
+  // independiente del selector #stats-range. Si el mes adelante no está cargado en Cronograma,
+  // se generan sus domingos por calendario como bolitas futuras vacías (nadie "participó" aún). ──
+  const nowD=new Date();
+  const equipoWinMeses=[-3,-2,-1,0,1].map(off=>{
+    const d=new Date(nowD.getFullYear(), nowD.getMonth()+off, 1);
+    return {year:d.getFullYear(), month:d.getMonth()};
+  });
+  const equipoWinEntries=[]; // {year,month,roles,isFuture} en orden cronológico
+  equipoWinMeses.forEach(({year,month})=>{
+    const realSvcs=allSvc.filter(s=>s.year===year&&s.month===month);
+    const isFutureMonth=(year>nowD.getFullYear())||(year===nowD.getFullYear()&&month>nowD.getMonth());
+    if(realSvcs.length){
+      realSvcs.forEach(s=>equipoWinEntries.push({year,month,roles:s.roles,isFuture:false}));
+    } else if(isFutureMonth){
+      const diasEnMes=new Date(year,month+1,0).getDate();
+      for(let d=1; d<=diasEnMes; d++){
+        if(new Date(year,month,d).getDay()===0) equipoWinEntries.push({year,month,roles:{},isFuture:true});
+      }
+    }
+  });
+  const equipoGrupos=[]; // divisores de mes: {year,month,startIdx,count}
+  equipoWinEntries.forEach((e,i)=>{
+    const last=equipoGrupos[equipoGrupos.length-1];
+    if(last&&last.year===e.year&&last.month===e.month) last.count++;
+    else equipoGrupos.push({year:e.year,month:e.month,startIdx:i,count:1});
+  });
+  const equipoMusMap={};
+  equipoWinEntries.forEach((e,i)=>{
+    if(e.isFuture) return;
+    ROLE_IDS.forEach(([,id])=>{
+      const name=(e.roles[id]||'').trim(); if(!name) return;
+      const key=name.toLowerCase();
+      if(!equipoMusMap[key]) equipoMusMap[key]={name,servicios:new Set(),puestos:0};
+      equipoMusMap[key].servicios.add(i);
+      equipoMusMap[key].puestos++;
+    });
+  });
+  const equipoTotalReal=equipoWinEntries.filter(e=>!e.isFuture).length;
+  const equipoBurbujas=miembros.map(nombre=>{
+    const key=nombre.trim().toLowerCase();
+    const rec=equipoMusMap[key];
+    return {nombre, servicios:rec?rec.servicios.size:0, puestos:rec?rec.puestos:0, set:rec?rec.servicios:new Set()};
+  });
+  equipoBurbujas.sort((a,b)=> b.servicios-a.servicios || b.puestos-a.puestos || a.nombre.localeCompare(b.nombre,'es'));
+  const equipoFaltantes=Object.keys(equipoMusMap).filter(k=>!miembrosKeys.has(k)).map(k=>equipoMusMap[k].name);
+
+  const equipoFilaHtml=b=>{
+    const pct=equipoTotalReal?b.servicios/equipoTotalReal:0;
     const cat=b.servicios===0?'cero':pct>0.8?'ambar':pct>=0.4?'verde':'azul';
     const c=CATS[cat];
-    const dashoffset=(CIRC*(1-pct)).toFixed(2);
-    const dots=Array.from({length:totalServiciosRango},(_,i)=>b.set.has(i)
-      ? `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;margin:1.5px;background:${c.fg}"></span>`
-      : `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;margin:1.5px;border:1px solid var(--stats-border)"></span>`
-    ).join('');
-    return `<div style="display:flex;flex-direction:column;align-items:center;gap:6px;width:76px">
-      <div style="position:relative;width:${SIZE}px;height:${SIZE}px">
-        <svg width="${SIZE}" height="${SIZE}" style="position:absolute;top:0;left:0;transform:rotate(-90deg)">
-          <circle cx="${SIZE/2}" cy="${SIZE/2}" r="${R}" fill="none" stroke="var(--stats-border-soft)" stroke-width="${STROKE}"/>
-          <circle cx="${SIZE/2}" cy="${SIZE/2}" r="${R}" fill="none" stroke="${c.ring}" stroke-width="${STROKE}" stroke-linecap="round" stroke-dasharray="${CIRC.toFixed(2)}" stroke-dashoffset="${dashoffset}"/>
-        </svg>
-        <div style="position:absolute;top:${STROKE}px;left:${STROKE}px;width:${SIZE-STROKE*2}px;height:${SIZE-STROKE*2}px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:${c.bg};color:${c.fg};border:${b.servicios===0?`2px dashed ${c.border}`:`1px solid ${c.border}`};${b.servicios===0?'opacity:.65':''}">
-          <span style="font-size:20px;font-weight:700;line-height:1">${b.servicios}</span>
-          <span style="font-size:10px;font-weight:600;opacity:.75">${b.puestos}p</span>
-        </div>
-      </div>
-      <div style="display:flex;flex-wrap:wrap;justify-content:center;max-width:76px">${dots}</div>
-      <span style="font-size:11px;text-align:center;color:var(--stats-text-secondary);line-height:1.2">${esc(b.nombre)}</span>
+    const gruposHtml=equipoGrupos.map(g=>{
+      const mesLabel=MESES[g.month].slice(0,3);
+      const dots=Array.from({length:g.count},(_,k)=>{
+        const i=g.startIdx+k, entry=equipoWinEntries[i];
+        if(entry.isFuture) return `<span class="stats-equipo-dot" title="${mesLabel} — todavía sin programar" style="border:1px dashed var(--stats-border)"></span>`;
+        return b.set.has(i)
+          ? `<span class="stats-equipo-dot" style="background:${c.fg}"></span>`
+          : `<span class="stats-equipo-dot" style="border:1px solid var(--stats-border)"></span>`;
+      }).join('');
+      return `<div class="stats-equipo-grupo"><span class="stats-equipo-mes">${mesLabel}</span><div class="stats-equipo-dots">${dots}</div></div>`;
+    }).join('');
+    return `<div class="stats-equipo-row">
+      <div class="stats-equipo-nombre">${esc(b.nombre)}</div>
+      <div class="stats-equipo-tira">${gruposHtml}</div>
+      <div class="stats-equipo-valor" style="color:${c.fg}">${b.servicios} <span style="font-weight:500;opacity:.7">· ${b.puestos}p</span></div>
     </div>`;
-  }).join('');
+  };
+  const equipoTablaHtml=equipoBurbujas.map(equipoFilaHtml).join('');
 
-  const chivatoMusHtml=faltantesMus.length
+  const chivatoEquipoHtml=equipoFaltantes.length
     ?`<div style="margin-top:16px;padding:12px 14px;background:var(--stats-warning-bg);border:1px solid var(--stats-warning);border-radius:var(--stats-radius-md);display:flex;gap:10px;align-items:flex-start">
         <i class="ti ti-alert-triangle" style="color:var(--stats-warning);font-size:16px;flex-shrink:0;margin-top:1px"></i>
         <div style="font-size:13px;color:var(--stats-text)">
           <strong style="display:block;margin-bottom:4px">Estos nombres están en los servicios pero no en tu lista de Miembros</strong>
-          ${faltantesMus.map(n=>`<span class="stats-badge stats-badge--warning" style="margin:2px">${esc(n)}</span>`).join('')}
+          ${equipoFaltantes.map(n=>`<span class="stats-badge stats-badge--warning" style="margin:2px">${esc(n)}</span>`).join('')}
           <div style="margin-top:4px;color:var(--stats-text-secondary)">Revisá que estén bien escritos.</div>
         </div>
       </div>`
     :'';
 
-  const sec2=miembros.length
-    ?`<div style="display:flex;flex-wrap:wrap;gap:16px 28px;margin-bottom:16px">`
-      +statBlock('Servicios en el rango',totalServiciosRango)
-      +statBlock('Promedio por persona',promedioMus.toFixed(1))
-      +statBlock('Más cargado',esc(masCargadoMus))
-      +statBlock('Sin lugar',sinLugarMus)
-      +`</div><div style="display:flex;flex-wrap:wrap;gap:18px 14px">${bubblesHtml}</div>${chivatoMusHtml}`
+  const secEquipo=miembros.length
+    ?`${equipoTablaHtml}${chivatoEquipoHtml}`
     :`<div style="font-size:13px;color:var(--stats-text-secondary)">Cargá la lista de Miembros en Configuración para ver este resumen</div>`;
 
   // ── Sección 3: tonalidades más usadas ─── (mismo conteo; ahora vía statsRenderBarChart)
@@ -3844,7 +3896,7 @@ function renderEstadisticas(){
     </div>
     <div class="stats-card">
       <div class="stats-section-title">Equipo</div>
-      ${sec2}
+      ${secEquipo}
     </div>`;
 
   if(keyStats.length) statsRenderBarChart(document.getElementById('stats-bar-tonos'), {items: keyStats.map(k=>({id:k.key,label:k.key,valor:k.count})), orientacion:'horizontal'});
