@@ -899,6 +899,60 @@ select option { background: var(--bg3); }
 #guion-editor .btn-danger:hover { background: var(--red-bg); }
 #guion-editor .empty-state { font-family: 'Inter', system-ui, sans-serif; }
 #guion-editor .ge-chip { border-radius: 999px !important; font-weight: 600; }
+
+/* MODAL "Agregar canciones" (picker) — mismo sistema visual, scoped a #modal-picker
+   (modal exclusivo del Cronograma mensual, no compartido con el picker del guión). */
+#modal-picker {
+  --pk-bg: #f5f5f7;
+  --pk-surface: #ffffff;
+  --pk-border: #e1e1e4;
+  --pk-border-soft: #ededef;
+  --pk-text: #1c1c1e;
+  --pk-text-secondary: #78787f;
+  --pk-primary: #007aff;
+  --pk-primary-light: #e5f0ff;
+  --pk-success: #34c759;
+  --pk-radius-md: 12px;
+  --pk-radius-lg: 16px;
+  --pk-radius-full: 999px;
+  --pk-shadow-2: 0 20px 60px rgba(28,28,30,.18);
+  --pk-ease: cubic-bezier(.2,0,0,1);
+}
+#modal-picker .modal {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--pk-surface); border: none; border-radius: var(--pk-radius-lg);
+  box-shadow: var(--pk-shadow-2);
+}
+#modal-picker .modal-title { color: var(--pk-text); font-weight: 700; font-size: 18px; }
+#modal-picker .modal-title .btn-icon { border-radius: var(--pk-radius-md); }
+#modal-picker input {
+  font-family: 'Inter', system-ui, sans-serif; background: var(--pk-bg);
+  border: 1px solid var(--pk-border); border-radius: var(--pk-radius-md);
+  color: var(--pk-text); box-shadow: none;
+}
+#modal-picker input:focus { border-color: var(--pk-primary); }
+#modal-picker .search-input i { color: var(--pk-text-secondary); }
+#modal-picker .chip {
+  font-family: 'Inter', system-ui, sans-serif; border-radius: var(--pk-radius-full);
+  border: 1px solid var(--pk-border); color: var(--pk-text-secondary); background: var(--pk-surface);
+  transition: all 120ms var(--pk-ease);
+}
+#modal-picker .chip:hover { border-color: var(--pk-primary); color: var(--pk-primary); }
+#modal-picker .chip.active { border-color: var(--pk-primary); background: var(--pk-primary); color: #fff; }
+#modal-picker .song-picker-list {
+  border: 1px solid var(--pk-border-soft); border-radius: var(--pk-radius-lg); overflow: hidden;
+}
+#modal-picker .sp-item { border-bottom: 1px solid var(--pk-border-soft); padding: 10px 14px; transition: background 120ms var(--pk-ease); }
+#modal-picker .sp-item:hover { background: var(--pk-bg); }
+#modal-picker .sp-item.selected { background: var(--pk-primary-light); }
+#modal-picker .sp-check { border-radius: 5px; border-color: var(--pk-border); }
+#modal-picker .sp-item.selected .sp-check { background: var(--pk-primary); border-color: var(--pk-primary); }
+#modal-picker .sp-name { font-family: 'Inter', system-ui, sans-serif; color: var(--pk-text); font-weight: 500; }
+#modal-picker .sp-key { color: var(--pk-primary); font-weight: 700; }
+#modal-picker .empty-state { font-family: 'Inter', system-ui, sans-serif; color: var(--pk-text-secondary); }
+#modal-picker .btn { font-family: 'Inter', system-ui, sans-serif; border-radius: var(--pk-radius-md); }
+#modal-picker .btn-primary { background: var(--pk-primary); border-color: var(--pk-primary); }
+#modal-picker .btn-primary:hover { background: #0062cc; border-color: #0062cc; }
 </style>
 </head>
 <body>
@@ -2230,7 +2284,6 @@ function renderPicker(){
       <div class="sp-check">${pickerSelected.includes(s.id)?'<i class="ti ti-check" style="font-size:11px;color:#fff"></i>':''}</div>
       <span class="sp-name">${s.name}${s.nueva?` <span class="badge badge-green" style="font-size:10px">Nueva</span>`:''}</span>
       <span class="sp-key">${s.key||''}</span>
-      ${s.cats?.length?`<div style="display:flex;gap:3px">${s.cats.slice(0,2).map(c=>`<span class="badge badge-gray" style="font-size:10px">${c}</span>`).join('')}</div>`:''}
     </div>`).join('');
 }
 
