@@ -478,6 +478,12 @@ select option { background: var(--bg3); }
 #page-mes .song-item-name { color: var(--crono-text); font-weight: 500; }
 #page-mes .divider { background: var(--crono-border-soft); }
 #page-mes .crono-toggle-mobile { background: var(--crono-surface); border: 1px solid var(--crono-border); color: var(--crono-text-secondary); border-radius: var(--crono-radius-md); }
+
+/* Fase 3: panel "servicios anteriores" — el contenedor es exclusivo de Mes, safe de
+   restylear; las mini-cards de buildBandCard/buildSongsCard (modo 'crono') se comparten
+   con Bandas (modo 'compact') y la imagen exportada (sin mode), así que sus colores
+   IMG_* quedan intactos a propósito. */
+#page-mes .crono-col-form { border-left: 1px solid var(--crono-border-soft); }
 </style>
 </head>
 <body>
@@ -1545,7 +1551,7 @@ function renderHistPanel(serviceIdx){
     }
   }
 
-  if(!prevServices.length) return '<div style="grid-column:1/-1;font-size:11px;color:var(--text3);font-style:italic;text-align:center;padding:28px 0">Sin servicios anteriores</div>';
+  if(!prevServices.length) return '<div style="grid-column:1/-1;font-size:11px;color:var(--crono-text-secondary);font-style:italic;text-align:center;padding:28px 0">Sin servicios anteriores</div>';
 
   // altura común para las 2 cards de banda, para que las de "Canciones" arranquen alineadas
   const maxRoles = Math.max(...prevServices.map(p => ROLE_IDS.filter(([,id]) => (p.roles[id]||'').trim()).length));
@@ -1556,7 +1562,7 @@ function renderHistPanel(serviceIdx){
   const withAccent = prevServices.map((prev, idx) => ({prev, accent: DOMINGO_COLORS[idx % DOMINGO_COLORS.length]}));
   const display = withAccent.length > 1 ? [...withAccent].reverse() : withAccent;
 
-  let html = '<div style="grid-column:1/-1;font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.10em;margin-bottom:2px"><i class="ti ti-eye" style="margin-right:4px;font-size:10px"></i>Servicios anteriores</div>';
+  let html = '<div style="grid-column:1/-1;font-size:9px;font-weight:700;color:var(--crono-text-secondary);text-transform:uppercase;letter-spacing:.10em;margin-bottom:2px"><i class="ti ti-eye" style="margin-right:4px;font-size:10px"></i>Servicios anteriores</div>';
   display.forEach(function({prev, accent}){
     html += '<div class="crono-prev-col">'
       + buildBandCard({label:prev.label, roles:prev.roles}, accent, sharedRolesH, {mode:'crono'})
