@@ -3823,17 +3823,15 @@ function buildMonthHTML(services, opts={}){
   return `
     <div id="_month_render" style="width:${W}px;background:${IMG_BG};font-family:'Outfit',sans-serif;padding:0">
       <div style="background:${IMG_BG};padding:30px ${padX}px 22px">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:24px">
-          <div style="font-size:80px;font-weight:800;color:${IMG_TEXT};line-height:.88;font-family:'Fraunces',serif;letter-spacing:-2px">${MESES[month]}</div>
-          ${(versiculo||cita)?`<div style="max-width:420px;background:${IMG_SURFACE};border-radius:12px;padding:15px 19px;border:1px solid ${IMG_BORDER};box-shadow:${IMG_SHADOW}">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-              <span style="font-size:15px">📖</span>
-              <span style="font-size:10px;font-weight:700;color:${accent};letter-spacing:.13em;text-transform:uppercase">Versículo del mes</span>
-            </div>
-            ${versiculo?`<div style="font-size:17px;color:#2e3e52;line-height:1.65;font-style:italic">${versiculo}</div>`:''}
-            ${cita?`<div style="font-size:14px;font-weight:800;color:${accent};text-align:right;margin-top:${versiculo?'8px':'0'}">${cita}</div>`:''}
-          </div>`:''}
-        </div>
+        <div style="font-size:80px;font-weight:800;color:${IMG_TEXT};line-height:.88;font-family:'Fraunces',serif;letter-spacing:-2px">${MESES[month]}</div>
+        ${(versiculo||cita)?`<div style="margin-top:18px;background:${IMG_SURFACE};border-radius:12px;padding:16px 22px;border:1px solid ${IMG_BORDER};box-shadow:${IMG_SHADOW}">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">
+            <span style="font-size:15px">📖</span>
+            <span style="font-size:10px;font-weight:700;color:${accent};letter-spacing:.13em;text-transform:uppercase">Versículo del mes</span>
+          </div>
+          ${versiculo?`<div style="font-size:17px;color:#2e3e52;line-height:1.6;font-style:italic">${versiculo}</div>`:''}
+          ${cita?`<div style="font-size:14px;font-weight:800;color:${accent};text-align:right;margin-top:${versiculo?'8px':'0'}">${cita}</div>`:''}
+        </div>`:''}
       </div>
       <div style="padding:0 ${padX}px 40px">
         ${reflexionBlock}
