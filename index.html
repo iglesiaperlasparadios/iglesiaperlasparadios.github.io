@@ -778,6 +778,82 @@ select option { background: var(--bg3); }
 }
 #page-cancionero .cn-speed-btn:hover { border-color: var(--cn-primary); }
 #page-cancionero .cn-speed-btn.active { background: var(--cn-primary); border-color: var(--cn-primary); color: #fff; }
+
+/* PARTICIPACIÓN — mismo sistema visual, scoped a #page-participacion */
+#page-participacion {
+  --pt-bg: #f5f5f7;
+  --pt-surface: #ffffff;
+  --pt-border: #e1e1e4;
+  --pt-border-soft: #ededef;
+  --pt-text: #1c1c1e;
+  --pt-text-secondary: #78787f;
+  --pt-primary: #007aff;
+  --pt-primary-light: #e5f0ff;
+  --pt-success: #34c759;
+  --pt-success-bg: #e8f8ee;
+  --pt-warning: #b4740e;
+  --pt-warning-bg: #fbf0dc;
+  --pt-error: #b3261e;
+  --pt-error-bg: #fbe7e5;
+  --pt-radius-md: 12px;
+  --pt-radius-xl: 22px;
+  --pt-radius-full: 999px;
+  --pt-shadow-1: 0 1px 3px rgba(28,28,30,.06), 0 4px 14px rgba(28,28,30,.04);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+#page-participacion .pt-page-title { font-size: 22px; font-weight: 700; letter-spacing: -.02em; color: var(--pt-text); margin-bottom: 4px; }
+#page-participacion .pt-page-sub { font-size: 13px; color: var(--pt-text-secondary); margin-bottom: 20px; }
+#page-participacion .card { background: var(--pt-surface); border: 1px solid var(--pt-border-soft); border-radius: var(--pt-radius-xl); box-shadow: var(--pt-shadow-1); }
+#page-participacion .card-title { font-size: 15px; font-weight: 700; color: var(--pt-text); text-transform: none; letter-spacing: -.01em; border-bottom: none; padding-bottom: 0; }
+#page-participacion .part-table th { font-family: 'Inter', system-ui, sans-serif; font-size: 11px; color: var(--pt-text-secondary); text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--pt-border-soft); }
+#page-participacion .part-table td { font-family: 'Inter', system-ui, sans-serif; font-size: 13px; color: var(--pt-text); border-bottom: 1px solid var(--pt-border-soft); }
+#page-participacion .part-table tr:hover td { background: var(--pt-bg); }
+#page-participacion .badge { border-radius: var(--pt-radius-full); font-family: 'Inter', system-ui, sans-serif; font-weight: 600; }
+#page-participacion .badge-green { background: var(--pt-success-bg); color: var(--pt-success); }
+#page-participacion .badge-amber { background: var(--pt-warning-bg); color: var(--pt-warning); }
+#page-participacion .badge-red { background: var(--pt-error-bg); color: var(--pt-error); }
+#page-participacion .badge-gray { background: var(--pt-border-soft); color: var(--pt-text-secondary); }
+#page-participacion .empty-state { font-family: 'Inter', system-ui, sans-serif; color: var(--pt-text-secondary); }
+
+/* CONFIGURACIÓN — mismo sistema visual, scoped a #page-config.
+   OJO: #cfg-header-preview NO se toca — es la previsualización real del
+   header exportado (Fraunces/colores fijos), debe verse igual al PNG final. */
+#page-config {
+  --cfg-bg: #f5f5f7;
+  --cfg-surface: #ffffff;
+  --cfg-border: #e1e1e4;
+  --cfg-border-soft: #ededef;
+  --cfg-text: #1c1c1e;
+  --cfg-text-secondary: #78787f;
+  --cfg-primary: #007aff;
+  --cfg-primary-light: #e5f0ff;
+  --cfg-error: #b3261e;
+  --cfg-error-bg: #fbe7e5;
+  --cfg-radius-md: 12px;
+  --cfg-radius-xl: 22px;
+  --cfg-radius-full: 999px;
+  --cfg-shadow-1: 0 1px 3px rgba(28,28,30,.06), 0 4px 14px rgba(28,28,30,.04);
+  --cfg-ease: cubic-bezier(.2,0,0,1);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+#page-config .cfg-page-title { font-size: 22px; font-weight: 700; letter-spacing: -.02em; color: var(--cfg-text); margin-bottom: 4px; }
+#page-config .cfg-page-sub { font-size: 13px; color: var(--cfg-text-secondary); margin-bottom: 20px; }
+#page-config .card { background: var(--cfg-surface); border: 1px solid var(--cfg-border-soft); border-radius: var(--cfg-radius-xl); box-shadow: var(--cfg-shadow-1); }
+#page-config .card-title { font-size: 15px; font-weight: 700; color: var(--cfg-text); text-transform: none; letter-spacing: -.01em; border-bottom: none; padding-bottom: 0; }
+#page-config .field label { font-family: 'Inter', system-ui, sans-serif; color: var(--cfg-text-secondary); text-transform: none; letter-spacing: 0; font-size: 12px; }
+#page-config input { font-family: 'Inter', system-ui, sans-serif; background: var(--cfg-bg); border: 1px solid var(--cfg-border); border-radius: var(--cfg-radius-md); color: var(--cfg-text); box-shadow: none; }
+#page-config input:focus { border-color: var(--cfg-primary); }
+#page-config .btn { font-family: 'Inter', system-ui, sans-serif; border-radius: var(--cfg-radius-md); border: 1px solid var(--cfg-border); background: var(--cfg-surface); color: var(--cfg-text); box-shadow: none; transition: background 120ms var(--cfg-ease); }
+#page-config .btn:hover { background: var(--cfg-bg); }
+#page-config .btn-danger { border-color: var(--cfg-error); color: var(--cfg-error); background: var(--cfg-surface); }
+#page-config .btn-danger:hover { background: var(--cfg-error-bg); }
+#page-config #cfg-logo-preview { background: var(--cfg-bg) !important; border: 1px solid var(--cfg-border) !important; }
+#page-config #cfg-logo-preview i { color: var(--cfg-text-secondary) !important; }
+#page-config .cfg-hint { font-family: 'Inter', system-ui, sans-serif; font-size: 11px; color: var(--cfg-text-secondary); }
+#page-config #miembros-list > div { background: var(--cfg-bg) !important; border-radius: var(--cfg-radius-md) !important; }
+#page-config #miembros-list input { font-family: 'Inter', system-ui, sans-serif; color: var(--cfg-text) !important; }
+#page-config #miembro-nuevo { flex: 1; }
+#page-config #cloud-auth-status { font-family: 'Inter', system-ui, sans-serif; color: var(--cfg-text-secondary) !important; }
 </style>
 </head>
 <body>
@@ -989,15 +1065,15 @@ select option { background: var(--bg3); }
 
 <!-- ===== PARTICIPACION ===== -->
 <div class="page" id="page-participacion">
-  <div class="page-title">Participación del equipo</div>
-  <div class="page-sub">Seguimiento de presencia para cuidar la carga de cada músico</div>
+  <div class="pt-page-title">Participación del equipo</div>
+  <div class="pt-page-sub">Seguimiento de presencia para cuidar la carga de cada músico</div>
   <div id="part-content"></div>
 </div>
 
 <!-- ===== CONFIGURACION ===== -->
 <div class="page" id="page-config">
-  <div class="page-title">Configuración</div>
-  <div class="page-sub">Datos de la iglesia que aparecen en todas las imágenes generadas</div>
+  <div class="cfg-page-title">Configuración</div>
+  <div class="cfg-page-sub">Datos de la iglesia que aparecen en todas las imágenes generadas</div>
 
   <div class="card">
     <div class="card-title">Identidad institucional</div>
@@ -1015,15 +1091,15 @@ select option { background: var(--bg3); }
   <div class="card">
     <div class="card-title">Logo de la iglesia</div>
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">
-      <div id="cfg-logo-preview" style="width:64px;height:64px;border-radius:50%;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
-        <i class="ti ti-photo" style="font-size:24px;color:var(--text3)"></i>
+      <div id="cfg-logo-preview" style="width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+        <i class="ti ti-photo" style="font-size:24px"></i>
       </div>
       <div>
         <label class="btn btn-sm" style="cursor:pointer">
           <i class="ti ti-upload"></i> Subir logo
           <input type="file" id="cfg-logo-file" accept="image/*" style="display:none" onchange="handleLogoUpload(event)">
         </label>
-        <div style="font-size:11px;color:var(--text3);margin-top:5px">PNG o JPG, fondo transparente recomendado.<br>Aparece en el header y footer de la imagen.</div>
+        <div class="cfg-hint" style="margin-top:5px">PNG o JPG, fondo transparente recomendado.<br>Aparece en el header y footer de la imagen.</div>
       </div>
     </div>
     <button class="btn btn-sm btn-danger" onclick="removeLogo()" id="cfg-logo-remove" style="display:none"><i class="ti ti-trash"></i> Quitar logo</button>
@@ -1038,9 +1114,9 @@ select option { background: var(--bg3); }
 
   <div class="card">
     <div class="card-title">Miembros del ministerio</div>
-    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Lista de nombres del ministerio (usá el mismo texto que en los roles de los servicios).</div>
+    <div class="cfg-hint" style="margin-bottom:12px">Lista de nombres del ministerio (usá el mismo texto que en los roles de los servicios).</div>
     <div style="display:flex;gap:6px;margin-bottom:12px">
-      <input id="miembro-nuevo" placeholder="Nombre" style="flex:1" onkeydown="if(event.key==='Enter')addMiembro()">
+      <input id="miembro-nuevo" placeholder="Nombre" onkeydown="if(event.key==='Enter')addMiembro()">
       <button class="btn btn-sm" onclick="addMiembro()"><i class="ti ti-plus"></i> Agregar</button>
     </div>
     <div id="miembros-list"></div>
@@ -1048,7 +1124,7 @@ select option { background: var(--bg3); }
 
   <div class="card">
     <div class="card-title">Backup de datos</div>
-    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Descargá una copia completa de todos los datos guardados (canciones, cronogramas, bandas, listas, guiones, participación, configuración) o restaurala en otro navegador o dispositivo.</div>
+    <div class="cfg-hint" style="margin-bottom:12px">Descargá una copia completa de todos los datos guardados (canciones, cronogramas, bandas, listas, guiones, participación, configuración) o restaurala en otro navegador o dispositivo.</div>
     <div class="btn-group">
       <button class="btn" onclick="exportAllData()"><i class="ti ti-download"></i> Exportar datos</button>
       <label class="btn" style="cursor:pointer">
@@ -1060,9 +1136,9 @@ select option { background: var(--bg3); }
 
   <div class="card" id="cloud-sync-card">
     <div class="card-title">Sincronización de canciones en la nube</div>
-    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Iniciá sesión con Google para publicar la biblioteca de canciones a la nube. Cualquier dispositivo (sin necesidad de iniciar sesión) lee automáticamente la última versión publicada al abrir la app.</div>
+    <div class="cfg-hint" style="margin-bottom:12px">Iniciá sesión con Google para publicar la biblioteca de canciones a la nube. Cualquier dispositivo (sin necesidad de iniciar sesión) lee automáticamente la última versión publicada al abrir la app.</div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <span id="cloud-auth-status" style="font-size:12px;color:var(--text2)">Verificando conexión...</span>
+      <span id="cloud-auth-status">Verificando conexión...</span>
       <button class="btn btn-sm" id="cloud-signin-btn" onclick="cloudSignIn()" style="display:none"><i class="ti ti-brand-google"></i> Iniciar sesión con Google</button>
       <button class="btn btn-sm btn-danger" id="cloud-signout-btn" onclick="cloudSignOut()" style="display:none"><i class="ti ti-logout"></i> Cerrar sesión</button>
     </div>
@@ -3302,7 +3378,7 @@ function renderParticipacion(){
             return`<tr>
               <td style="font-weight:500">${name}</td>
               <td>${d.count} de ${n}</td>
-              <td style="color:var(--text3)">${d.last?d.last.label:'-'}</td>
+              <td style="color:var(--pt-text-secondary)">${d.last?d.last.label:'-'}</td>
               <td><span class="badge ${badge}">${status}</span></td>
             </tr>`;
           }).join('')}
