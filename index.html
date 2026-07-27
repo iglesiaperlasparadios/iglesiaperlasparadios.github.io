@@ -673,6 +673,51 @@ select option { background: var(--bg3); }
 #modal-cancion .btn-danger { border-color: var(--cm-error); color: var(--cm-error); }
 #modal-cancion .btn-danger:hover { background: var(--cm-error-bg); }
 #modal-cancion .cm-sec-row { background: var(--cm-bg); border: 1px solid var(--cm-border-soft); border-radius: var(--cm-radius-lg); }
+
+/* COORDINACIÓN (landing de guiones) — mismo sistema visual, scoped a #page-guion.
+   Alcance: la lista de guiones guardados (#guion-landing). El editor de guion no se toca. */
+#page-guion {
+  --gui-bg: #f5f5f7;
+  --gui-surface: #ffffff;
+  --gui-border: #e1e1e4;
+  --gui-border-soft: #ededef;
+  --gui-text: #1c1c1e;
+  --gui-text-secondary: #78787f;
+  --gui-primary: #007aff;
+  --gui-error: #b3261e;
+  --gui-error-bg: #fbe7e5;
+  --gui-radius-md: 12px;
+  --gui-radius-xl: 22px;
+  --gui-shadow-1: 0 1px 3px rgba(28,28,30,.06), 0 4px 14px rgba(28,28,30,.04);
+  --gui-shadow-2: 0 8px 24px rgba(28,28,30,.09);
+  --gui-ease: cubic-bezier(.2,0,0,1);
+}
+#guion-landing { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+#guion-landing .gui-page-title { font-size: 22px; font-weight: 700; letter-spacing: -.02em; color: var(--gui-text); }
+#guion-landing .gui-page-sub { font-size: 13px; color: var(--gui-text-secondary); margin-bottom: 20px; }
+#guion-landing .btn {
+  font-family: 'Inter', system-ui, sans-serif; border-radius: var(--gui-radius-md);
+  border: 1px solid var(--gui-border); background: var(--gui-surface); color: var(--gui-text);
+  box-shadow: none;
+}
+#guion-landing .btn:hover { background: var(--gui-bg); }
+#guion-landing .btn-primary { background: var(--gui-primary); border-color: var(--gui-primary); color: #fff; }
+#guion-landing .btn-primary:hover { background: #0062cc; }
+#guion-landing .btn-danger { border-color: var(--gui-error); color: var(--gui-error); }
+#guion-landing .btn-danger:hover { background: var(--gui-error-bg); }
+#guion-landing .gui-card {
+  background: var(--gui-surface); border: 1px solid var(--gui-border-soft);
+  border-left: 4px solid var(--gui-mes, var(--gui-border));
+  border-radius: var(--gui-radius-xl); box-shadow: var(--gui-shadow-1);
+  padding: 14px 18px; margin-bottom: 10px;
+  transition: transform 150ms var(--gui-ease), box-shadow 150ms var(--gui-ease);
+}
+#guion-landing .gui-card:hover { transform: translateY(-1px); box-shadow: var(--gui-shadow-2); }
+#guion-landing .gui-mes-badge {
+  display: inline-flex; align-items: center; font-size: 11px; font-weight: 600;
+  padding: 2px 9px; border-radius: 999px; color: var(--gui-mes, var(--gui-text-secondary));
+  background: var(--gui-mes-bg, var(--gui-border-soft));
+}
 </style>
 </head>
 <body>
@@ -977,10 +1022,10 @@ select option { background: var(--bg3); }
   <!-- ── Landing ─────────────────────────────── -->
   <div id="guion-landing">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-      <div class="page-title">Coordinación</div>
+      <div class="gui-page-title">Coordinación</div>
       <button class="btn btn-primary btn-sm" onclick="newGuion()"><i class="ti ti-plus"></i> Nuevo</button>
     </div>
-    <div class="page-sub">Armá el orden del tiempo de adoración</div>
+    <div class="gui-page-sub">Armá el orden del tiempo de adoración</div>
     <div id="guion-landing-list" style="margin-top:12px"></div>
   </div>
 
@@ -4452,12 +4497,25 @@ function renderGuionLanding(){
   el.innerHTML=list.map(g=>{
     const svc=_findServiceForDate(g.date);
     const coordina=svc?.roles?.coordina||'';
-    return `<div class="card" style="margin-bottom:8px;padding:12px 16px">
+    // color por mes calendario (mismo MES_ACCENT que ya usa la imagen exportada) — así
+    // todo Julio queda de un color, Agosto de otro, estable sin importar el año
+    let mesStyle='', mesBadge='';
+    if(g.date){
+      const [y,mStr]=g.date.split('-');
+      const m=parseInt(mStr,10)-1;
+      const accent=MES_ACCENT[((m%12)+12)%12];
+      mesStyle=` style="--gui-mes:${accent};--gui-mes-bg:${accent}18"`;
+      mesBadge=`<span class="gui-mes-badge">${MESES[m]} ${y}</span>`;
+    }
+    return `<div class="gui-card"${mesStyle}>
       <div style="display:flex;align-items:flex-start;gap:10px">
         <div style="flex:1;min-width:0">
-          <div style="font-size:14px;font-weight:600;color:var(--text)">${g.date?_fmtGuionDate(g.date):'Sin fecha'}</div>
-          ${g.title?`<div style="font-size:12px;color:var(--text3);margin-top:2px">${g.title}</div>`:''}
-          <div style="font-size:11px;color:var(--text3);margin-top:4px;display:flex;gap:10px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="font-size:14px;font-weight:600;color:var(--gui-text)">${g.date?_fmtGuionDate(g.date):'Sin fecha'}</span>
+            ${mesBadge}
+          </div>
+          ${g.title?`<div style="font-size:12px;color:var(--gui-text-secondary);margin-top:2px">${g.title}</div>`:''}
+          <div style="font-size:11px;color:var(--gui-text-secondary);margin-top:4px;display:flex;gap:10px;flex-wrap:wrap">
             <span><i class="ti ti-layout-list" style="font-size:10px"></i> ${g.blocks?.length||0} bloques</span>
             ${coordina?`<span><i class="ti ti-user" style="font-size:10px"></i> ${coordina}</span>`:''}
           </div>
