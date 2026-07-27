@@ -854,6 +854,51 @@ select option { background: var(--bg3); }
 #page-config #miembros-list input { font-family: 'Inter', system-ui, sans-serif; color: var(--cfg-text) !important; }
 #page-config #miembro-nuevo { flex: 1; }
 #page-config #cloud-auth-status { font-family: 'Inter', system-ui, sans-serif; color: var(--cfg-text-secondary) !important; }
+
+/* GUION EDITOR (armar guión) — mismo sistema visual, scoped a #guion-editor.
+   Se redefinen las variables globales viejas (--bg2/--bg3/--border/--text*/--accent/etc.)
+   SOLO dentro de este scope: así todo el render de bloques (que usa esas variables
+   en decenas de estilos inline distribuidos en varias funciones JS) hereda el look
+   nuevo sin tocar ni una línea de esa lógica. Los colores de _BTYPE_COLOR,
+   _EVENTO_TIPOS, DOMINGO_COLORS y los builders buildGuionCard* (imagen exportada)
+   NO se tocan: mantienen su identidad tal cual está. */
+#guion-editor {
+  --bg2: #ffffff;
+  --bg3: #f5f5f7;
+  --bg4: #ececef;
+  --border: #e1e1e4;
+  --border2: #d1d1d6;
+  --text: #1c1c1e;
+  --text2: #52525b;
+  --text3: #78787f;
+  --accent: #007aff;
+  --accent-bg: #e5f0ff;
+  --green: #34c759;
+  --green-bg: #e8f8ee;
+  --amber: #b4740e;
+  --amber-bg: #fbf0dc;
+  --red: #b3261e;
+  --red-bg: #fbe7e5;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+#guion-editor .card { border-radius: 22px; box-shadow: 0 1px 3px rgba(28,28,30,.06), 0 4px 14px rgba(28,28,30,.04); border-color: #ededef; }
+#guion-editor .card-title { text-transform: none; letter-spacing: -.01em; font-size: 15px; border-bottom: none; padding-bottom: 0; }
+#guion-editor input, #guion-editor textarea, #guion-editor select {
+  font-family: 'Inter', system-ui, sans-serif; border-radius: 12px; box-shadow: none;
+}
+#guion-editor input:focus, #guion-editor textarea:focus, #guion-editor select:focus { border-color: var(--accent); }
+#guion-editor .btn {
+  font-family: 'Inter', system-ui, sans-serif; border-radius: 12px; background: var(--bg2);
+  border-color: var(--border); box-shadow: none; transition: background 120ms ease;
+}
+#guion-editor .btn:hover { background: var(--bg3); border-color: var(--border2); }
+#guion-editor .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+#guion-editor .btn-primary:hover { background: #0062cc; border-color: #0062cc; }
+#guion-editor .btn-success { background: var(--green); border-color: var(--green); color: #fff; }
+#guion-editor .btn-danger { border-color: var(--red); color: var(--red); background: var(--bg2); }
+#guion-editor .btn-danger:hover { background: var(--red-bg); }
+#guion-editor .empty-state { font-family: 'Inter', system-ui, sans-serif; }
+#guion-editor .ge-chip { border-radius: 999px !important; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -1185,10 +1230,10 @@ select option { background: var(--bg3); }
         </div>
       </div>
       <div id="guion-import-wrap" style="display:none;margin-top:8px">
-        <button class="btn btn-sm" onclick="importFromCronograma()" style="border-color:#2563a8;color:#2563a8"><i class="ti ti-table-import"></i> Importar canciones del cronograma</button>
+        <button class="btn btn-sm ge-chip" onclick="importFromCronograma()" style="border-color:#2563a8;color:#2563a8;background:rgba(37,99,168,.1)"><i class="ti ti-table-import"></i> Importar canciones del cronograma</button>
       </div>
       <div id="guion-programa-wrap" style="display:none;margin-top:8px">
-        <button class="btn btn-sm" onclick="openProgramaModal()" style="border-color:#7c3aed;color:#7c3aed">📋 Programa del domingo</button>
+        <button class="btn btn-sm ge-chip" onclick="openProgramaModal()" style="border-color:#7c3aed;color:#7c3aed;background:rgba(124,58,237,.1)">📋 Programa del domingo</button>
       </div>
     </div>
 
@@ -1197,11 +1242,11 @@ select option { background: var(--bg3); }
     <div class="card">
       <div class="card-title">Agregar bloque</div>
       <div class="btn-group">
-        <button class="btn btn-sm" onclick="addGuionBlock('texto')" style="border-color:#2563a8;color:#2563a8"><i class="ti ti-text-size"></i> Texto</button>
-        <button class="btn btn-sm" onclick="addGuionBlock('cancion')" style="border-color:#c05a1f;color:#c05a1f"><i class="ti ti-music"></i> Canción</button>
-        <button class="btn btn-sm" onclick="addGuionBlock('versiculo')" style="border-color:#1a7070;color:#1a7070"><i class="ti ti-book"></i> Versículo</button>
-        <button class="btn btn-sm" onclick="addGuionBlock('oracion')" style="border-color:#6b3fa0;color:#6b3fa0"><i class="ti ti-hands-praying"></i> Oración</button>
-        <button class="btn btn-sm" onclick="addGuionBlock('evento')" style="border-color:#a16207;color:#a16207">🎯 Evento</button>
+        <button class="btn btn-sm ge-chip" onclick="addGuionBlock('texto')" style="border-color:#2563a8;color:#2563a8;background:rgba(37,99,168,.1)"><i class="ti ti-text-size"></i> Texto</button>
+        <button class="btn btn-sm ge-chip" onclick="addGuionBlock('cancion')" style="border-color:#c05a1f;color:#c05a1f;background:rgba(192,90,31,.1)"><i class="ti ti-music"></i> Canción</button>
+        <button class="btn btn-sm ge-chip" onclick="addGuionBlock('versiculo')" style="border-color:#1a7070;color:#1a7070;background:rgba(26,112,112,.1)"><i class="ti ti-book"></i> Versículo</button>
+        <button class="btn btn-sm ge-chip" onclick="addGuionBlock('oracion')" style="border-color:#6b3fa0;color:#6b3fa0;background:rgba(107,63,160,.1)"><i class="ti ti-hands-praying"></i> Oración</button>
+        <button class="btn btn-sm ge-chip" onclick="addGuionBlock('evento')" style="border-color:#a16207;color:#a16207;background:rgba(161,98,7,.1)">🎯 Evento</button>
       </div>
     </div>
 
