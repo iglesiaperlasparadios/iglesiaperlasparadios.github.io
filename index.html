@@ -3876,12 +3876,21 @@ function renderEstadisticas(){
     const bDate=lastUsedGlobal[b.name.toLowerCase()]||new Date(0);
     return aDate-bDate;
   });
+  // corte de color RELATIVO al máximo actual de la lista (no un número fijo), para que
+  // no quede desactualizado a medida que crece el historial
+  const rotarUsosVals=rotarSorted.filter(c=>c.usosCount).map(c=>c.usosCount);
+  const rotarMaxUsos=rotarUsosVals.length?Math.max(...rotarUsosVals):0;
+  const rotarUsosBadgeClass=n=>{
+    if(!n||rotarMaxUsos<=1) return 'stats-badge--neutral';
+    const pct=n/rotarMaxUsos;
+    return pct>2/3?'stats-badge--error':pct>1/3?'stats-badge--warning':'stats-badge--neutral';
+  };
   const rotarRow=c=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--stats-bg);border-radius:var(--stats-radius-md);border:1px solid var(--stats-border-soft)">
     <div style="flex:1;min-width:0">
       <div style="font-size:13px;font-weight:600;color:var(--stats-text)">${esc(c.name)}</div>
       <div style="font-size:11px;color:var(--stats-text-secondary);margin-top:2px">${[c.key,c.author].filter(Boolean).map(esc).join(' · ')||'—'}</div>
     </div>
-    ${c.usosCount?`<span class="stats-badge stats-badge--neutral" title="Veces usada en total">${c.usosCount}× hist.</span>`:`<span class="stats-badge stats-badge--warning">nunca usada</span>`}
+    ${c.usosCount?`<span class="stats-badge ${rotarUsosBadgeClass(c.usosCount)}" title="Veces usada en total">${c.usosCount}× hist.</span>`:`<span class="stats-badge stats-badge--warning">nunca usada</span>`}
     <button onclick="goTo('canciones');setTimeout(()=>openCancionModal('${c.id}'),100)" title="Editar canción" style="width:32px;height:32px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;background:none;border:none;border-radius:8px;cursor:pointer;color:var(--stats-primary)"><i class="ti ti-edit" style="font-size:15px"></i></button>
   </div>`;
   const rotarPrimeras=rotarSorted.slice(0,20), rotarResto=rotarSorted.slice(20);
@@ -3926,8 +3935,8 @@ function renderEstadisticas(){
       <div class="stats-card">
         <div class="stats-section-title">Repertorio</div>
         <div class="stats-section-sub">Canciones más tocadas</div>
-        ${songStats.length?'<div id="stats-bar-repertorio-primeras"></div>':'<div style="font-size:13px;color:var(--stats-text-secondary)">Sin canciones en el rango seleccionado</div>'}
-        ${repertorioResto.length?`<div id="stats-bar-repertorio-resto" style="display:none;margin-top:14px"></div>${verTodasBtn(songStats.length,"document.getElementById('stats-bar-repertorio-resto').style.display='block';this.remove()")}`:''}
+        ${songStats.length?'<div id="stats-bar-repertorio"></div>':'<div style="font-size:13px;color:var(--stats-text-secondary)">Sin canciones en el rango seleccionado</div>'}
+        ${repertorioResto.length?verTodasBtn(songStats.length,`document.querySelectorAll('#stats-bar-repertorio .stats-bar-chart-fila').forEach((el,i)=>{if(i>=${repertorioPrimeras.length}) el.style.display=''});this.remove()`):''}
       </div>
     </div>
     <div class="stats-card">
@@ -3936,8 +3945,14 @@ function renderEstadisticas(){
     </div>`;
 
   if(keyStats.length) statsRenderBarChart(document.getElementById('stats-bar-tonos'), {items: keyStats.map(k=>({id:k.key,label:k.key,valor:k.count})), orientacion:'horizontal'});
-  if(repertorioPrimeras.length) statsRenderBarChart(document.getElementById('stats-bar-repertorio-primeras'), {items: repertorioPrimeras.map(s=>({id:s.name,label:s.name,valor:s.count})), orientacion:'horizontal'});
-  if(repertorioResto.length) statsRenderBarChart(document.getElementById('stats-bar-repertorio-resto'), {items: repertorioResto.map(s=>({id:s.name,label:s.name,valor:s.count})), orientacion:'horizontal'});
+  if(songStats.length){
+    // una sola grilla compartida para las 20: las que van más allá del corte quedan
+    // display:none (no un contenedor/wrapper aparte), "Ver todas" solo las revela
+    statsRenderBarChart(document.getElementById('stats-bar-repertorio'), {items: songStats.map(s=>({id:s.name,label:s.name,valor:s.count})), orientacion:'horizontal'});
+    if(repertorioResto.length){
+      [...document.querySelectorAll('#stats-bar-repertorio .stats-bar-chart-fila')].forEach((el,i)=>{ if(i>=repertorioPrimeras.length) el.style.display='none'; });
+    }
+  }
 }
 
 // ═══════════════════════════════════════════════
