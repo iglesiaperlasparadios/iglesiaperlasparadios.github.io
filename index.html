@@ -1718,16 +1718,13 @@ function togglePickerSong(id){
 
 function confirmPicker(){
   const canciones=getCanciones();
-  let usosChanged=false;
   pickerSelected.forEach(id=>{
     const c=canciones.find(c=>c.id===id);
     if(c&&pickerSI!==null){
       if(!monthServices[pickerSI].songs[pickerSec])monthServices[pickerSI].songs[pickerSec]=[];
       monthServices[pickerSI].songs[pickerSec].push({id:c.id,name:c.name,key:c.key,nueva:c.nueva,note:c.playNote||''});
-      c.usosCount=(c.usosCount||0)+1; usosChanged=true;
     }
   });
-  if(usosChanged) saveCanciones(canciones);
   refreshSongsSection(pickerSI);
   closeModal('modal-picker');
   saveMesState();
@@ -3644,6 +3641,26 @@ function renderEstadisticas(){
     return;
   }
 
+  // ── Recalcular usosCount real: antes era un contador manual que sumaba al elegir una
+  // canción en el picker (Cronograma o Coordinación) y nunca restaba al sacarla — quedaba
+  // desincronizado de lo que realmente terminó en un servicio guardado. Ahora se deriva
+  // siempre de allSvc (TODO el historial de Cronograma, sin filtro de rango — misma fuente
+  // que "Repertorio"), y se persiste de vuelta en la canción. ──
+  {
+    const allSongCounts={};
+    allSvc.forEach(s=>s.songs.forEach(sg=>{
+      const k=sg.name.toLowerCase();
+      allSongCounts[k]=(allSongCounts[k]||0)+1;
+    }));
+    const cancionesParaSync=getCanciones();
+    let usosSyncChanged=false;
+    cancionesParaSync.forEach(c=>{
+      const real=allSongCounts[c.name.toLowerCase()]||0;
+      if(c.usosCount!==real){ c.usosCount=real; usosSyncChanged=true; }
+    });
+    if(usosSyncChanged) saveCanciones(cancionesParaSync);
+  }
+
   const range=document.getElementById('stats-range')?.value||'todo';
   const now=new Date();
   const filtered=allSvc.filter(s=>{
@@ -4826,8 +4843,6 @@ function _selectLetra(id){ _letraPickerSelected=id; renderLetraPicker(); }
 function confirmLetraPicker(){
   if(!_letraPickerSelected){ showToast('Elegí una canción','amber'); return; }
   const block={type:'cancion', id:Date.now().toString(), songId:_letraPickerSelected};
-  const canciones=getCanciones();const ci=canciones.findIndex(c=>c.id===_letraPickerSelected);
-  if(ci>=0){canciones[ci].usosCount=(canciones[ci].usosCount||0)+1;saveCanciones(canciones);}
   if(_letraPickerTargetIdx!==undefined&&_letraPickerTargetIdx!==null){
     block.id=guionBlocks[_letraPickerTargetIdx].id;
     guionBlocks[_letraPickerTargetIdx]=block;
