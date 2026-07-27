@@ -483,7 +483,15 @@ select option { background: var(--bg3); }
    restylear; las mini-cards de buildBandCard/buildSongsCard (modo 'crono') se comparten
    con Bandas (modo 'compact') y la imagen exportada (sin mode), así que sus colores
    IMG_* quedan intactos a propósito. */
-#page-mes .crono-col-form { border-left: 1px solid var(--crono-border-soft); }
+#page-mes .crono-col-form { border-left: none; padding-left: 20px; }
+/* El panel de "servicios anteriores" tiene SU PROPIA card (alto = su propio contenido,
+   no el de la columna de roles/canciones al lado) — así el sobrante de altura se ve como
+   aire normal al costado de una card más chica, no como aire desperdiciado adentro. */
+#page-mes .crono-prev-wrap {
+  background: var(--crono-surface); border: 1px solid var(--crono-border-soft);
+  border-radius: var(--crono-radius-lg); box-shadow: var(--crono-shadow-1);
+  padding: 14px;
+}
 </style>
 </head>
 <body>
