@@ -591,9 +591,9 @@ select option { background: var(--bg3); }
     <div id="preview-wrap" style="display:none" class="canvas-preview"><canvas id="cv-preview"></canvas></div>
   </div>
 
-  <div class="card" id="participacion-mes-card" style="display:none">
-    <div class="card-title">Resumen de participación</div>
-    <div id="participacion-mes-header" style="font-size:12px;color:var(--text3);margin-bottom:14px"></div>
+  <div class="crono-card" id="participacion-mes-card" style="display:none">
+    <div class="crono-card-title">Resumen de participación</div>
+    <div id="participacion-mes-header" style="font-size:12px;color:var(--crono-text-secondary);margin-bottom:14px"></div>
     <div id="participacion-mes-bubbles" style="display:flex;flex-wrap:wrap;gap:18px 14px"></div>
     <div id="participacion-mes-chivato" style="display:none;margin-top:14px"></div>
   </div>
@@ -1874,7 +1874,7 @@ function renderParticipacionMes(){
   const masCargado=burbujas.length?burbujas[0].nombre:'—';
   const sinLugar=burbujas.filter(b=>b.domingos===0).length;
 
-  const statBlock=(label,value)=>`<div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">${label}</div><div style="font-size:16px;font-weight:700;color:var(--text)">${value}</div></div>`;
+  const statBlock=(label,value)=>`<div><div style="font-size:11px;font-weight:500;color:var(--crono-text-secondary);text-transform:uppercase;letter-spacing:.04em">${label}</div><div style="font-size:18px;font-weight:700;color:var(--crono-text);margin-top:2px">${value}</div></div>`;
   document.getElementById('participacion-mes-header').innerHTML=
     `<div style="display:flex;flex-wrap:wrap;gap:16px 28px">`
     +statBlock('Domingos del mes',n)
@@ -1886,10 +1886,10 @@ function renderParticipacionMes(){
   // anillo de progreso (SVG, stroke-dasharray) — mismo tamaño de burbuja que antes (60px)
   const R=30, STROKE=4, SIZE=(R+STROKE)*2, CIRC=2*Math.PI*R;
   const CATS={
-    cero: {ring:'var(--border2)', bg:'transparent',        fg:'var(--text3)', border:'var(--border2)'},
-    ambar:{ring:'var(--amber)',   bg:'var(--amber-bg)',    fg:'var(--amber)', border:'var(--amber)'},
-    azul: {ring:'var(--accent)',  bg:'var(--accent-bg)',   fg:'var(--accent)',border:'var(--accent)'},
-    verde:{ring:'var(--green)',   bg:'var(--green-bg)',    fg:'var(--green)', border:'var(--green)'}
+    cero: {ring:'var(--crono-border)',        bg:'transparent',               fg:'var(--crono-text-secondary)', border:'var(--crono-border)'},
+    ambar:{ring:'var(--crono-warning)',       bg:'var(--crono-warning-bg)',   fg:'var(--crono-warning)',        border:'var(--crono-warning)'},
+    azul: {ring:'var(--crono-primary)',       bg:'var(--crono-primary-light)',fg:'var(--crono-primary)',        border:'var(--crono-primary)'},
+    verde:{ring:'var(--crono-success)',       bg:'var(--crono-success-bg)',   fg:'var(--crono-success)',        border:'var(--crono-success)'}
   };
   document.getElementById('participacion-mes-bubbles').innerHTML=burbujas.map(b=>{
     const cat = b.domingos===0 ? 'cero'
@@ -1901,21 +1901,21 @@ function renderParticipacionMes(){
     const dashoffset=(CIRC*(1-frac)).toFixed(2);
     const dots=Array.from({length:n},(_,i)=>b.set.has(i)
       ? `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;margin:0 1.5px;background:${c.fg}"></span>`
-      : `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;margin:0 1.5px;border:1px solid var(--border2)"></span>`
+      : `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;margin:0 1.5px;border:1px solid var(--crono-border)"></span>`
     ).join('');
     return `<div style="display:flex;flex-direction:column;align-items:center;gap:6px;width:76px">
       <div style="position:relative;width:${SIZE}px;height:${SIZE}px">
         <svg width="${SIZE}" height="${SIZE}" style="position:absolute;top:0;left:0;transform:rotate(-90deg)">
-          <circle cx="${SIZE/2}" cy="${SIZE/2}" r="${R}" fill="none" stroke="var(--border)" stroke-width="${STROKE}"/>
+          <circle cx="${SIZE/2}" cy="${SIZE/2}" r="${R}" fill="none" stroke="var(--crono-border-soft)" stroke-width="${STROKE}"/>
           <circle cx="${SIZE/2}" cy="${SIZE/2}" r="${R}" fill="none" stroke="${c.ring}" stroke-width="${STROKE}" stroke-linecap="round" stroke-dasharray="${CIRC.toFixed(2)}" stroke-dashoffset="${dashoffset}"/>
         </svg>
-        <div style="position:absolute;top:${STROKE}px;left:${STROKE}px;width:${SIZE-STROKE*2}px;height:${SIZE-STROKE*2}px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Fraunces',serif;background:${c.bg};color:${c.fg};border:${b.domingos===0?`2px dashed ${c.border}`:`1px solid ${c.border}`};${b.domingos===0?'opacity:.65':''}">
+        <div style="position:absolute;top:${STROKE}px;left:${STROKE}px;width:${SIZE-STROKE*2}px;height:${SIZE-STROKE*2}px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:${c.bg};color:${c.fg};border:${b.domingos===0?`2px dashed ${c.border}`:`1px solid ${c.border}`};${b.domingos===0?'opacity:.65':''}">
           <span style="font-size:20px;font-weight:700;line-height:1">${b.domingos}</span>
           <span style="font-size:10px;font-weight:600;opacity:.75">${b.puestos}p</span>
         </div>
       </div>
       <div>${dots}</div>
-      <span style="font-size:11px;text-align:center;color:var(--text2);line-height:1.2">${esc(b.nombre)}</span>
+      <span style="font-size:11px;text-align:center;color:var(--crono-text-secondary);line-height:1.2">${esc(b.nombre)}</span>
     </div>`;
   }).join('');
 
@@ -1924,7 +1924,14 @@ function renderParticipacionMes(){
   const chivato=document.getElementById('participacion-mes-chivato');
   if(faltantes.length){
     chivato.style.display='';
-    chivato.innerHTML=`<div class="alert alert-amber"><i class="ti ti-alert-triangle"></i><div><strong style="display:block;margin-bottom:3px">Estos nombres están en los servicios pero no en tu lista de Miembros</strong>${faltantes.map(n=>`<span class="badge badge-amber" style="margin:2px">${esc(n)}</span>`).join('')}<div style="margin-top:4px">Revisá que estén bien escritos.</div></div></div>`;
+    chivato.innerHTML=`<div style="margin-top:4px;padding:12px 14px;background:var(--crono-warning-bg);border:1px solid var(--crono-warning);border-radius:var(--crono-radius-md);display:flex;gap:10px;align-items:flex-start">
+      <i class="ti ti-alert-triangle" style="color:var(--crono-warning);font-size:16px;flex-shrink:0;margin-top:1px"></i>
+      <div style="font-size:13px;color:var(--crono-text)">
+        <strong style="display:block;margin-bottom:4px">Estos nombres están en los servicios pero no en tu lista de Miembros</strong>
+        ${faltantes.map(n=>`<span style="display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:500;padding:3px 8px;border-radius:8px;margin:2px;background:var(--crono-warning-bg);color:var(--crono-warning);border:1px solid var(--crono-warning)">${esc(n)}</span>`).join('')}
+        <div style="margin-top:4px;color:var(--crono-text-secondary)">Revisá que estén bien escritos.</div>
+      </div>
+    </div>`;
   } else {
     chivato.style.display='none';
     chivato.innerHTML='';
