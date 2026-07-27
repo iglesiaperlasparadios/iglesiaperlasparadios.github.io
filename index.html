@@ -603,6 +603,13 @@ select option { background: var(--bg3); }
 #page-canciones .canc-badge--error { background: var(--canc-error-bg); color: var(--canc-error); }
 #page-canciones .canc-badge--neutral { background: var(--canc-border-soft); color: var(--canc-text-secondary); }
 #page-canciones .canc-key { color: var(--canc-primary); font-weight: 700; }
+#page-canciones .canc-icon-btn { background: var(--canc-surface); }
+#page-canciones .canc-icon-btn--warning { border-color: var(--canc-warning); color: var(--canc-warning); }
+#page-canciones .canc-icon-btn--warning:hover { background: var(--canc-warning-bg); }
+#page-canciones .canc-icon-btn--primary { border-color: var(--canc-primary); color: var(--canc-primary); }
+#page-canciones .canc-icon-btn--primary:hover { background: var(--canc-primary-light); }
+#page-canciones .canc-icon-btn--success { border-color: var(--canc-success); color: var(--canc-success); }
+#page-canciones .canc-icon-btn--success:hover { background: var(--canc-success-bg); }
 
 /* MODAL "Editar canción" — mismo sistema visual, scoped a #modal-cancion (modal exclusivo,
    no compartido con ningún otro flujo). */
@@ -1331,6 +1338,33 @@ function getBandas(){return db('bandas')}
 function saveBandas(v){dbSet('bandas',v)}
 function getCanciones(){return db('canciones')}
 function saveCanciones(v){dbSet('canciones',v)}
+
+// Recalcula usosCount desde TODO el historial real de Cronograma (no un contador manual
+// que solo suma al elegir en un picker y nunca resta) — misma fuente que "Repertorio" en
+// Estadísticas. La llaman tanto Estadísticas como Canciones, así el número siempre está
+// al día sin importar qué pantalla se visite primero.
+function syncUsosCountFromCronograma(){
+  const allSongCounts={};
+  Object.keys(localStorage).filter(k=>k.match(/^mm_mes_\d+_\d+$/)).forEach(k=>{
+    try{
+      const st=JSON.parse(localStorage.getItem(k));
+      if(!st?.services) return;
+      st.services.forEach(s=>{
+        SECCIONES.forEach(sec=>(s.songs?.[sec]||[]).forEach(sg=>{
+          const key=(sg.name||'').toLowerCase();
+          allSongCounts[key]=(allSongCounts[key]||0)+1;
+        }));
+      });
+    }catch{}
+  });
+  const canciones=getCanciones();
+  let changed=false;
+  canciones.forEach(c=>{
+    const real=allSongCounts[c.name.toLowerCase()]||0;
+    if(c.usosCount!==real){ c.usosCount=real; changed=true; }
+  });
+  if(changed) saveCanciones(canciones);
+}
 function getListas(){return db('listas')}
 function saveListas(v){dbSet('listas',v)}
 function getHistorial(){return db('historial')}
@@ -2674,6 +2708,7 @@ const CANC_TONES=['primary','success','warning','error'];
 const _cancTone=cat=>CANC_TONES[Math.max(0,CATS.indexOf(cat))%CANC_TONES.length];
 
 function renderCanciones(){
+  syncUsosCountFromCronograma();
   const q=(document.getElementById('search-canciones')?.value||'').toLowerCase();
   let songs=getCanciones()
     .filter(s=>(!q||s.name.toLowerCase().includes(q))&&(!catFilter||s.cats?.includes(catFilter)))
@@ -2688,31 +2723,32 @@ function renderCanciones(){
     }).join('');
   if(!songs.length){el.innerHTML='<div class="empty-state"><i class="ti ti-music-off"></i>No hay canciones</div>';return;}
   el.innerHTML=songs.map(s=>{
+    // "acordes" siempre al final (pegado a los botones de acción) para que quede en la
+    // misma posición fila a fila — "Nueva" puede variar antes, pero acordes no se mueve
     const badges=[
       s.nueva?`<span class="canc-badge canc-badge--success">Nueva</span>`:'',
       (s.secciones?.length||s.chords||s.lyrics)?`<span class="canc-badge canc-badge--primary"><i class="ti ti-music" style="font-size:10px"></i> acordes</span>`:'',
-      s.usosCount?`<span class="canc-badge canc-badge--neutral">${s.usosCount}×</span>`:'',
-      s.youtube?`<a href="${s.youtube}" target="_blank" style="color:var(--canc-text-secondary);font-size:15px;flex-shrink:0;display:inline-flex"><i class="ti ti-brand-youtube"></i></a>`:'',
     ].filter(Boolean).join('');
-    const cats=s.cats?.length?`<div class="tag-list" style="margin-top:6px">${s.cats.map(c=>`<span class="canc-badge canc-badge--${_cancTone(c)}">${c}</span>`).join('')}</div>`:'';
+    const meta=[
+      s.key?`<span>Iglesia: <strong class="canc-key">${s.key}</strong></span>`:'',
+      s.keyOrig?`<span>Original: <strong>${s.keyOrig}</strong></span>`:'',
+      s.author?`<span>${s.author}</span>`:'',
+      s.playNote?`<span style="font-style:italic">${s.playNote}</span>`:'',
+      s.usosCount?`<span>${s.usosCount} uso${s.usosCount===1?'':'s'}</span>`:'',
+    ].filter(Boolean).join('');
     return `<div class="song-lib-item">
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
           <span class="song-lib-name">${s.name}</span>
           <span class="song-lib-badges">${badges}</span>
         </div>
-        <div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--canc-text-secondary)">
-          ${s.key?`<span>Iglesia: <strong class="canc-key">${s.key}</strong></span>`:''}
-          ${s.keyOrig?`<span>Original: <strong>${s.keyOrig}</strong></span>`:''}
-          ${s.author?`<span>${s.author}</span>`:''}
-          ${s.playNote?`<span style="font-style:italic">${s.playNote}</span>`:''}
-        </div>
-        ${cats}
+        <div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--canc-text-secondary)">${meta}</div>
       </div>
       <div class="btn-group">
-        ${(s.secciones?.length||s.lyrics||s.chords)?`<button class="btn btn-sm btn-icon" onclick="openPrintPreview('${s.id}')" title="Vista previa de impresión"><i class="ti ti-printer"></i></button>`:''}
-        <button class="btn btn-sm btn-icon" onclick="openCancionModal('${s.id}')"><i class="ti ti-edit"></i></button>
-        <button class="btn btn-sm btn-icon btn-danger" onclick="deleteCancion('${s.id}')"><i class="ti ti-trash"></i></button>
+        ${s.youtube?`<a class="btn btn-sm btn-icon canc-icon-btn canc-icon-btn--success" href="${s.youtube}" target="_blank" title="Ver en YouTube"><i class="ti ti-brand-youtube"></i></a>`:''}
+        ${(s.secciones?.length||s.lyrics||s.chords)?`<button class="btn btn-sm btn-icon canc-icon-btn canc-icon-btn--warning" onclick="openPrintPreview('${s.id}')" title="Vista previa de impresión"><i class="ti ti-printer"></i></button>`:''}
+        <button class="btn btn-sm btn-icon canc-icon-btn canc-icon-btn--primary" onclick="openCancionModal('${s.id}')" title="Editar"><i class="ti ti-edit"></i></button>
+        <button class="btn btn-sm btn-icon btn-danger" onclick="deleteCancion('${s.id}')" title="Borrar"><i class="ti ti-trash"></i></button>
       </div>
     </div>`;
   }).join('');
@@ -3926,25 +3962,7 @@ function renderEstadisticas(){
     return;
   }
 
-  // ── Recalcular usosCount real: antes era un contador manual que sumaba al elegir una
-  // canción en el picker (Cronograma o Coordinación) y nunca restaba al sacarla — quedaba
-  // desincronizado de lo que realmente terminó en un servicio guardado. Ahora se deriva
-  // siempre de allSvc (TODO el historial de Cronograma, sin filtro de rango — misma fuente
-  // que "Repertorio"), y se persiste de vuelta en la canción. ──
-  {
-    const allSongCounts={};
-    allSvc.forEach(s=>s.songs.forEach(sg=>{
-      const k=sg.name.toLowerCase();
-      allSongCounts[k]=(allSongCounts[k]||0)+1;
-    }));
-    const cancionesParaSync=getCanciones();
-    let usosSyncChanged=false;
-    cancionesParaSync.forEach(c=>{
-      const real=allSongCounts[c.name.toLowerCase()]||0;
-      if(c.usosCount!==real){ c.usosCount=real; usosSyncChanged=true; }
-    });
-    if(usosSyncChanged) saveCanciones(cancionesParaSync);
-  }
+  syncUsosCountFromCronograma();
 
   const range=document.getElementById('stats-range')?.value||'todo';
   const now=new Date();
