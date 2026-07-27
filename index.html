@@ -349,6 +349,13 @@ select option { background: var(--bg3); }
 #page-estadisticas .stats-badge--error { background: var(--stats-error-bg); color: var(--stats-error); }
 #page-estadisticas .stats-icon-tile { border-radius: var(--stats-radius-md); display: grid; place-items: center; flex-shrink: 0; }
 #page-estadisticas .stats-metrics-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 16px; }
+#page-estadisticas .stats-row-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; margin-bottom: 16px; }
+#page-estadisticas .stats-row-2col .stats-card { margin-bottom: 0; }
+@media (max-width: 760px) {
+  #page-estadisticas .stats-row-2col { grid-template-columns: 1fr; margin-bottom: 16px; }
+  #page-estadisticas .stats-row-2col .stats-card { margin-bottom: 16px; }
+  #page-estadisticas .stats-row-2col .stats-card:last-child { margin-bottom: 0; }
+}
 #page-estadisticas .stats-metric-card {
   display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
   padding: 18px 18px 16px; border: 1.5px solid var(--stats-border-soft); border-radius: var(--stats-radius-xl);
@@ -3884,15 +3891,17 @@ function renderEstadisticas(){
       <div class="stats-section-sub">Sin uso en los últimos 60 días · nunca usadas primero · filtro de rango no aplica</div>
       ${secRotar}
     </div>
-    <div class="stats-card">
-      <div class="stats-section-title">Tonalidades más usadas</div>
-      ${keyStats.length?'<div id="stats-bar-tonos"></div>':'<div style="font-size:13px;color:var(--stats-text-secondary)">Sin canciones con tonalidad registrada</div>'}
-    </div>
-    <div class="stats-card">
-      <div class="stats-section-title">Repertorio</div>
-      <div class="stats-section-sub">Canciones más tocadas</div>
-      ${songStats.length?'<div id="stats-bar-repertorio-primeras"></div>':'<div style="font-size:13px;color:var(--stats-text-secondary)">Sin canciones en el rango seleccionado</div>'}
-      ${repertorioResto.length?`<div id="stats-bar-repertorio-resto" style="display:none;margin-top:14px"></div>${verTodasBtn(songStats.length,"document.getElementById('stats-bar-repertorio-resto').style.display='block';this.remove()")}`:''}
+    <div class="stats-row-2col">
+      <div class="stats-card">
+        <div class="stats-section-title">Tonalidades más usadas</div>
+        ${keyStats.length?'<div id="stats-bar-tonos"></div>':'<div style="font-size:13px;color:var(--stats-text-secondary)">Sin canciones con tonalidad registrada</div>'}
+      </div>
+      <div class="stats-card">
+        <div class="stats-section-title">Repertorio</div>
+        <div class="stats-section-sub">Canciones más tocadas</div>
+        ${songStats.length?'<div id="stats-bar-repertorio-primeras"></div>':'<div style="font-size:13px;color:var(--stats-text-secondary)">Sin canciones en el rango seleccionado</div>'}
+        ${repertorioResto.length?`<div id="stats-bar-repertorio-resto" style="display:none;margin-top:14px"></div>${verTodasBtn(songStats.length,"document.getElementById('stats-bar-repertorio-resto').style.display='block';this.remove()")}`:''}
+      </div>
     </div>
     <div class="stats-card">
       <div class="stats-section-title">Equipo</div>
