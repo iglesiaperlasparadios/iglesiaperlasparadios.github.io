@@ -308,6 +308,9 @@ select option { background: var(--bg3); }
   --stats-shadow-1: 0 1px 3px rgba(28,28,30,.06), 0 4px 14px rgba(28,28,30,.04);
   --stats-shadow-2: 0 8px 28px rgba(28,28,30,.08);
   --stats-ease: cubic-bezier(.2,0,0,1);
+  --stats-equipo-name-w: 100px;
+  --stats-equipo-value-w: 66px;
+  --stats-equipo-spacer: 22px;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background: var(--stats-bg);
 }
@@ -385,22 +388,19 @@ select option { background: var(--bg3); }
 #page-estadisticas .stats-bar-chart-track-v { width: 16px; height: 120px; border-radius: var(--stats-radius-full); background: var(--stats-bg); overflow: hidden; display: flex; align-items: flex-end; }
 #page-estadisticas .stats-bar-chart-fill-v { width: 100%; border-radius: var(--stats-radius-full); height: var(--stats-barra-pct,0%); background: var(--stats-primary); animation: stats-barra-grow-v 650ms var(--stats-ease) both; }
 #page-estadisticas .stats-bar-chart-corto { font-size: 12px; font-weight: 500; color: var(--stats-text-secondary); text-align: center; }
-#page-estadisticas .stats-equipo-row { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--stats-border-soft); }
-#page-estadisticas .stats-equipo-row:last-of-type { border-bottom: none; }
-#page-estadisticas .stats-equipo-nombre { width: 100px; flex-shrink: 0; font-size: 13px; font-weight: 600; color: var(--stats-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#page-estadisticas .stats-equipo-tira { flex: 1; min-width: 0; display: flex; overflow-x: auto; }
-#page-estadisticas .stats-equipo-grupo { display: flex; flex-direction: column; align-items: center; gap: 3px; margin-right: 14px; flex-shrink: 0; }
-#page-estadisticas .stats-equipo-mes { font-size: 9px; font-weight: 600; color: var(--stats-text-secondary); text-transform: uppercase; letter-spacing: .04em; }
-#page-estadisticas .stats-equipo-dots { display: flex; flex-wrap: nowrap; gap: 3px; }
-#page-estadisticas .stats-equipo-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-#page-estadisticas .stats-equipo-valor { width: 66px; flex-shrink: 0; text-align: right; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+#page-estadisticas .stats-equipo-scroll { overflow-x: auto; }
+#page-estadisticas .stats-equipo-tabla { display: grid; align-items: center; column-gap: 7px; row-gap: 11px; position: relative; }
+#page-estadisticas .stats-equipo-nombre { font-size: 13px; font-weight: 600; color: var(--stats-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#page-estadisticas .stats-equipo-mes-header { font-size: 10px; font-weight: 600; color: var(--stats-text-secondary); text-transform: uppercase; letter-spacing: .04em; text-align: center; }
+#page-estadisticas .stats-equipo-dot { width: 13px; height: 13px; border-radius: 50%; justify-self: center; }
+#page-estadisticas .stats-equipo-valor { text-align: right; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
 @media (max-width: 600px) {
-  #page-estadisticas .stats-equipo-nombre { width: 68px; font-size: 12px; }
-  #page-estadisticas .stats-equipo-grupo { margin-right: 8px; gap: 2px; }
-  #page-estadisticas .stats-equipo-dots { gap: 2px; }
-  #page-estadisticas .stats-equipo-dot { width: 6px; height: 6px; }
-  #page-estadisticas .stats-equipo-mes { font-size: 8px; }
-  #page-estadisticas .stats-equipo-valor { width: 50px; font-size: 12px; }
+  #page-estadisticas { --stats-equipo-name-w: 68px; --stats-equipo-value-w: 50px; --stats-equipo-spacer: 12px; }
+  #page-estadisticas .stats-equipo-tabla { column-gap: 4px; row-gap: 9px; }
+  #page-estadisticas .stats-equipo-nombre { font-size: 12px; }
+  #page-estadisticas .stats-equipo-mes-header { font-size: 9px; }
+  #page-estadisticas .stats-equipo-dot { width: 9px; height: 9px; }
+  #page-estadisticas .stats-equipo-valor { font-size: 12px; }
 }
 </style>
 </head>
@@ -3764,28 +3764,55 @@ function renderEstadisticas(){
   equipoBurbujas.sort((a,b)=> b.servicios-a.servicios || b.puestos-a.puestos || a.nombre.localeCompare(b.nombre,'es'));
   const equipoFaltantes=Object.keys(equipoMusMap).filter(k=>!miembrosKeys.has(k)).map(k=>equipoMusMap[k].name);
 
-  const equipoFilaHtml=b=>{
+  // ── Grilla compartida: cada domingo es su propia columna (auto), con una columna
+  // "separador" (--stats-equipo-spacer) entre un mes y el siguiente. Encabezado y filas
+  // son hijos DIRECTOS del mismo grid, así quedan alineados sin cálculo por fila. ──
+  const equipoColTokens=['var(--stats-equipo-name-w)'];
+  equipoGrupos.forEach((g,gi)=>{
+    for(let k=0;k<g.count;k++) equipoColTokens.push('auto');
+    if(gi<equipoGrupos.length-1) equipoColTokens.push('var(--stats-equipo-spacer)');
+  });
+  equipoColTokens.push('var(--stats-equipo-value-w)');
+  const equipoGridTemplate=equipoColTokens.join(' ');
+  // separador de mes: celda vacía con borde izquierdo, una por fila (incluido el
+  // encabezado) — al ser parte del flujo normal de auto-placement, cada fila la coloca
+  // correctamente sola; apiladas con poco row-gap se leen como una única línea continua
+  // que atraviesa encabezado + filas, sin los problemas de mezclar celdas explícitas
+  // (grid-row/column-span multi-fila) con el auto-placement del resto de celdas.
+  const equipoSepCell='<div style="border-left:1px solid var(--stats-border-soft);align-self:stretch"></div>';
+
+  const equipoHeaderCells=['<div></div>'];
+  equipoGrupos.forEach((g,gi)=>{
+    const mesLabel=MESES[g.month].slice(0,3);
+    equipoHeaderCells.push(`<div class="stats-equipo-mes-header" style="grid-column:span ${g.count}">${mesLabel}</div>`);
+    if(gi<equipoGrupos.length-1) equipoHeaderCells.push(equipoSepCell);
+  });
+  equipoHeaderCells.push('<div></div>');
+
+  const equipoFilaCells=b=>{
     const pct=equipoTotalReal?b.servicios/equipoTotalReal:0;
     const cat=b.servicios===0?'cero':pct>0.8?'ambar':pct>=0.4?'verde':'azul';
     const c=CATS[cat];
-    const gruposHtml=equipoGrupos.map(g=>{
+    const cells=[`<div class="stats-equipo-nombre">${esc(b.nombre)}</div>`];
+    equipoGrupos.forEach((g,gi)=>{
       const mesLabel=MESES[g.month].slice(0,3);
-      const dots=Array.from({length:g.count},(_,k)=>{
+      for(let k=0;k<g.count;k++){
         const i=g.startIdx+k, entry=equipoWinEntries[i];
-        if(entry.isFuture) return `<span class="stats-equipo-dot" title="${mesLabel} — todavía sin programar" style="border:1px dashed var(--stats-border)"></span>`;
-        return b.set.has(i)
+        if(entry.isFuture) cells.push(`<span class="stats-equipo-dot" title="${mesLabel} — todavía sin programar" style="border:1px dashed var(--stats-border)"></span>`);
+        else cells.push(b.set.has(i)
           ? `<span class="stats-equipo-dot" style="background:${c.fg}"></span>`
-          : `<span class="stats-equipo-dot" style="border:1px solid var(--stats-border)"></span>`;
-      }).join('');
-      return `<div class="stats-equipo-grupo"><span class="stats-equipo-mes">${mesLabel}</span><div class="stats-equipo-dots">${dots}</div></div>`;
-    }).join('');
-    return `<div class="stats-equipo-row">
-      <div class="stats-equipo-nombre">${esc(b.nombre)}</div>
-      <div class="stats-equipo-tira">${gruposHtml}</div>
-      <div class="stats-equipo-valor" style="color:${c.fg}">${b.servicios} <span style="font-weight:500;opacity:.7">· ${b.puestos}p</span></div>
-    </div>`;
+          : `<span class="stats-equipo-dot" style="border:1px solid var(--stats-border)"></span>`);
+      }
+      if(gi<equipoGrupos.length-1) cells.push(equipoSepCell);
+    });
+    cells.push(`<div class="stats-equipo-valor" style="color:${c.fg}">${b.servicios} <span style="font-weight:500;opacity:.7">· ${b.puestos}p</span></div>`);
+    return cells.join('');
   };
-  const equipoTablaHtml=equipoBurbujas.map(equipoFilaHtml).join('');
+
+  const equipoTablaHtml=`<div class="stats-equipo-scroll"><div class="stats-equipo-tabla" style="grid-template-columns:${equipoGridTemplate}">
+    ${equipoHeaderCells.join('')}
+    ${equipoBurbujas.map(equipoFilaCells).join('')}
+  </div></div>`;
 
   const chivatoEquipoHtml=equipoFaltantes.length
     ?`<div style="margin-top:16px;padding:12px 14px;background:var(--stats-warning-bg);border:1px solid var(--stats-warning);border-radius:var(--stats-radius-md);display:flex;gap:10px;align-items:flex-start">
