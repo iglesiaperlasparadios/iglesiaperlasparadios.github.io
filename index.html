@@ -950,10 +950,11 @@ select option { background: var(--bg3); }
 #modal-picker .sp-check { border-radius: 5px; border-color: var(--pk-border); }
 #modal-picker .sp-item.selected .sp-check { background: var(--pk-primary); border-color: var(--pk-primary); }
 #modal-picker .sp-name { font-family: 'Inter', system-ui, sans-serif; color: var(--pk-text); font-weight: 500; }
-#modal-picker .sp-key { color: var(--pk-primary); font-weight: 700; }
-#modal-picker .sp-usage {
-  display: inline-flex; align-items: center; font-family: 'Inter', system-ui, sans-serif;
-  font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: var(--pk-radius-full); white-space: nowrap;
+#modal-picker .sp-key { color: var(--pk-primary); font-weight: 700; width: 26px; flex-shrink: 0; text-align: center; }
+#modal-picker .sp-usage, #modal-picker .sp-usage-slot {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 54px; box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif;
+  font-size: 10px; font-weight: 700; padding: 2px 4px; border-radius: var(--pk-radius-full); white-space: nowrap;
 }
 #modal-picker .sp-usage--month { background: var(--pk-warning-bg); color: var(--pk-warning); }
 #modal-picker .sp-usage--6m { background: var(--pk-primary-light); color: var(--pk-primary); }
@@ -2318,16 +2319,19 @@ function renderPicker(){
     const nk=s.name.toLowerCase();
     const mCount=monthCounts[nk]||0;
     const sCount=sixMonthCounts[nk]||0;
-    const usageHTML=(mCount||sCount)?`<div style="display:flex;gap:4px;flex-shrink:0">
-      ${mCount?`<span class="sp-usage sp-usage--month" title="Ya usada ${mCount} vez${mCount>1?'es':''} este mes">${mCount}× mes</span>`:''}
-      ${sCount?`<span class="sp-usage sp-usage--6m" title="Usada ${sCount} vez${sCount>1?'es':''} en los últimos 6 meses">${sCount}× 6m</span>`:''}
-    </div>`:'';
+    const sixHTML=sCount
+      ?`<span class="sp-usage sp-usage--6m" title="Usada ${sCount} vez${sCount>1?'es':''} en los últimos 6 meses">${sCount}× 6m</span>`
+      :`<span class="sp-usage-slot"></span>`;
+    const monthHTML=mCount
+      ?`<span class="sp-usage sp-usage--month" title="Ya usada ${mCount} vez${mCount>1?'es':''} este mes">${mCount}× mes</span>`
+      :`<span class="sp-usage-slot"></span>`;
     return `
     <div class="sp-item${pickerSelected.includes(s.id)?' selected':''}" onclick="togglePickerSong('${s.id}')">
       <div class="sp-check">${pickerSelected.includes(s.id)?'<i class="ti ti-check" style="font-size:11px;color:#fff"></i>':''}</div>
       <span class="sp-name">${s.name}${s.nueva?` <span class="badge badge-green" style="font-size:10px">Nueva</span>`:''}</span>
       <span class="sp-key">${s.key||''}</span>
-      ${usageHTML}
+      ${sixHTML}
+      ${monthHTML}
     </div>`;
   }).join('');
 }
