@@ -402,6 +402,67 @@ select option { background: var(--bg3); }
   #page-estadisticas .stats-equipo-dot { width: 9px; height: 9px; }
   #page-estadisticas .stats-equipo-valor { font-size: 12px; }
 }
+
+/* CRONOGRAMA (Mes completo) — mismo sistema visual que Estadísticas, scoped a #page-mes.
+   Fase 1: base + header + Configuración del mes + Devocional del mes. */
+#page-mes {
+  --crono-bg: #f5f5f7;
+  --crono-surface: #ffffff;
+  --crono-border: #e1e1e4;
+  --crono-border-soft: #ededef;
+  --crono-text: #1c1c1e;
+  --crono-text-secondary: #78787f;
+  --crono-primary: #007aff;
+  --crono-primary-dark: #0062cc;
+  --crono-primary-light: #e5f0ff;
+  --crono-success: #34c759;
+  --crono-success-bg: #e8f8ee;
+  --crono-warning: #b4740e;
+  --crono-warning-bg: #fbf0dc;
+  --crono-error: #b3261e;
+  --crono-error-bg: #fbe7e5;
+  --crono-radius-sm: 8px;
+  --crono-radius-md: 12px;
+  --crono-radius-lg: 16px;
+  --crono-radius-xl: 26px;
+  --crono-radius-full: 999px;
+  --crono-shadow-1: 0 1px 3px rgba(28,28,30,.06), 0 4px 14px rgba(28,28,30,.04);
+  --crono-shadow-2: 0 8px 28px rgba(28,28,30,.08);
+  --crono-ease: cubic-bezier(.2,0,0,1);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--crono-bg);
+}
+#page-mes .crono-page-title { font-size: 22px; font-weight: 700; letter-spacing: -.02em; color: var(--crono-text); margin-bottom: 4px; }
+#page-mes .crono-page-sub { font-size: 13px; color: var(--crono-text-secondary); margin-bottom: 20px; }
+#page-mes .crono-card {
+  background: var(--crono-surface); border: 1px solid var(--crono-border-soft);
+  border-radius: var(--crono-radius-xl); box-shadow: var(--crono-shadow-1);
+  padding: 20px; margin-bottom: 16px;
+}
+#page-mes .crono-card-title { font-size: 15px; font-weight: 600; color: var(--crono-text); margin-bottom: 14px; }
+#page-mes select, #page-mes input, #page-mes textarea {
+  font-family: 'Inter', system-ui, sans-serif; background: var(--crono-surface);
+  border: 1px solid var(--crono-border); border-radius: var(--crono-radius-md);
+  color: var(--crono-text); box-shadow: none;
+}
+#page-mes select:focus, #page-mes input:focus, #page-mes textarea:focus { border-color: var(--crono-primary); }
+#page-mes .field label { color: var(--crono-text-secondary); font-weight: 500; }
+#page-mes .btn {
+  font-family: 'Inter', system-ui, sans-serif; border-radius: var(--crono-radius-md);
+  border: 1px solid var(--crono-border); background: var(--crono-surface); color: var(--crono-text);
+  box-shadow: none; transition: background 120ms var(--crono-ease);
+}
+#page-mes .btn:hover { background: var(--crono-bg); }
+#page-mes .btn-primary { background: var(--crono-primary); border-color: var(--crono-primary); color: #fff; }
+#page-mes .btn-primary:hover { background: var(--crono-primary-dark); }
+#page-mes .btn-success { background: var(--crono-success); border-color: var(--crono-success); color: #fff; }
+#page-mes .btn-success:hover { opacity: .92; }
+#page-mes .cal-title { color: var(--crono-text); font-weight: 600; font-size: 14px; }
+#page-mes .cal-dow { color: var(--crono-text-secondary); }
+#page-mes .cal-day { color: var(--crono-text); border-radius: var(--crono-radius-sm); }
+#page-mes .cal-day:hover { background: var(--crono-bg); }
+#page-mes .cal-day.today { border-color: var(--crono-primary); color: var(--crono-primary); }
+#page-mes .cal-day.selected { background: var(--crono-primary); color: #fff; }
 </style>
 </head>
 <body>
@@ -451,18 +512,18 @@ select option { background: var(--bg3); }
 <!-- ===== MES COMPLETO ===== -->
 <div class="page active" id="page-mes">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-    <div class="page-title">Mes completo</div>
+    <div class="crono-page-title">Mes completo</div>
     <div style="display:flex;align-items:center;gap:10px">
-      <span id="save-status" style="font-size:11px;color:var(--text3)"></span>
+      <span id="save-status" style="font-size:11px;color:var(--crono-text-secondary)"></span>
       <button class="btn btn-primary" onclick="manualSave()"><i class="ti ti-device-floppy"></i> Guardar</button>
     </div>
   </div>
-  <div class="page-sub">Armá todos los servicios del mes y generá las imágenes de una vez</div>
+  <div class="crono-page-sub">Armá todos los servicios del mes y generá las imágenes de una vez</div>
 
   <div id="alerts-mes"></div>
 
-  <div class="card">
-    <div class="card-title">Configuración del mes</div>
+  <div class="crono-card">
+    <div class="crono-card-title">Configuración del mes</div>
     <div class="row2" style="margin-bottom:10px">
       <div>
         <div class="cal-nav">
@@ -484,8 +545,8 @@ select option { background: var(--bg3); }
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-title">Devocional del mes</div>
+  <div class="crono-card">
+    <div class="crono-card-title">Devocional del mes</div>
     <div class="field"><label>Versículo</label><input id="mes-versiculo" placeholder="ej: Juan 4:24 — Dios es Espíritu..." oninput="saveMesState()"></div>
     <div class="field"><label>Reflexión para el equipo</label><textarea id="mes-devocional" rows="3" placeholder="Texto de la reflexión del mes..." oninput="saveMesState()"></textarea></div>
     <div class="field"><label>Desafío de la semana</label><textarea id="mes-desafio" rows="3" placeholder="Desafío práctico para el equipo este mes..." oninput="saveMesState()"></textarea></div>
@@ -500,7 +561,7 @@ select option { background: var(--bg3); }
   <div id="gen-wrap" style="display:none">
     <div id="prog-wrap" style="display:none">
       <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
-      <div style="font-size:12px;color:var(--text3);text-align:center;margin-top:4px" id="prog-label">Preparando...</div>
+      <div style="font-size:12px;color:var(--crono-text-secondary);text-align:center;margin-top:4px" id="prog-label">Preparando...</div>
     </div>
     <div class="btn-group">
       <button class="btn btn-success" style="flex:1" onclick="generateZip()"><i class="ti ti-photo-down"></i> Generar imagen del mes</button>
@@ -1288,7 +1349,7 @@ function renderCalMes(){
     const dow=new Date(calYM.y,calYM.m,d).getDay();
     if(today.getDate()===d&&today.getMonth()===calYM.m&&today.getFullYear()===calYM.y)el.classList.add('today');
     if((document.getElementById('chk-sab').checked&&dow===6)||(document.getElementById('chk-dom').checked&&dow===0))
-      el.style.color='#58a6ff';
+      el.style.color='var(--crono-primary)';
     grid.appendChild(el);
   }
 }
