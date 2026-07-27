@@ -1045,7 +1045,7 @@ select option { background: var(--bg3); }
 
   <div class="crono-card">
     <div class="crono-card-title">Devocional del mes</div>
-    <div class="field"><label>Versículo</label><input id="mes-versiculo" placeholder="ej: Juan 4:24 — Dios es Espíritu..." oninput="saveMesState()"></div>
+    <div class="field"><label>Versículo</label><textarea id="mes-versiculo" rows="2" placeholder="ej: Juan 4:24 — Dios es Espíritu..." oninput="saveMesState()"></textarea></div>
     <div class="field"><label>Reflexión para el equipo</label><textarea id="mes-devocional" rows="3" placeholder="Texto de la reflexión del mes..." oninput="saveMesState()"></textarea></div>
     <div class="field"><label>Desafío de la semana</label><textarea id="mes-desafio" rows="3" placeholder="Desafío práctico para el equipo este mes..." oninput="saveMesState()"></textarea></div>
     <div class="field"><label>Canciones nuevas del mes</label>
@@ -3816,7 +3816,7 @@ function buildMonthHTML(services, opts={}){
               <span style="font-size:15px">📖</span>
               <span style="font-size:10px;font-weight:700;color:${accent};letter-spacing:.13em;text-transform:uppercase">Versículo del mes</span>
             </div>
-            <div style="font-size:17px;color:#2e3e52;line-height:1.65;font-style:italic">${versiculo}</div>
+            <div style="font-size:17px;font-weight:700;color:#2e3e52;line-height:1.65;font-style:italic">${versiculo}</div>
           </div>`:''}
         </div>
       </div>
