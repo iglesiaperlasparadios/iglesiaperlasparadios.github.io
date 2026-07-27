@@ -3837,11 +3837,11 @@ function renderEstadisticas(){
   }));
   const keyStats=Object.entries(keyMap).map(([k,v])=>({key:k,count:v})).sort((a,b)=>b.count-a.count);
 
-  // ── Sección 4 (base de "Para rotar"): no usadas en 60 días ── (SIN TOCAR: lógica sobre allSvc, sin filtro de rango)
-  const cut60=new Date(); cut60.setDate(cut60.getDate()-60);
-  const recent60Names=new Set(allSvc.filter(s=>s.date>=cut60).flatMap(s=>s.songs.map(sg=>sg.name.toLowerCase())));
+  // ── Sección 4 (base de "Para rotar"): no usadas en los últimos 6 meses ── (lógica sobre allSvc, sin filtro de rango)
+  const cutRotar=new Date(); cutRotar.setMonth(cutRotar.getMonth()-6);
+  const recentRotarNames=new Set(allSvc.filter(s=>s.date>=cutRotar).flatMap(s=>s.songs.map(sg=>sg.name.toLowerCase())));
   const unused=getCanciones()
-    .filter(c=>!recent60Names.has(c.name.toLowerCase()))
+    .filter(c=>!recentRotarNames.has(c.name.toLowerCase()))
     .sort((a,b)=>a.name.localeCompare(b.name,'es',{sensitivity:'base'}));
 
   // ── KPIs: repertorio activo = canciones con usosCount>0 (histórico) sobre el total ──
@@ -3901,7 +3901,7 @@ function renderEstadisticas(){
         ?`<div id="stats-rotar-resto" class="stats-rotar-lista" style="display:none;margin-top:10px">${rotarResto.map(rotarRow).join('')}</div>
           ${verTodasBtn(rotarSorted.length,"document.getElementById('stats-rotar-resto').style.display='grid';this.remove()")}`
         :'')
-    :`<div style="font-size:13px;color:var(--stats-success)"><i class="ti ti-circle-check"></i> ¡Todas las canciones se usaron en los últimos 60 días!</div>`;
+    :`<div style="font-size:13px;color:var(--stats-success)"><i class="ti ti-circle-check"></i> ¡Todas las canciones se usaron en los últimos 6 meses!</div>`;
 
   // ── "Repertorio": top de canciones (mismo songStats de arriba), ahora vía statsRenderBarChart ──
   const repertorioPrimeras=songStats.slice(0,8), repertorioResto=songStats.slice(8);
@@ -3924,7 +3924,7 @@ function renderEstadisticas(){
     </div>
     <div class="stats-card">
       <div class="stats-section-title">Para rotar</div>
-      <div class="stats-section-sub">Sin uso en los últimos 60 días · nunca usadas primero · filtro de rango no aplica</div>
+      <div class="stats-section-sub">Sin uso en los últimos 6 meses · nunca usadas primero · filtro de rango no aplica</div>
       ${secRotar}
     </div>
     <div class="stats-row-2col">
