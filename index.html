@@ -5056,14 +5056,14 @@ function _renderCancionRowHTML(b, idx){
     ?`<span style="font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.name)}</span>`
     :`<span style="font-size:13px;font-style:italic;color:var(--text3)">Canción no encontrada</span>`;
   const keyBadge=(c&&(c.key||c.capo))
-    ?`<span style="font-size:11px;color:var(--text2);background:var(--bg3);border-radius:4px;padding:1px 7px;flex-shrink:0;white-space:nowrap">${esc(c.key||'')}${c.key&&c.capo?' · ':''}${esc(c.capo||'')}</span>`
+    ?`<span style="font-size:11px;font-weight:600;color:var(--text2);background:var(--bg3);border-radius:999px;padding:2px 9px;flex-shrink:0;white-space:nowrap">${esc(c.key||'')}${c.key&&c.capo?' · ':''}${esc(c.capo||'')}</span>`
     :'';
-  const notasBtn=`<button onclick="toggleExpandBlock('${b.id}')" title="Notas/acordes" style="width:32px;height:32px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;background:none;border:none;border-radius:6px;cursor:pointer;color:${isExpanded?'#ec4899':'var(--text3)'}" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='none'"><i class="ti ti-notes" style="font-size:15px"></i></button>`;
+  const notasBtn=`<button onclick="toggleExpandBlock('${b.id}')" title="Notas/acordes" style="width:32px;height:32px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;background:none;border:none;border-radius:8px;cursor:pointer;color:${isExpanded?'#ec4899':'var(--text3)'}" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='none'"><i class="ti ti-notes" style="font-size:15px"></i></button>`;
   const expandedHTML=isExpanded
     ?`<div style="border-top:1px solid var(--border);margin:2px 0 8px;padding-top:10px">${_renderBlockSectionsDOMWithNotes(b,idx,c)}</div>`
     :'';
   return `<div>
-    <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin-bottom:6px;box-shadow:0 1px 2px rgba(28,28,30,.04)">
       <i class="ti ti-music" style="font-size:13px;color:var(--text3);flex-shrink:0"></i>
       <div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;overflow:hidden">
         ${nameHTML}
