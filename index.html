@@ -492,6 +492,49 @@ select option { background: var(--bg3); }
   border-radius: var(--crono-radius-lg); box-shadow: var(--crono-shadow-1);
   padding: 14px;
 }
+
+/* MENÚ PRINCIPAL (sidebar + topbar mobile) — mismo sistema visual, es el único elemento
+   que vive fuera de cualquier #page-*, así que se scopea directo por .sidebar/.mobile-topbar
+   (no hay riesgo de fuga: es un elemento único, compartido por diseño en todas las páginas). */
+.sidebar {
+  --shell-bg: #f5f5f7;
+  --shell-surface: #ffffff;
+  --shell-border-soft: #ededef;
+  --shell-text: #1c1c1e;
+  --shell-text-secondary: #78787f;
+  --shell-primary: #007aff;
+  --shell-primary-dark: #0062cc;
+  --shell-radius-md: 12px;
+  --shell-radius-full: 999px;
+  --shell-shadow-1: 0 1px 3px rgba(28,28,30,.06), 0 4px 14px rgba(28,28,30,.04);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--shell-surface);
+  border-right: 1px solid var(--shell-border-soft);
+  box-shadow: var(--shell-shadow-1);
+}
+.sidebar-logo {
+  background: linear-gradient(135deg, var(--shell-primary), var(--shell-primary-dark));
+  border-bottom: none;
+  padding: 24px 20px 20px;
+}
+.sidebar-logo span { color: rgba(255,255,255,.75); }
+.nav { padding: 12px 10px; }
+.nav-item {
+  border-left: none; border-radius: var(--shell-radius-md);
+  padding: 10px 14px; margin-bottom: 2px; color: var(--shell-text-secondary);
+  font-family: 'Inter', system-ui, sans-serif; transition: background 120ms ease, color 120ms ease;
+}
+.nav-item:hover { background: var(--shell-bg); color: var(--shell-text); }
+.nav-item.active { background: var(--shell-primary); color: #fff; font-weight: 600; box-shadow: 0 2px 8px rgba(0,122,255,.25); }
+.sidebar .btn {
+  font-family: 'Inter', system-ui, sans-serif; border-radius: var(--shell-radius-md);
+  border: 1px solid var(--shell-border-soft); background: var(--shell-surface); color: var(--shell-text);
+  box-shadow: none;
+}
+.sidebar .btn:hover { background: var(--shell-bg); }
+.mobile-topbar { background: linear-gradient(135deg, #007aff, #0062cc); }
+.mobile-topbar-title { font-family: 'Inter', system-ui, sans-serif; }
+.sidebar.open { box-shadow: 4px 0 24px rgba(0,0,0,.18); }
 </style>
 </head>
 <body>
@@ -521,17 +564,17 @@ select option { background: var(--bg3); }
     <div class="nav-item" data-page="estadisticas" onclick="goTo('estadisticas')"><i class="ti ti-chart-bar"></i> Estadísticas</div>
     <div class="nav-item" data-page="config" onclick="goTo('config')"><i class="ti ti-settings"></i> Configuración</div>
   </nav>
-  <div style="padding:12px 16px;border-top:1px solid var(--border)">
+  <div style="padding:12px 16px;border-top:1px solid var(--shell-border-soft)">
     <button class="btn btn-sm" style="width:100%;justify-content:center;margin-bottom:5px" onclick="exportBackup()"><i class="ti ti-download"></i> Exportar backup</button>
     <label class="btn btn-sm" style="width:100%;justify-content:center;cursor:pointer;margin-bottom:5px">
       <i class="ti ti-upload"></i> Importar backup
       <input type="file" id="import-file" accept=".json" style="display:none" onchange="handleBackupFile(event,'import')">
     </label>
-    <label class="btn btn-sm" style="width:100%;justify-content:center;cursor:pointer;color:var(--text3)">
+    <label class="btn btn-sm" style="width:100%;justify-content:center;cursor:pointer;color:var(--shell-text-secondary)">
       <i class="ti ti-shield-check"></i> Verificar backup
       <input type="file" id="verify-file" accept=".json" style="display:none" onchange="handleBackupFile(event,'verify')">
     </label>
-    <div style="font-size:10px;color:var(--text3);text-align:center;margin-top:8px;line-height:1.5">Guardá una copia antes<br>de cerrar el navegador</div>
+    <div style="font-size:10px;color:var(--shell-text-secondary);text-align:center;margin-top:8px;line-height:1.5">Guardá una copia antes<br>de cerrar el navegador</div>
   </div>
 </div>
 
