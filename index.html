@@ -912,6 +912,8 @@ select option { background: var(--bg3); }
   --pk-primary: #007aff;
   --pk-primary-light: #e5f0ff;
   --pk-success: #34c759;
+  --pk-warning: #b4740e;
+  --pk-warning-bg: #fbf0dc;
   --pk-radius-md: 12px;
   --pk-radius-lg: 16px;
   --pk-radius-full: 999px;
@@ -949,6 +951,12 @@ select option { background: var(--bg3); }
 #modal-picker .sp-item.selected .sp-check { background: var(--pk-primary); border-color: var(--pk-primary); }
 #modal-picker .sp-name { font-family: 'Inter', system-ui, sans-serif; color: var(--pk-text); font-weight: 500; }
 #modal-picker .sp-key { color: var(--pk-primary); font-weight: 700; }
+#modal-picker .sp-usage {
+  display: inline-flex; align-items: center; font-family: 'Inter', system-ui, sans-serif;
+  font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: var(--pk-radius-full); white-space: nowrap;
+}
+#modal-picker .sp-usage--month { background: var(--pk-warning-bg); color: var(--pk-warning); }
+#modal-picker .sp-usage--6m { background: var(--pk-primary-light); color: var(--pk-primary); }
 #modal-picker .empty-state { font-family: 'Inter', system-ui, sans-serif; color: var(--pk-text-secondary); }
 #modal-picker .btn { font-family: 'Inter', system-ui, sans-serif; border-radius: var(--pk-radius-md); }
 #modal-picker .btn-primary { background: var(--pk-primary); border-color: var(--pk-primary); }
@@ -2274,17 +2282,54 @@ function renderPickerCats(){
     CATS.map(c=>`<span class="chip" onclick="pickerCatFilter='${c}';renderPicker();document.querySelectorAll('#picker-cat-chips .chip').forEach(c=>c.classList.remove('active'));this.classList.add('active')">${c}</span>`).join('');
 }
 
+// Conteo de usos para el picker: "este mes" (monthServices actual, en memoria) y
+// "últimos 6 meses" (mismo corte que "Para rotar" en Estadísticas) — ayuda a no repetir.
+function _pickerUsageCounts(){
+  const monthCounts={};
+  monthServices.forEach(s=>{
+    SECCIONES.forEach(sec=>(s.songs?.[sec]||[]).forEach(sg=>{
+      const k=(sg.name||'').toLowerCase(); monthCounts[k]=(monthCounts[k]||0)+1;
+    }));
+  });
+  const sixMonthCounts={};
+  const cut6=new Date(); cut6.setMonth(cut6.getMonth()-6);
+  Object.keys(localStorage).filter(k=>k.match(/^mm_mes_\d+_\d+$/)).forEach(k=>{
+    try{
+      const st=JSON.parse(localStorage.getItem(k));
+      if(!st?.services) return;
+      if(new Date(st.year,st.month,1)<cut6) return;
+      st.services.forEach(s=>{
+        SECCIONES.forEach(sec=>(s.songs?.[sec]||[]).forEach(sg=>{
+          const k2=(sg.name||'').toLowerCase(); sixMonthCounts[k2]=(sixMonthCounts[k2]||0)+1;
+        }));
+      });
+    }catch{}
+  });
+  return {monthCounts, sixMonthCounts};
+}
+
 function renderPicker(){
   const q=document.getElementById('picker-search').value.toLowerCase();
   let songs=getCanciones().filter(s=>(!q||s.name.toLowerCase().includes(q))&&(!pickerCatFilter||s.cats?.includes(pickerCatFilter))).sort((a,b)=>a.name.localeCompare(b.name,'es',{sensitivity:'base'}));
   const list=document.getElementById('picker-list');
   if(!songs.length){list.innerHTML='<div class="empty-state"><i class="ti ti-music-off"></i>Sin canciones</div>';return;}
-  list.innerHTML=songs.map(s=>`
+  const {monthCounts, sixMonthCounts}=_pickerUsageCounts();
+  list.innerHTML=songs.map(s=>{
+    const nk=s.name.toLowerCase();
+    const mCount=monthCounts[nk]||0;
+    const sCount=sixMonthCounts[nk]||0;
+    const usageHTML=(mCount||sCount)?`<div style="display:flex;gap:4px;flex-shrink:0">
+      ${mCount?`<span class="sp-usage sp-usage--month" title="Ya usada ${mCount} vez${mCount>1?'es':''} este mes">${mCount}× mes</span>`:''}
+      ${sCount?`<span class="sp-usage sp-usage--6m" title="Usada ${sCount} vez${sCount>1?'es':''} en los últimos 6 meses">${sCount}× 6m</span>`:''}
+    </div>`:'';
+    return `
     <div class="sp-item${pickerSelected.includes(s.id)?' selected':''}" onclick="togglePickerSong('${s.id}')">
       <div class="sp-check">${pickerSelected.includes(s.id)?'<i class="ti ti-check" style="font-size:11px;color:#fff"></i>':''}</div>
       <span class="sp-name">${s.name}${s.nueva?` <span class="badge badge-green" style="font-size:10px">Nueva</span>`:''}</span>
       <span class="sp-key">${s.key||''}</span>
-    </div>`).join('');
+      ${usageHTML}
+    </div>`;
+  }).join('');
 }
 
 function togglePickerSong(id){
