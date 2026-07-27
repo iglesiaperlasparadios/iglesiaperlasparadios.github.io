@@ -3820,18 +3820,28 @@ function buildMonthHTML(services, opts={}){
     </div>`;
   }).join('');
 
+  // Versículo al lado del título cuando hay ancho suficiente (mayoría de los meses,
+  // 3+ domingos) para que quede simétrico; si el mes tiene pocos servicios (imagen
+  // angosta), se acomoda debajo a todo el ancho para no quedar apretado en una columna.
+  const sideBySide = W >= 850;
+  const versiculoBoxHTML = (versiculo||cita)?`<div style="${sideBySide?'flex:1;min-width:0;max-width:1000px;':'margin-top:18px;'}background:${IMG_SURFACE};border-radius:12px;padding:16px 22px;border:1px solid ${IMG_BORDER};box-shadow:${IMG_SHADOW}">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">
+      <span style="font-size:15px">📖</span>
+      <span style="font-size:10px;font-weight:700;color:${accent};letter-spacing:.13em;text-transform:uppercase">Versículo del mes</span>
+    </div>
+    ${versiculo?`<div style="font-size:17px;color:#2e3e52;line-height:1.6;font-style:italic">${versiculo}</div>`:''}
+    ${cita?`<div style="font-size:14px;font-weight:800;color:${accent};text-align:right;margin-top:${versiculo?'8px':'0'}">${cita}</div>`:''}
+  </div>`:'';
+
   return `
     <div id="_month_render" style="width:${W}px;background:${IMG_BG};font-family:'Outfit',sans-serif;padding:0">
       <div style="background:${IMG_BG};padding:30px ${padX}px 22px">
+        ${sideBySide?`<div style="display:flex;align-items:center;justify-content:space-between;gap:24px">
+          <div style="font-size:80px;font-weight:800;color:${IMG_TEXT};line-height:.88;font-family:'Fraunces',serif;letter-spacing:-2px;flex-shrink:0">${MESES[month]}</div>
+          ${versiculoBoxHTML}
+        </div>`:`
         <div style="font-size:80px;font-weight:800;color:${IMG_TEXT};line-height:.88;font-family:'Fraunces',serif;letter-spacing:-2px">${MESES[month]}</div>
-        ${(versiculo||cita)?`<div style="margin-top:18px;background:${IMG_SURFACE};border-radius:12px;padding:16px 22px;border:1px solid ${IMG_BORDER};box-shadow:${IMG_SHADOW}">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">
-            <span style="font-size:15px">📖</span>
-            <span style="font-size:10px;font-weight:700;color:${accent};letter-spacing:.13em;text-transform:uppercase">Versículo del mes</span>
-          </div>
-          ${versiculo?`<div style="font-size:17px;color:#2e3e52;line-height:1.6;font-style:italic">${versiculo}</div>`:''}
-          ${cita?`<div style="font-size:14px;font-weight:800;color:${accent};text-align:right;margin-top:${versiculo?'8px':'0'}">${cita}</div>`:''}
-        </div>`:''}
+        ${versiculoBoxHTML}`}
       </div>
       <div style="padding:0 ${padX}px 40px">
         ${reflexionBlock}
