@@ -603,6 +603,69 @@ select option { background: var(--bg3); }
 #page-canciones .canc-badge--error { background: var(--canc-error-bg); color: var(--canc-error); }
 #page-canciones .canc-badge--neutral { background: var(--canc-border-soft); color: var(--canc-text-secondary); }
 #page-canciones .canc-key { color: var(--canc-primary); font-weight: 700; }
+
+/* MODAL "Editar canción" — mismo sistema visual, scoped a #modal-cancion (modal exclusivo,
+   no compartido con ningún otro flujo). */
+#modal-cancion {
+  --cm-bg: #f5f5f7;
+  --cm-surface: #ffffff;
+  --cm-border: #e1e1e4;
+  --cm-border-soft: #ededef;
+  --cm-text: #1c1c1e;
+  --cm-text-secondary: #78787f;
+  --cm-primary: #007aff;
+  --cm-primary-light: #e5f0ff;
+  --cm-success: #34c759;
+  --cm-success-bg: #e8f8ee;
+  --cm-warning: #b4740e;
+  --cm-warning-bg: #fbf0dc;
+  --cm-error: #b3261e;
+  --cm-error-bg: #fbe7e5;
+  --cm-radius-md: 12px;
+  --cm-radius-lg: 16px;
+  --cm-radius-xl: 22px;
+  --cm-radius-full: 999px;
+  --cm-shadow-2: 0 20px 60px rgba(28,28,30,.18);
+  --cm-ease: cubic-bezier(.2,0,0,1);
+}
+#modal-cancion .modal {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--cm-surface); border: 1px solid var(--cm-border-soft);
+  border-radius: var(--cm-radius-xl); box-shadow: var(--cm-shadow-2);
+}
+#modal-cancion .modal-title { color: var(--cm-text); font-weight: 700; }
+#modal-cancion .modal-tabs { border-bottom: 1px solid var(--cm-border-soft); }
+#modal-cancion .modal-tab { font-family: 'Inter', system-ui, sans-serif; color: var(--cm-text-secondary); }
+#modal-cancion .modal-tab.active { color: var(--cm-primary); border-bottom-color: var(--cm-primary); }
+#modal-cancion .modal-tab:hover { color: var(--cm-text); }
+#modal-cancion .field label { color: var(--cm-text-secondary); font-weight: 500; }
+#modal-cancion input, #modal-cancion textarea, #modal-cancion select {
+  font-family: 'Inter', system-ui, sans-serif; background: var(--cm-surface);
+  border: 1px solid var(--cm-border); border-radius: var(--cm-radius-md);
+  color: var(--cm-text); box-shadow: none;
+}
+#modal-cancion input:focus, #modal-cancion textarea:focus, #modal-cancion select:focus { border-color: var(--cm-primary); }
+#modal-cancion .chip {
+  font-family: 'Inter', system-ui, sans-serif; border-radius: var(--cm-radius-full);
+  border: 1px solid var(--cm-border); color: var(--cm-text-secondary); background: var(--cm-surface);
+  transition: all 120ms var(--cm-ease);
+}
+#modal-cancion .chip:hover { border-color: var(--cm-primary); color: var(--cm-primary); }
+#modal-cancion .chip.active.tone--primary { border-color: var(--cm-primary); background: var(--cm-primary); color: #fff; }
+#modal-cancion .chip.active.tone--success { border-color: var(--cm-success); background: var(--cm-success); color: #fff; }
+#modal-cancion .chip.active.tone--warning { border-color: var(--cm-warning); background: var(--cm-warning); color: #fff; }
+#modal-cancion .chip.active.tone--error { border-color: var(--cm-error); background: var(--cm-error); color: #fff; }
+#modal-cancion .btn {
+  font-family: 'Inter', system-ui, sans-serif; border-radius: var(--cm-radius-md);
+  border: 1px solid var(--cm-border); background: var(--cm-surface); color: var(--cm-text);
+  box-shadow: none;
+}
+#modal-cancion .btn:hover { background: var(--cm-bg); }
+#modal-cancion .btn-primary { background: var(--cm-primary); border-color: var(--cm-primary); color: #fff; }
+#modal-cancion .btn-primary:hover { background: #0062cc; }
+#modal-cancion .btn-danger { border-color: var(--cm-error); color: var(--cm-error); }
+#modal-cancion .btn-danger:hover { background: var(--cm-error-bg); }
+#modal-cancion .cm-sec-row { background: var(--cm-bg); border: 1px solid var(--cm-border-soft); border-radius: var(--cm-radius-lg); }
 </style>
 </head>
 <body>
@@ -1042,7 +1105,7 @@ select option { background: var(--bg3); }
       <div style="display:flex;align-items:flex-end;gap:10px;margin-bottom:12px">
         <div class="field" style="flex:1;margin-bottom:0"><label>Capo</label><input id="cm-capo" placeholder="ej: CAPO 2do traste / forma Em"></div>
         <div style="display:flex;align-items:center;gap:4px;padding-bottom:2px">
-          <span style="font-size:11px;color:var(--text3);white-space:nowrap">Transponer todo:</span>
+          <span style="font-size:11px;color:var(--cm-text-secondary);white-space:nowrap">Transponer todo:</span>
           <button class="btn btn-sm btn-icon" onclick="transposeChordsBy(-1)" title="-1 semitono"><i class="ti ti-minus"></i></button>
           <button class="btn btn-sm btn-icon" onclick="transposeChordsBy(1)" title="+1 semitono"><i class="ti ti-plus"></i></button>
         </div>
@@ -2262,7 +2325,7 @@ function openCancionModal(id=null){
 
 function renderCmCats(selected=[]){
   const el=document.getElementById('cm-cats');
-  el.innerHTML=CATS.map(c=>`<span class="chip${selected.includes(c)?' active':''}" onclick="this.classList.toggle('active')">${c}</span>`).join('');
+  el.innerHTML=CATS.map(c=>`<span class="chip tone--${_cancTone(c)}${selected.includes(c)?' active':''}" onclick="this.classList.toggle('active')">${c}</span>`).join('');
 }
 
 function getSelectedCats(){
@@ -2355,11 +2418,11 @@ function _syncCmSecciones(){
 function renderCmSecciones(){
   const el=document.getElementById('cm-secciones-container'); if(!el) return;
   if(!_cmSecciones.length){
-    el.innerHTML='<div style="text-align:center;color:var(--text3);font-size:13px;padding:14px;border:1px dashed var(--border4,var(--border));border-radius:8px">Sin secciones — agregá una abajo</div>';
+    el.innerHTML='<div style="text-align:center;color:var(--cm-text-secondary);font-size:13px;padding:14px;border:1px dashed var(--cm-border);border-radius:var(--cm-radius-md)">Sin secciones — agregá una abajo</div>';
     return;
   }
   el.innerHTML=_cmSecciones.map((s,i)=>`
-    <div class="cm-sec-row" style="background:var(--bg3);border-radius:8px;padding:10px 12px;margin-bottom:8px;border:1px solid var(--border)">
+    <div class="cm-sec-row" style="padding:10px 12px;margin-bottom:8px">
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
         <select class="cm-sec-tipo" style="flex:1;height:28px;font-size:12px">
           ${_SEC_TIPOS.map(t=>`<option value="${t}"${s.tipo===t?' selected':''}>${_SEC_TIPO_LABEL[t]}</option>`).join('')}
