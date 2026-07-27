@@ -1046,7 +1046,8 @@ select option { background: var(--bg3); }
 
   <div class="crono-card">
     <div class="crono-card-title">Devocional del mes</div>
-    <div class="field"><label>Versículo</label><textarea id="mes-versiculo" rows="2" placeholder="ej: Juan 4:24 — Dios es Espíritu..." oninput="saveMesState()"></textarea></div>
+    <div class="field"><label>Versículo</label><textarea id="mes-versiculo" rows="2" placeholder="ej: Dios es Espíritu; y los que le adoran, en espíritu y en verdad es necesario que adoren..." oninput="saveMesState()"></textarea></div>
+    <div class="field"><label>Cita bíblica</label><input id="mes-cita" placeholder="ej: Juan 4:24 — NVI" oninput="saveMesState()"></div>
     <div class="field"><label>Reflexión para el equipo</label><textarea id="mes-devocional" rows="3" placeholder="Texto de la reflexión del mes..." oninput="saveMesState()"></textarea></div>
     <div class="field"><label>Desafío de la semana</label><textarea id="mes-desafio" rows="3" placeholder="Desafío práctico para el equipo este mes..." oninput="saveMesState()"></textarea></div>
     <div class="field"><label>Canciones nuevas del mes</label>
@@ -1713,6 +1714,7 @@ function _doSave(){
       diasSab: document.getElementById('chk-sab')?.checked ?? true,
       diasDom: document.getElementById('chk-dom')?.checked ?? false,
       versiculo: document.getElementById('mes-versiculo')?.value?.trim()||'',
+      cita: document.getElementById('mes-cita')?.value?.trim()||'',
       devocional: document.getElementById('mes-devocional')?.value?.trim()||'',
       desafio: document.getElementById('mes-desafio')?.value?.trim()||'',
       nuevas: getNuevasMes(),
@@ -1770,9 +1772,11 @@ function restoreMesState(year, month){
     if(domEl) domEl.checked = state.diasDom ?? false;
 
     const vEl = document.getElementById('mes-versiculo');
+    const cEl = document.getElementById('mes-cita');
     const dEl = document.getElementById('mes-devocional');
     const dsEl = document.getElementById('mes-desafio');
     if(vEl) vEl.value = state.versiculo||'';
+    if(cEl) cEl.value = state.cita||'';
     if(dEl) dEl.value = state.devocional||'';
     if(dsEl) dsEl.value = state.desafio||'';
 
@@ -1850,8 +1854,10 @@ function changeMonthMes(d){
     // no saved data — clear services and show empty calendar
     monthServices = [];
     const vEl = document.getElementById('mes-versiculo');
+    const cEl = document.getElementById('mes-cita');
     const dEl = document.getElementById('mes-devocional');
     if(vEl) vEl.value = '';
+    if(cEl) cEl.value = '';
     if(dEl) dEl.value = '';
     const nWrap = document.getElementById('mes-nuevas');
     if(nWrap) nWrap.innerHTML = '';
@@ -2513,9 +2519,11 @@ function openWa(si){
   });
   const dev=document.getElementById('mes-devocional').value.trim();
   const vers=document.getElementById('mes-versiculo').value.trim();
-  if(vers||dev){
+  const cita=document.getElementById('mes-cita')?.value.trim()||'';
+  if(vers||cita||dev){
     lines.push('*📖 Devocional del mes*');
     if(vers)lines.push(`_${vers}_`);
+    if(cita)lines.push(`*${cita}*`);
     if(dev)lines.push(dev);
     lines.push('');
   }
@@ -3760,7 +3768,7 @@ function buildSongsCard(s, accent, opts={}){
 }
 
 function buildMonthHTML(services, opts={}){
-  const {versiculo='',devText='',desafio='',nuevas=[]} = opts;
+  const {versiculo='',cita='',devText='',desafio='',nuevas=[]} = opts;
   const month  = services[0]?.month ?? new Date().getMonth();
   const year   = services[0]?.year  ?? new Date().getFullYear();
   const accent = MES_ACCENT[month] || '#1E5F9E';
@@ -3815,12 +3823,13 @@ function buildMonthHTML(services, opts={}){
       <div style="background:${IMG_BG};padding:30px ${padX}px 22px">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:24px">
           <div style="font-size:80px;font-weight:800;color:${IMG_TEXT};line-height:.88;font-family:'Fraunces',serif;letter-spacing:-2px">${MESES[month]}</div>
-          ${versiculo?`<div style="max-width:420px;background:${IMG_SURFACE};border-radius:12px;padding:15px 19px;border:1px solid ${IMG_BORDER};box-shadow:${IMG_SHADOW}">
+          ${(versiculo||cita)?`<div style="max-width:420px;background:${IMG_SURFACE};border-radius:12px;padding:15px 19px;border:1px solid ${IMG_BORDER};box-shadow:${IMG_SHADOW}">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
               <span style="font-size:15px">📖</span>
               <span style="font-size:10px;font-weight:700;color:${accent};letter-spacing:.13em;text-transform:uppercase">Versículo del mes</span>
             </div>
-            <div style="font-size:17px;font-weight:700;color:#2e3e52;line-height:1.65;font-style:italic">${versiculo}</div>
+            ${versiculo?`<div style="font-size:17px;color:#2e3e52;line-height:1.65;font-style:italic">${versiculo}</div>`:''}
+            ${cita?`<div style="font-size:14px;font-weight:800;color:${accent};text-align:right;margin-top:${versiculo?'8px':'0'}">${cita}</div>`:''}
           </div>`:''}
         </div>
       </div>
@@ -3864,6 +3873,7 @@ async function previewFirst(){
   try{
     const cv=await htmlToCanvas(buildMonthHTML(monthServices,{
       versiculo:document.getElementById('mes-versiculo').value.trim(),
+      cita:document.getElementById('mes-cita')?.value.trim()||'',
       devText:document.getElementById('mes-devocional').value.trim(),
       desafio:document.getElementById('mes-desafio').value.trim(),
       nuevas:getNuevasMes()
@@ -3892,6 +3902,7 @@ async function generateZip(){
     saveHistorialFromServices();
     const cv=await htmlToCanvas(buildMonthHTML(monthServices,{
       versiculo:document.getElementById('mes-versiculo').value.trim(),
+      cita:document.getElementById('mes-cita')?.value.trim()||'',
       devText:document.getElementById('mes-devocional').value.trim(),
       desafio:document.getElementById('mes-desafio').value.trim(),
       nuevas:getNuevasMes()
@@ -3947,6 +3958,7 @@ function exportBackup(){
         diasSab:   document.getElementById('chk-sab')?.checked ?? true,
         diasDom:   document.getElementById('chk-dom')?.checked ?? false,
         versiculo: document.getElementById('mes-versiculo')?.value?.trim() || '',
+        cita:      document.getElementById('mes-cita')?.value?.trim() || '',
         devocional:document.getElementById('mes-devocional')?.value?.trim() || '',
         nuevas:    getNuevasMes(),
         services
@@ -4114,8 +4126,10 @@ function confirmImport(){
     if(domEl) domEl.checked = meta.diasDom ?? false;
 
     const vEl = document.getElementById('mes-versiculo');
+    const cEl = document.getElementById('mes-cita');
     const dEl = document.getElementById('mes-devocional');
     if(vEl) vEl.value = meta.versiculo  || '';
+    if(cEl) cEl.value = meta.cita       || '';
     if(dEl) dEl.value = meta.devocional || '';
 
     const nWrap = document.getElementById('mes-nuevas');
