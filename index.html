@@ -457,6 +457,8 @@ select option { background: var(--bg3); }
 #page-mes .btn-primary:hover { background: var(--crono-primary-dark); }
 #page-mes .btn-success { background: var(--crono-success); border-color: var(--crono-success); color: #fff; }
 #page-mes .btn-success:hover { opacity: .92; }
+#page-mes .btn-danger { border-color: var(--crono-error); color: var(--crono-error); background: var(--crono-surface); }
+#page-mes .btn-danger:hover { background: var(--crono-error-bg); }
 #page-mes .cal-title { color: var(--crono-text); font-weight: 600; font-size: 14px; }
 #page-mes .cal-dow { color: var(--crono-text-secondary); }
 #page-mes .cal-day { color: var(--crono-text); border-radius: var(--crono-radius-sm); }
@@ -472,9 +474,11 @@ select option { background: var(--bg3); }
 }
 #page-mes .service-header { background: var(--crono-surface); border-bottom: 1px solid var(--crono-border-soft); border-radius: var(--crono-radius-xl) var(--crono-radius-xl) 0 0; }
 #page-mes .service-header:hover { background: var(--crono-bg); }
-#page-mes .roles-grid { gap: 8px 14px; }
-#page-mes .role-lbl { color: var(--crono-text-secondary); font-weight: 500; }
-#page-mes .song-item { background: var(--crono-bg); border-radius: var(--crono-radius-md); border: 1px solid var(--crono-border-soft); padding: 7px 10px; }
+#page-mes .roles-grid { gap: 10px 14px; }
+#page-mes .role-row { display: flex; flex-direction: column; align-items: stretch; gap: 4px; }
+#page-mes .role-lbl { width: auto; color: var(--crono-text-secondary); font-weight: 600; font-size: 10px; }
+#page-mes .role-row input { width: 100%; }
+#page-mes .song-item { background: var(--crono-surface); border-radius: var(--crono-radius-md); border: 1px solid var(--crono-border-soft); padding: 7px 10px; }
 #page-mes .song-item-name { color: var(--crono-text); font-weight: 500; }
 #page-mes .divider { background: var(--crono-border-soft); }
 #page-mes .crono-toggle-mobile { background: var(--crono-surface); border: 1px solid var(--crono-border); color: var(--crono-text-secondary); border-radius: var(--crono-radius-md); }
@@ -1993,15 +1997,13 @@ function renderServices(){
 }
 
 function renderSongItem(si,sec,idx,sg,sectionColor=null,total=1){
-  const itemBg=sectionColor?sectionColor+'12':'var(--crono-bg)';
   const keyColor=sectionColor||'var(--crono-primary)';
-  return `<div class="song-item" id="sitem-${si}-${sec}-${idx}" style="background:${itemBg};align-items:center;gap:5px">
-    <span class="song-item-name" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px;flex-shrink:0" data-name="${sg.name.replace(/"/g,'&quot;')}" onclick="openCancionViewByName(this.dataset.name)">${sg.name}</span>
+  return `<div class="song-item" id="sitem-${si}-${sec}-${idx}" style="align-items:center;gap:5px">
+    <span class="song-item-name" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px;flex:1" data-name="${sg.name.replace(/"/g,'&quot;')}" onclick="openCancionViewByName(this.dataset.name)">${sg.name}</span>
     ${sg.key?`<span class="song-item-key" style="color:${keyColor};flex-shrink:0">${sg.key}</span>`:''}
     ${sg.nueva?`<span class="badge badge-green" style="font-size:10px;flex-shrink:0">Nueva</span>`:''}
-    <input style="flex:1;min-width:50px;height:20px;font-size:10px;color:#78716c;background:#fefce8;border:1px solid #fef08a;border-radius:var(--crono-radius-sm);font-style:italic;padding:0 5px" placeholder="nota..." value="${sg.note||''}" onchange="updateSongNote(${si},'${sec}',${idx},this.value)">
-    <button class="btn btn-sm btn-icon" style="flex-shrink:0" onclick="moveSong(${si},'${sec}',${idx},-1)"${idx===0?' disabled':''} title="Subir"><i class="ti ti-chevron-up"></i></button>
-    <button class="btn btn-sm btn-icon" style="flex-shrink:0" onclick="moveSong(${si},'${sec}',${idx},1)"${idx===total-1?' disabled':''} title="Bajar"><i class="ti ti-chevron-down"></i></button>
+    <button class="btn btn-sm btn-icon" style="flex-shrink:0;color:var(--crono-primary)" onclick="moveSong(${si},'${sec}',${idx},-1)"${idx===0?' disabled':''} title="Subir"><i class="ti ti-chevron-up"></i></button>
+    <button class="btn btn-sm btn-icon" style="flex-shrink:0;color:var(--crono-primary)" onclick="moveSong(${si},'${sec}',${idx},1)"${idx===total-1?' disabled':''} title="Bajar"><i class="ti ti-chevron-down"></i></button>
     <button class="btn btn-sm btn-icon btn-danger" style="flex-shrink:0" onclick="removeSong(${si},'${sec}',${idx})"><i class="ti ti-x"></i></button>
   </div>`;
 }
