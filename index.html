@@ -4963,10 +4963,10 @@ function buildProgramaHTML(){
 
   // PROGRAMA (desde bloques del guión) — canciones agrupadas, eventos protagonistas
   let programaHTML='';
-  const _renderSongGroup=songs=>`<div style="display:flex;gap:10px;align-items:flex-start;background:#f0f4f0;border-radius:12px;padding:10px 14px;margin-bottom:6px">
-    <span style="font-size:14px;flex-shrink:0;margin-top:1px">🎵</span>
-    <div>${songs.map(n=>`<div style="font-size:14px;font-weight:400;color:#374151;line-height:1.7">• ${esc(n)}</div>`).join('')}</div>
-  </div>`;
+  const _renderSongGroup=songs=>`<div style="margin-bottom:6px">${songs.map(n=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:#fff;border-radius:10px;border:1px solid #e5e9f0;box-shadow:${shadow};margin-bottom:6px">
+    <span style="font-size:16px;flex-shrink:0">🎵</span>
+    <span style="font-size:15px;font-weight:600;color:#1e293b">${esc(n)}</span>
+  </div>`).join('')}</div>`;
 
   // Agrupar bloques: canciones consecutivas → un bloque de lista
   // Los bloques texto se descartan antes de agrupar para no cortar secuencias de canciones
@@ -4990,9 +4990,14 @@ function buildProgramaHTML(){
     if(b._songGroup) return _renderSongGroup(b.names);
     if(b.type==='evento'){
       const et=_EVENTO_TIPOS.find(e=>e.value===b.eventType)||_EVENTO_TIPOS[0];
-      return `<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:${et.bg};border-radius:10px;border:1px solid ${et.border}44;border-left:4px solid ${et.border};margin-bottom:6px">
-        <span style="font-size:18px">${et.emoji}</span>
-        <div style="font-family:'Fraunces',Georgia,serif;font-size:17px;font-weight:700;color:#1e293b">${esc(et.label)}${b.detail?` — ${esc(b.detail)}`:''}</div>
+      const hasDetail=(b.detail||'').trim();
+      const labelHTML=hasDetail
+        ?`<div style="font-size:11px;font-weight:700;color:${et.border};letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px">${esc(et.label)}</div>`
+        :`<div style="font-family:'Fraunces',Georgia,serif;font-size:17px;font-weight:700;color:#1e293b">${esc(et.label)}</div>`;
+      const detailHTML=hasDetail?`<div style="font-family:'Fraunces',Georgia,serif;font-size:19px;font-weight:700;color:#1e293b">${esc(b.detail)}</div>`:'';
+      return `<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:${et.bg};border-radius:10px;border:1px solid ${et.border}44;border-left:4px solid ${et.border};margin-bottom:6px">
+        <span style="font-size:20px">${et.emoji}</span>
+        <div>${labelHTML}${detailHTML}</div>
       </div>`;
     }
     if(b.type==='texto') return '';
