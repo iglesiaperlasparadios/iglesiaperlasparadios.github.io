@@ -2979,7 +2979,7 @@ function deleteCancion(id){
 }
 
 // ── Hojas A4 para imprimir canciones ──────────────────────────
-// Una sola generación de hojas para vista previa, PNG e impresión: las hojas se
+// Una sola generación de hojas para vista previa, PNG y PDF: las hojas se
 // arman probando el contenido dentro de una hoja A4 real fuera de pantalla, y lo
 // que no entra pasa a la hoja siguiente (partiendo secciones si hace falta).
 // Nunca modifica la canción guardada: trabaja sobre copias de sus secciones.
@@ -3185,7 +3185,7 @@ async function _buildPrintPages(c, opts={}){
 let _printPreviewId=null;
 let _printPreviewOpts={};   // opciones de _buildPrintPages + fileName/pngHidden (las pone el Cancionero)
 let _printPreviewSeq=0;
-let _printPreviewPages=[];   // las hojas que muestra la vista previa: PNG e impresión usan estas mismas
+let _printPreviewPages=[];   // las hojas que muestra la vista previa: el PNG y el PDF usan estas mismas
 
 function openPrintPreview(id, opts={}){
   _printPreviewId=id;
