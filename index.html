@@ -91,6 +91,20 @@ body { min-height: 100vh; }
   .sidebar-backdrop.show { opacity: 1; pointer-events: auto; }
 }
 
+/* IMPRESIÓN DE CANCIONES — solo actúa con body.imprimiendo (lo pone printCancionPreview
+   y lo saca al terminar o cancelar). Imprimir cualquier otra pantalla queda igual. */
+#print-root { display: none; }
+@media print {
+  @page { size: A4; margin: 0; }
+  html.imprimiendo { background: #fff !important; }
+  body.imprimiendo { display: block !important; margin: 0 !important; padding: 0 !important; background: #fff !important; min-height: 0 !important; }
+  body.imprimiendo > *:not(#print-root) { display: none !important; }
+  body.imprimiendo #print-root { display: block; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  /* un poco menos que A4 (297mm) para que el redondeo nunca empuje una hoja en blanco */
+  body.imprimiendo .print-sheet { width: 210mm; height: 296mm; overflow: hidden; break-after: page; page-break-after: always; }
+  body.imprimiendo .print-sheet:last-child { break-after: auto; page-break-after: auto; }
+}
+
 /* MODO LECTURA — compartir el Cancionero por URL (?lectura). Sin la clase
    en <body>, ninguna de estas reglas aplica: la app queda igual que hoy. */
 body.modo-lectura .sidebar,
@@ -1610,6 +1624,9 @@ select option { background: var(--bg3); }
       <span id="print-font-size-label" style="font-size:13px;font-weight:600;color:var(--text2);min-width:30px;text-align:right">20px</span>
       <span style="width:1px;height:20px;background:var(--border);flex-shrink:0"></span>
       <span id="print-page-count" style="font-size:13px;color:var(--text3);white-space:nowrap;min-width:60px;text-align:center"></span>
+      <button class="btn btn-sm" id="print-print-btn" onclick="printCancionPreview()">
+        <i class="ti ti-printer"></i> Imprimir / PDF
+      </button>
       <button class="btn btn-sm btn-primary" id="print-download-btn" onclick="downloadPrintCancion()">
         <i class="ti ti-download"></i> Descargar PNG
       </button>
@@ -3009,23 +3026,47 @@ function _printGroups(contenido, mode){
   return groups;
 }
 
-function _printLineHTML(line, isChorus, st){
+// isChord: si el renglón es de acordes (se decide antes de partir renglones largos,
+// porque un pedazo de letra suelto como "A" podría parecer un acorde)
+function _printLineHTML(line, isChorus, st, isChord=isChordLine(line)){
   line=line.replace(/\s+$/,''); // los espacios del final no se ven: no deben achicar la letra
   const lyricColor=isChorus?'#2563a8':'#111827';
   const lyricStyle=isChorus?'font-style:italic;':'font-style:normal;';
   if(st.mode==='letra')
     return `<span style="display:block;font-family:'Outfit',sans-serif;white-space:pre-wrap;font-size:${st.fontSize}px;font-weight:500;${lyricStyle}color:${lyricColor};line-height:1.35">${_printEsc(line)}</span>`;
-  // Con acordes la línea no se parte (desalinearía los acordes), salvo que no entre ni al mínimo
-  const ws=st.wrap?'white-space:pre-wrap;overflow-wrap:anywhere':'white-space:pre';
-  if(isChordLine(line))
-    return `<span style="display:block;font-family:'Courier New',monospace;${ws};font-size:${st.fontSize}px;font-weight:700;font-style:normal;color:#ea580c;line-height:1.2">${_printEsc(line)}</span>`;
+  // Con acordes el renglón nunca lo parte el navegador: desalinearía los acordes
+  // (los renglones que no entran se parten antes, con _printSplitGroup)
+  if(isChord)
+    return `<span style="display:block;font-family:'Courier New',monospace;white-space:pre;font-size:${st.fontSize}px;font-weight:700;font-style:normal;color:#ea580c;line-height:1.2">${_printEsc(line)}</span>`;
   if(!line.trim()) return '<div style="height:4px"></div>';
-  return `<span style="display:block;font-family:'Courier New',monospace;${ws};font-size:${st.fontSize}px;font-weight:500;${lyricStyle}color:${lyricColor};line-height:1.2">${_printEsc(line)}</span>`;
+  return `<span style="display:block;font-family:'Courier New',monospace;white-space:pre;font-size:${st.fontSize}px;font-weight:500;${lyricStyle}color:${lyricColor};line-height:1.2">${_printEsc(line)}</span>`;
 }
 
 function _printGroupHTML(grp, isChorus, st){
   if(grp.every(l=>!l.trim())) return '<div style="height:8px"></div>';
-  return `<div style="margin-bottom:4px">${grp.map(l=>_printLineHTML(l,isChorus,st)).join('')}</div>`;
+  return `<div style="margin-bottom:4px">${grp.map((l,i)=>_printLineHTML(l,isChorus,st,grp.roles?grp.roles[i]:isChordLine(l))).join('')}</div>`;
+}
+
+// Un grupo con los roles (acorde/letra) de cada renglón fijados de antemano
+function _printGroupWithRoles(lines, roles){ const g=lines.slice(); g.roles=roles; return g; }
+
+// Parte un grupo (acordes + letra) que no entra a lo ancho, cortando TODOS sus renglones
+// en la misma columna: así cada acorde sigue sobre su sílaba. Busca una columna que no
+// parta ninguna palabra ni acorde; si no hay, corta justo en el máximo.
+function _printSplitGroup(grp, maxCols){
+  const roles=grp.roles||grp.map(l=>isChordLine(l));
+  const lines=grp.map(l=>l.replace(/\s+$/,''));
+  if(lines.every(l=>l.length<=maxCols)) return [_printGroupWithRoles(grp,roles)];
+  let cut=maxCols;
+  for(let c=maxCols;c>maxCols/2;c--){
+    if(lines.every(l=>c>=l.length||l[c]===' '||l[c-1]===' ')){ cut=c; break; }
+  }
+  const heads=lines.map(l=>l.slice(0,cut));
+  let rests=lines.map(l=>l.slice(cut));
+  // sacar la misma sangría a todos los renglones del resto, para no correr los acordes
+  const lead=Math.min(...rests.filter(r=>r.trim()).map(r=>r.match(/^ */)[0].length));
+  rests=rests.map(r=>r.slice(lead));
+  return [_printGroupWithRoles(heads,roles), ..._printSplitGroup(_printGroupWithRoles(rests,roles),maxCols)];
 }
 
 function _printHeaderHTML(c, pageNum, totalLabel, st){
@@ -3041,7 +3082,7 @@ function _printHeaderHTML(c, pageNum, totalLabel, st){
 
 // Ancho del renglón más ancho (px) con acordes, a un tamaño de letra dado
 function _printMaxLineWidth(secs, fontSize, host){
-  const st={mode:'acordes',fontSize,wrap:false};
+  const st={mode:'acordes',fontSize};
   host.innerHTML=secs.map(s=>s.contenido.split('\n').filter(l=>l.trim())
     .map(l=>_printLineHTML(l,s.tipo==='coro',st).replace('display:block','display:inline-block')+'<br>').join('')).join('');
   let max=0;
@@ -3074,7 +3115,8 @@ function _printPaginate(c, secs, st, host, withNumbers){
     counts[s.tipo]=(counts[s.tipo]||0)+1;
     const label=(_SEC_TIPO_LABEL[s.tipo]||s.tipo)+(totals[s.tipo]>1?' '+counts[s.tipo]:'');
     const isChorus=s.tipo==='coro';
-    const queue=_printGroups(s.contenido,st.mode);
+    let queue=_printGroups(s.contenido,st.mode);
+    if(st.maxCols) queue=queue.flatMap(g=>_printSplitGroup(g,st.maxCols));
     let placed=0; secEl=null;
     while(queue.length){
       const grp=queue.shift();
@@ -3094,7 +3136,7 @@ function _printPaginate(c, secs, st, host, withNumbers){
       const pageEmpty=sectionEmpty&&body.children.length===1;
       if(pageEmpty){
         // ni sola en una hoja vacía entra: partir el grupo renglón por renglón
-        if(grp.length>1){ queue.unshift(...grp.map(l=>[l])); continue; }
+        if(grp.length>1){ queue.unshift(...grp.map((l,i)=>_printGroupWithRoles([l],[grp.roles?grp.roles[i]:isChordLine(l)]))); continue; }
         lines.appendChild(el); placed++; continue; // un único renglón: se deja (no hay forma de achicarlo más)
       }
       if(sectionEmpty) secEl.remove();
@@ -3109,7 +3151,7 @@ function _printPaginate(c, secs, st, host, withNumbers){
 // Arma las hojas de una canción. Devuelve {pages:[html], fontSize, note}.
 // opts: mode, shift, fontSize, headerKey, headerLines (por defecto, el tono y capo guardados).
 async function _buildPrintPages(c, opts={}){
-  const st={mode:'acordes', shift:0, fontSize:20, headerKey:c.key||'', headerLines:c.capo?[c.capo]:[], wrap:false, ...opts};
+  const st={mode:'acordes', shift:0, fontSize:20, headerKey:c.key||'', headerLines:c.capo?[c.capo]:[], maxCols:0, ...opts};
   try{ await document.fonts.load("700 28px 'Outfit'"); await document.fonts.load("500 20px 'Outfit'"); await document.fonts.ready; }catch(e){}
   const secs=_printSecciones(c,st);
   if(!secs.length) return {pages:[], fontSize:st.fontSize, note:''};
@@ -3121,12 +3163,15 @@ async function _buildPrintPages(c, opts={}){
     if(st.mode!=='letra'){
       const innerW=_PRINT_W-2*_PRINT_PAD;
       if(_printMaxLineWidth(secs,st.fontSize,host)>innerW){
-        let fs=st.fontSize-1;
+        let fs=Math.max(_PRINT_MIN_FONT,st.fontSize);
         while(fs>_PRINT_MIN_FONT && _printMaxLineWidth(secs,fs,host)>innerW) fs--;
         st.fontSize=fs;
         if(_printMaxLineWidth(secs,fs,host)>innerW){
-          st.wrap=true;
-          note=`Hay renglones que no entran ni a ${fs}px: se parten en dos para no perder texto`;
+          // caracteres por renglón a este tamaño (Courier es monoespaciada)
+          host.innerHTML=`<span style="font-family:'Courier New',monospace;font-weight:700;font-size:${fs}px;white-space:pre">${'M'.repeat(100)}</span>`;
+          st.maxCols=Math.floor(innerW/(host.firstElementChild.offsetWidth/100));
+          host.innerHTML='';
+          note=`Hay renglones que no entran ni a ${fs}px: se pasan al renglón siguiente junto con sus acordes`;
         } else note=`Letra ajustada a ${fs}px para que entren los renglones largos`;
       }
     }
@@ -3145,6 +3190,7 @@ async function _buildPrintPages(c, opts={}){
 
 let _printPreviewId=null;
 let _printPreviewSeq=0;
+let _printPreviewPages=[];   // las hojas que muestra la vista previa: PNG e impresión usan estas mismas
 
 function openPrintPreview(id){
   _printPreviewId=id;
@@ -3166,8 +3212,12 @@ async function updatePrintPreview(){
   const body=document.getElementById('print-preview-body');
   const countEl=document.getElementById('print-page-count');
   const noteEl=document.getElementById('print-fit-note');
+  _printPreviewPages=[];
+  _setPrintButtonsDisabled(true);
   const res=await _buildPrintPages(c,{fontSize});
   if(seq!==_printPreviewSeq) return; // el slider se movió mientras se armaban las hojas
+  _printPreviewPages=res.pages;
+  _setPrintButtonsDisabled(!res.pages.length);
   noteEl.textContent=res.note;
   noteEl.style.display=res.note?'':'none';
   if(!res.pages.length){
@@ -3180,16 +3230,53 @@ async function updatePrintPreview(){
   body.innerHTML=res.pages.map(p=>`<div style="box-shadow:0 6px 28px rgba(0,0,0,0.55);flex-shrink:0">${p}</div>`).join('');
 }
 
+function _setPrintButtonsDisabled(v){
+  ['print-print-btn','print-download-btn'].forEach(id=>{ const b=document.getElementById(id); if(b) b.disabled=v; });
+}
+
+// ── Imprimir / guardar PDF ──
+// Pone las hojas de la vista previa en #print-root, activa body.imprimiendo (el CSS
+// de impresión oculta todo lo demás) y cambia el título para sugerir el nombre del PDF.
+// Todo se deshace al terminar o cancelar (afterprint), con respaldo al volver a tocar la app.
+let _printTitleBackup=null;
+function _printCleanup(){
+  document.documentElement.classList.remove('imprimiendo');
+  document.body.classList.remove('imprimiendo');
+  document.getElementById('print-root')?.remove();
+  if(_printTitleBackup!==null){ document.title=_printTitleBackup; _printTitleBackup=null; }
+  window.removeEventListener('afterprint',_printCleanup);
+  window.removeEventListener('pointerdown',_printCleanup);
+}
+function _printPages(pages, title){
+  _printCleanup();
+  const root=document.createElement('div');
+  root.id='print-root';
+  root.innerHTML=pages.map(p=>`<div class="print-sheet">${p.replace('id="_cancion_print"','')}</div>`).join('');
+  document.body.appendChild(root);
+  _printTitleBackup=document.title;
+  document.title=title;
+  document.documentElement.classList.add('imprimiendo');
+  document.body.classList.add('imprimiendo');
+  window.addEventListener('afterprint',_printCleanup);
+  // respaldo por si el navegador no avisa al cerrar el diálogo (algunos celulares)
+  setTimeout(()=>window.addEventListener('pointerdown',_printCleanup),1000);
+  window.print();
+}
+function printCancionPreview(){
+  const c=getCanciones().find(c=>c.id===_printPreviewId);
+  if(!c||!_printPreviewPages.length) return;
+  _printPages(_printPreviewPages, c.name+(c.key?' - '+c.key:''));
+}
+
 async function downloadPrintCancion(){
   const c=getCanciones().find(c=>c.id===_printPreviewId);
   if(!c) return;
-  const fontSize=parseInt(document.getElementById('print-font-slider').value);
+  const pages=_printPreviewPages;
+  if(!pages.length){showToast('Sin contenido para imprimir','amber');return;}
   const btn=document.getElementById('print-download-btn');
   btn.disabled=true;
   showToast('Generando imagen...','amber');
   try{
-    const {pages}=await _buildPrintPages(c,{fontSize});
-    if(!pages.length){showToast('Sin contenido para imprimir','amber');btn.disabled=false;return;}
     const N=pages.length;
     const canvases=[];
     for(let i=0;i<N;i++){
