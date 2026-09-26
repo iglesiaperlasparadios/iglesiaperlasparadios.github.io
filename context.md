@@ -41,8 +41,8 @@ Cómo trabajamos:
 - **Acordes:** una sola regla para toda la app (`isChordLine`).
 - **Estilo:** fuentes Outfit (sans) y Fraunces (serif), íconos de Tabler Icons. Tema claro con detalles en pastel, y cada mes tiene su color de acento (`MES_ACCENT`).
 - **Remotos:**
-  - `origin` → `bosioinmobiliaria-lang/ministerio-alabanza`
-  - `iglesia` → `iglesiaperlasparadios.github.io`
+  - `iglesia` → `iglesiaperlasparadios.github.io` — **es el que publica** (`main` apunta acá).
+  - `origin` → `bosioinmobiliaria-lang/ministerio-alabanza` — copia vieja, sin usar desde julio.
 
 ## Últimos cambios (hasta sep 2026)
 - **Julio–agosto:** rediseño visual de toda la app con un sistema de diseño unificado (menú, Cronograma, Canciones, Cancionero, Coordinación, Participación, Estadísticas).
