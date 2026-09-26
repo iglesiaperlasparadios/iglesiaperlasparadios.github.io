@@ -1620,21 +1620,24 @@ select option { background: var(--bg3); }
       <span id="print-preview-title" style="font-size:15px;font-weight:600">Vista previa de impresión</span>
       <button class="btn btn-sm btn-icon" onclick="closeModal('modal-print-preview')"><i class="ti ti-x"></i></button>
     </div>
-    <div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0">
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px 12px;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0">
       <i class="ti ti-typography" style="color:var(--text3);font-size:16px"></i>
-      <input type="range" id="print-font-slider" min="14" max="26" value="20" style="flex:1;accent-color:var(--accent)" oninput="updatePrintPreview()">
+      <input type="range" id="print-font-slider" min="14" max="26" value="20" style="flex:1 1 140px;accent-color:var(--accent)" oninput="updatePrintPreview()">
       <span id="print-font-size-label" style="font-size:13px;font-weight:600;color:var(--text2);min-width:30px;text-align:right">20px</span>
       <span style="width:1px;height:20px;background:var(--border);flex-shrink:0"></span>
       <span id="print-page-count" style="font-size:13px;color:var(--text3);white-space:nowrap;min-width:60px;text-align:center"></span>
       <button class="btn btn-sm" id="print-print-btn" onclick="printCancionPreview()">
         <i class="ti ti-printer"></i> Imprimir / PDF
       </button>
+      <button class="btn btn-sm" id="print-pdf-btn" onclick="downloadPdfCancion()">
+        <i class="ti ti-file-type-pdf"></i> Descargar PDF
+      </button>
       <button class="btn btn-sm btn-primary" id="print-download-btn" onclick="downloadPrintCancion()">
         <i class="ti ti-download"></i> Descargar PNG
       </button>
     </div>
     <div id="print-fit-note" style="display:none;padding:8px 16px;font-size:12px;font-weight:600;color:#b45309;background:#fffbeb;border-bottom:1px solid var(--border);flex-shrink:0"></div>
-    <div id="print-preview-body" style="flex:1;overflow-y:auto;background:#c8c4bc;padding:24px;display:flex;flex-direction:column;gap:20px;align-items:center;min-height:300px"></div>
+    <div id="print-preview-body" style="flex:1;overflow-y:auto;background:#c8c4bc;padding:clamp(12px,3vw,24px);display:flex;flex-direction:column;gap:20px;align-items:center;min-height:300px"></div>
   </div>
 </div>
 
@@ -3231,11 +3234,28 @@ async function updatePrintPreview(){
   }
   const N=res.pages.length;
   countEl.textContent=N+(N===1?' página':' páginas');
-  body.innerHTML=res.pages.map(p=>`<div style="box-shadow:0 6px 28px rgba(0,0,0,0.55);flex-shrink:0">${p}</div>`).join('');
+  body.innerHTML=res.pages.map(p=>`<div class="pp-sheet" style="box-shadow:0 6px 28px rgba(0,0,0,0.55);flex-shrink:0;overflow:hidden"><div class="pp-scale" style="width:${_PRINT_W}px;transform-origin:top left">${p}</div></div>`).join('');
+  _fitPrintPreview();
 }
 
+// En pantallas angostas la hoja se muestra achicada al ancho disponible. Solo cambia
+// cómo se ve: las hojas (y sus cortes) son las mismas que se descargan.
+function _fitPrintPreview(){
+  const body=document.getElementById('print-preview-body');
+  if(!body||!body.clientWidth) return;
+  const cs=getComputedStyle(body);
+  const avail=body.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight);
+  const k=Math.min(1,avail/_PRINT_W);
+  body.querySelectorAll('.pp-sheet').forEach(sh=>{
+    sh.style.width=(_PRINT_W*k)+'px';
+    sh.style.height=(_PRINT_H*k)+'px';
+    sh.firstElementChild.style.transform=k<1?`scale(${k})`:'';
+  });
+}
+window.addEventListener('resize',_fitPrintPreview);
+
 function _setPrintButtonsDisabled(v){
-  ['print-print-btn','print-download-btn'].forEach(id=>{ const b=document.getElementById(id); if(b) b.disabled=v; });
+  ['print-print-btn','print-pdf-btn','print-download-btn'].forEach(id=>{ const b=document.getElementById(id); if(b) b.disabled=v; });
 }
 
 // ── Imprimir / guardar PDF ──
@@ -3276,6 +3296,34 @@ function printCancionPreview(){
   const c=getCanciones().find(c=>c.id===_printPreviewId);
   if(!c||!_printPreviewPages.length) return;
   _printPages(c.name+(c.key?' - '+c.key:''));
+}
+
+// ── Descargar PDF ──
+// El PDF lo arma la app con las mismas hojas de la vista previa (una imagen A4 por hoja),
+// así sale igual en cualquier navegador o celular. Cada hoja ya trae su margen blanco de
+// 12,7mm, para que una impresora común no recorte nada. Se genera de a una hoja y se
+// libera cada imagen apenas se agrega, para no llenar la memoria del celular.
+async function downloadPdfCancion(){
+  const c=getCanciones().find(c=>c.id===_printPreviewId);
+  if(!c) return;
+  const pages=_printPreviewPages.slice();
+  if(!pages.length){showToast('Sin contenido para imprimir','amber');return;}
+  _setPrintButtonsDisabled(true);
+  try{
+    const {jsPDF}=window.jspdf;
+    const pdf=new jsPDF({unit:'mm',format:'a4',orientation:'portrait',compress:true});
+    for(let i=0;i<pages.length;i++){
+      showToast(pages.length>1?`Generando PDF… hoja ${i+1} de ${pages.length}`:'Generando PDF…','amber');
+      const cv=await htmlToCanvas(pages[i],'_cancion_print',{backgroundColor:'#ffffff',height:_PRINT_H});
+      if(i>0) pdf.addPage('a4','portrait');
+      pdf.addImage(cv.toDataURL('image/jpeg',0.92),'JPEG',0,0,210,297);
+      cv.width=cv.height=0; // liberar la memoria de la imagen
+    }
+    const name=(c.name+(c.key?' - '+c.key:'')).replace(/[\\/:*?"<>|]/g,'').trim()||'cancion';
+    pdf.save(name+'.pdf');
+    showToast(pages.length===1?'PDF descargado':`PDF descargado (${pages.length} hojas)`,'green');
+  }catch(e){ showToast('Error al generar el PDF','red'); console.error(e); }
+  _setPrintButtonsDisabled(!_printPreviewPages.length);
 }
 
 async function downloadPrintCancion(){
