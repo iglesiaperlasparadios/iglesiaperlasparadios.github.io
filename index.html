@@ -4,8 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ministerio de Música</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%2338bdf8'/><text x='50%25' y='50%25' dominant-baseline='central' text-anchor='middle' font-size='20' fill='white'>♪</text></svg>">
-<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%2338bdf8'/><text x='50%25' y='50%25' dominant-baseline='central' text-anchor='middle' font-size='20' fill='white'>♪</text></svg>">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#2563a8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Fraunces:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
@@ -68,6 +69,7 @@ body { min-height: 100vh; }
     width: 36px; height: 36px; border-radius: 8px; border: none; flex-shrink: 0;
     background: rgba(255,255,255,.16); color: #fff; font-size: 19px; cursor: pointer;
   }
+  .mobile-topbar-logo { width: 30px; height: 30px; flex-shrink: 0; border-radius: 50%; }
   .mobile-topbar-title { font-family: 'Fraunces', serif; font-weight: 600; font-size: 15px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   .main { padding-top: 52px; } /* corre todo el contenido debajo de la topbar fija — nada queda tapado */
@@ -522,6 +524,8 @@ select option { background: var(--bg3); }
   padding: 24px 20px 20px;
 }
 .sidebar-logo span { color: rgba(255,255,255,.75); }
+.sidebar-logo { display: flex; align-items: center; gap: 12px; }
+.sidebar-logo-img { width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; box-shadow: 0 2px 8px rgba(15,23,42,.2); }
 .nav { padding: 12px 10px; }
 .nav-item {
   border-left: none; border-radius: var(--shell-radius-md);
@@ -974,6 +978,7 @@ select option { background: var(--bg3); }
 <!-- MOBILE TOPBAR — solo visible en @media(max-width:768px) -->
 <div class="mobile-topbar">
   <button class="mobile-topbar-btn" id="mobile-topbar-btn" onclick="toggleMobileSidebar()"><i class="ti ti-menu-2"></i></button>
+  <img class="mobile-topbar-logo" src="icon-192.png" alt="">
   <span class="mobile-topbar-title">Ministerio de Música</span>
 </div>
 <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeMobileSidebar()"></div>
@@ -981,8 +986,11 @@ select option { background: var(--bg3); }
 <!-- SIDEBAR -->
 <div class="sidebar">
   <div class="sidebar-logo">
-    <h1>Ministerio<br>de Música</h1>
-    <span>Gestión de cronogramas</span>
+    <img class="sidebar-logo-img" src="icon-192.png" alt="">
+    <div>
+      <h1>Ministerio<br>de Música</h1>
+      <span>Gestión de cronogramas</span>
+    </div>
   </div>
   <nav class="nav">
     <div class="nav-item active" data-page="mes" onclick="goTo('mes')"><i class="ti ti-calendar-month"></i> Cronograma mensual</div>
