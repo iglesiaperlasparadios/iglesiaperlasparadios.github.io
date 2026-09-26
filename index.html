@@ -91,22 +91,6 @@ body { min-height: 100vh; }
   .sidebar-backdrop.show { opacity: 1; pointer-events: auto; }
 }
 
-/* IMPRESIÓN DE CANCIONES — solo actúa mientras la vista previa de impresión está abierta:
-   ahí imprimir (botón, ⌘P o menú del navegador) saca las hojas de #print-root. No depende
-   de los avisos de inicio/fin de impresión, que cada navegador manda distinto.
-   Imprimir cualquier otra pantalla queda igual. */
-#print-root { display: none; }
-@media print {
-  html:has(#modal-print-preview.open) { background: #fff !important; }
-  html:has(#modal-print-preview.open) body { display: block !important; margin: 0 !important; padding: 0 !important; background: #fff !important; min-height: 0 !important; }
-  html:has(#modal-print-preview.open) body > *:not(#print-root) { display: none !important; }
-  html:has(#modal-print-preview.open) #print-root { display: block; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  /* un poco menos que A4 (297mm) para que el redondeo nunca empuje una hoja en blanco */
-  #print-root .print-sheet { width: 210mm; height: 296mm; overflow: hidden; break-after: page; page-break-after: always; }
-  #print-root .print-sheet:last-child { break-after: auto; page-break-after: auto; }
-  @page { size: A4; margin: 0; }
-}
-
 /* MODO LECTURA — compartir el Cancionero por URL (?lectura). Sin la clase
    en <body>, ninguna de estas reglas aplica: la app queda igual que hoy. */
 body.modo-lectura .sidebar,
@@ -790,11 +774,13 @@ select option { background: var(--bg3); }
 /* botones de control del visor: tocá esto en vivo, con la guitarra en la mano —
    zona de toque más grande que el estándar de 28px */
 #page-cancionero #cancionero-toggle-chords-btn,
+#page-cancionero #cancionero-print-btn,
 #page-cancionero #cancionero-chord-tools .btn-icon,
 #page-cancionero #cancionero-scroll-toggle {
   width: 40px; height: 40px; border-radius: var(--cn-radius-md);
 }
-#page-cancionero #cancionero-toggle-chords-btn { width: auto; padding: 0 16px; }
+#page-cancionero #cancionero-toggle-chords-btn,
+#page-cancionero #cancionero-print-btn { width: auto; padding: 0 16px; }
 #page-cancionero .cn-speed-btn {
   width: 36px; height: 36px; border-radius: var(--cn-radius-md);
   border: 1px solid var(--cn-border); background: var(--cn-surface); color: var(--cn-text-secondary);
@@ -1153,7 +1139,10 @@ select option { background: var(--bg3); }
           <div id="cancionero-viewer-title" style="font-size:26px;font-weight:700;line-height:1.2"></div>
           <div id="cancionero-viewer-meta" style="font-size:13px;margin-top:5px"></div>
         </div>
-        <button class="btn btn-sm" id="cancionero-toggle-chords-btn" onclick="toggleCancionerChords()"><i class="ti ti-guitar-pick"></i> Ver acordes</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-sm" id="cancionero-toggle-chords-btn" onclick="toggleCancionerChords()"><i class="ti ti-guitar-pick"></i> Ver acordes</button>
+          <button class="btn btn-sm" id="cancionero-print-btn" onclick="openCancionerPrint()"><i class="ti ti-printer"></i> Imprimir / PDF</button>
+        </div>
       </div>
       <div id="cancionero-chord-tools" style="display:none;flex-direction:column;gap:9px;margin-bottom:16px;padding:11px 14px;border-radius:10px;width:fit-content;min-width:230px">
         <div id="cancionero-sounds-in" style="font-size:13px;font-weight:600">🔊 Suena en —</div>
@@ -1626,9 +1615,6 @@ select option { background: var(--bg3); }
       <span id="print-font-size-label" style="font-size:13px;font-weight:600;color:var(--text2);min-width:30px;text-align:right">20px</span>
       <span style="width:1px;height:20px;background:var(--border);flex-shrink:0"></span>
       <span id="print-page-count" style="font-size:13px;color:var(--text3);white-space:nowrap;min-width:60px;text-align:center"></span>
-      <button class="btn btn-sm" id="print-print-btn" onclick="printCancionPreview()">
-        <i class="ti ti-printer"></i> Imprimir / PDF
-      </button>
       <button class="btn btn-sm" id="print-pdf-btn" onclick="downloadPdfCancion()">
         <i class="ti ti-file-type-pdf"></i> Descargar PDF
       </button>
@@ -3194,11 +3180,14 @@ async function _buildPrintPages(c, opts={}){
 }
 
 let _printPreviewId=null;
+let _printPreviewOpts={};   // opciones de _buildPrintPages + fileName/pngHidden (las pone el Cancionero)
 let _printPreviewSeq=0;
 let _printPreviewPages=[];   // las hojas que muestra la vista previa: PNG e impresión usan estas mismas
 
-function openPrintPreview(id){
+function openPrintPreview(id, opts={}){
   _printPreviewId=id;
+  _printPreviewOpts=opts;
+  document.getElementById('print-download-btn').style.display=opts.pngHidden?'none':'';
   const c=getCanciones().find(c=>c.id===id);
   document.getElementById('print-preview-title').textContent=c?c.name:'Vista previa de impresión';
   const slider=document.getElementById('print-font-slider');
@@ -3218,12 +3207,10 @@ async function updatePrintPreview(){
   const countEl=document.getElementById('print-page-count');
   const noteEl=document.getElementById('print-fit-note');
   _printPreviewPages=[];
-  _setPrintRoot([]);
   _setPrintButtonsDisabled(true);
-  const res=await _buildPrintPages(c,{fontSize});
+  const res=await _buildPrintPages(c,{..._printPreviewOpts,fontSize});
   if(seq!==_printPreviewSeq) return; // el slider se movió mientras se armaban las hojas
   _printPreviewPages=res.pages;
-  _setPrintRoot(res.pages);
   _setPrintButtonsDisabled(!res.pages.length);
   noteEl.textContent=res.note;
   noteEl.style.display=res.note?'':'none';
@@ -3255,47 +3242,7 @@ function _fitPrintPreview(){
 window.addEventListener('resize',_fitPrintPreview);
 
 function _setPrintButtonsDisabled(v){
-  ['print-print-btn','print-pdf-btn','print-download-btn'].forEach(id=>{ const b=document.getElementById(id); if(b) b.disabled=v; });
-}
-
-// ── Imprimir / guardar PDF ──
-// #print-root siempre tiene las hojas que muestra la vista previa (lo llena updatePrintPreview);
-// el CSS de impresión lo usa mientras la vista previa está abierta. Al imprimir solo se
-// cambia el título, para sugerir el nombre del PDF, y se restaura al terminar o cancelar.
-function _setPrintRoot(pages){
-  let root=document.getElementById('print-root');
-  if(!root){ root=document.createElement('div'); root.id='print-root'; document.body.appendChild(root); }
-  root.innerHTML=pages.map(p=>`<div class="print-sheet">${p.replace('id="_cancion_print"','')}</div>`).join('');
-}
-let _printTitleBackup=null;
-let _printDialogOpened=false;
-function _printRestoreTitle(){
-  if(_printTitleBackup!==null){ document.title=_printTitleBackup; _printTitleBackup=null; }
-  window.removeEventListener('afterprint',_printRestoreTitle);
-  window.removeEventListener('pointerdown',_printRestoreTitle);
-}
-window.addEventListener('beforeprint',()=>{ _printDialogOpened=true; });
-function _printPages(title){
-  _printRestoreTitle();
-  _printTitleBackup=document.title;
-  document.title=title;
-  window.addEventListener('afterprint',_printRestoreTitle);
-  // respaldo por si el navegador no avisa al cerrar el diálogo (algunos celulares)
-  setTimeout(()=>{ if(_printTitleBackup!==null) window.addEventListener('pointerdown',_printRestoreTitle); },1000);
-  _printDialogOpened=false;
-  window.print();
-  // si el navegador ignoró el pedido (algunos frenan impresiones seguidas), avisar en vez de no hacer nada
-  setTimeout(()=>{
-    if(!_printDialogOpened){
-      _printRestoreTitle();
-      showToast('El navegador no abrió la impresión: esperá unos segundos y probá de nuevo, o usá ⌘P','amber');
-    }
-  },2500);
-}
-function printCancionPreview(){
-  const c=getCanciones().find(c=>c.id===_printPreviewId);
-  if(!c||!_printPreviewPages.length) return;
-  _printPages(c.name+(c.key?' - '+c.key:''));
+  ['print-pdf-btn','print-download-btn'].forEach(id=>{ const b=document.getElementById(id); if(b) b.disabled=v; });
 }
 
 // ── Descargar PDF ──
@@ -3319,7 +3266,7 @@ async function downloadPdfCancion(){
       pdf.addImage(cv.toDataURL('image/jpeg',0.92),'JPEG',0,0,210,297);
       cv.width=cv.height=0; // liberar la memoria de la imagen
     }
-    const name=(c.name+(c.key?' - '+c.key:'')).replace(/[\\/:*?"<>|]/g,'').trim()||'cancion';
+    const name=(_printPreviewOpts.fileName||c.name+(c.key?' - '+c.key:'')).replace(/[\\/:*?"<>|]/g,'').trim()||'cancion';
     pdf.save(name+'.pdf');
     showToast(pages.length===1?'PDF descargado':`PDF descargado (${pages.length} hojas)`,'green');
   }catch(e){ showToast('Error al generar el PDF','red'); console.error(e); }
@@ -3633,6 +3580,43 @@ function _cnUpdateScrollBtn(){
   if(body) body.addEventListener('click',cancionerScrollToggle);
 })();
 
+// Herramientas de acordes: tono que suena vs. formas a tocar (tono - capo).
+// El key cargado manda; si está vacío, se deduce de la raíz del primer acorde.
+// Lo usan el visor y la impresión, para que el papel muestre lo mismo que la pantalla.
+function _cnChordState(s, secciones=_getSecciones(s)){
+  let cleanKey=_cnCleanKey(s.key||'');
+  if(!cleanKey) cleanKey=_cnDeduceKeyFromSecciones(secciones);
+  const tonoOffset=_cancioneroTonoOffset, capoFret=_cancioneroCapoFret;
+  const formasOffset=tonoOffset-capoFret;
+  const suenaEn=cleanKey?_cnTransposeLine(cleanKey,tonoOffset):'';
+  const tonoFormas=cleanKey?_cnTransposeLine(cleanKey,formasOffset):'';
+  return {cleanKey,tonoOffset,capoFret,formasOffset,suenaEn,tonoFormas};
+}
+
+// Imprimir desde el Cancionero: lo que se está viendo (solo letra o acordes con el tono y
+// capo elegidos). Si se cambió el original, el encabezado lo dice.
+function openCancionerPrint(){
+  const s=_cancioneroList[_cancioneroIdx];
+  if(!s) return;
+  if(!_cancioneroShowChords){
+    openPrintPreview(s.id,{mode:'letra',headerKey:'',headerLines:[],fileName:s.name+' - letra',pngHidden:true});
+    return;
+  }
+  const {cleanKey,tonoOffset,capoFret,formasOffset,suenaEn,tonoFormas}=_cnChordState(s);
+  const opts={mode:'acordes',shift:formasOffset,pngHidden:true};
+  if(!tonoOffset&&!capoFret){
+    opts.fileName=s.name+(s.key?' - '+s.key:'');
+  } else {
+    const lines=[];
+    if(tonoOffset) lines.push(`Tono cambiado: suena en ${suenaEn||'—'} (original en ${cleanKey||'—'})`);
+    if(capoFret) lines.push(`Capo en traste ${capoFret}: los acordes están escritos en forma de ${tonoFormas||'—'}`);
+    opts.headerKey=suenaEn;
+    opts.headerLines=lines;
+    opts.fileName=s.name+' - '+(suenaEn||'tono')+(capoFret?' capo '+capoFret:'');
+  }
+  openPrintPreview(s.id,opts);
+}
+
 function renderCancionerViewer(){
   const s=_cancioneroList[_cancioneroIdx];
   if(!s) return;
@@ -3653,14 +3637,7 @@ function renderCancionerViewer(){
 
   const secciones=_getSecciones(s);
 
-  // Herramientas de acordes: tono que suena vs. formas a tocar (tono - capo)
-  // El key cargado manda; si está vacío, se deduce de la raíz del primer acorde.
-  let cleanKey=_cnCleanKey(s.key||'');
-  if(!cleanKey) cleanKey=_cnDeduceKeyFromSecciones(secciones);
-  const tonoOffset=_cancioneroTonoOffset, capoFret=_cancioneroCapoFret;
-  const formasOffset=tonoOffset-capoFret;
-  const suenaEn=cleanKey?_cnTransposeLine(cleanKey,tonoOffset):'';
-  const tonoFormas=cleanKey?_cnTransposeLine(cleanKey,formasOffset):'';
+  const {cleanKey,tonoOffset,capoFret,formasOffset,suenaEn,tonoFormas}=_cnChordState(s,secciones);
 
   const toolsPanel=document.getElementById('cancionero-chord-tools');
   toolsPanel.style.display=_cancioneroShowChords?'flex':'none';
