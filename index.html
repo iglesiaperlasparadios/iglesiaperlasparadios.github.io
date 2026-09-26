@@ -91,18 +91,20 @@ body { min-height: 100vh; }
   .sidebar-backdrop.show { opacity: 1; pointer-events: auto; }
 }
 
-/* IMPRESIÓN DE CANCIONES — solo actúa con body.imprimiendo (lo pone printCancionPreview
-   y lo saca al terminar o cancelar). Imprimir cualquier otra pantalla queda igual. */
+/* IMPRESIÓN DE CANCIONES — solo actúa mientras la vista previa de impresión está abierta:
+   ahí imprimir (botón, ⌘P o menú del navegador) saca las hojas de #print-root. No depende
+   de los avisos de inicio/fin de impresión, que cada navegador manda distinto.
+   Imprimir cualquier otra pantalla queda igual. */
 #print-root { display: none; }
 @media print {
-  @page { size: A4; margin: 0; }
-  html.imprimiendo { background: #fff !important; }
-  body.imprimiendo { display: block !important; margin: 0 !important; padding: 0 !important; background: #fff !important; min-height: 0 !important; }
-  body.imprimiendo > *:not(#print-root) { display: none !important; }
-  body.imprimiendo #print-root { display: block; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html:has(#modal-print-preview.open) { background: #fff !important; }
+  html:has(#modal-print-preview.open) body { display: block !important; margin: 0 !important; padding: 0 !important; background: #fff !important; min-height: 0 !important; }
+  html:has(#modal-print-preview.open) body > *:not(#print-root) { display: none !important; }
+  html:has(#modal-print-preview.open) #print-root { display: block; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   /* un poco menos que A4 (297mm) para que el redondeo nunca empuje una hoja en blanco */
-  body.imprimiendo .print-sheet { width: 210mm; height: 296mm; overflow: hidden; break-after: page; page-break-after: always; }
-  body.imprimiendo .print-sheet:last-child { break-after: auto; page-break-after: auto; }
+  #print-root .print-sheet { width: 210mm; height: 296mm; overflow: hidden; break-after: page; page-break-after: always; }
+  #print-root .print-sheet:last-child { break-after: auto; page-break-after: auto; }
+  @page { size: A4; margin: 0; }
 }
 
 /* MODO LECTURA — compartir el Cancionero por URL (?lectura). Sin la clase
@@ -3072,7 +3074,7 @@ function _printSplitGroup(grp, maxCols){
 function _printHeaderHTML(c, pageNum, totalLabel, st){
   if(pageNum===1){
     const key=st.headerKey;
-    const keyBadge=key?`<span style="background:#e5e7eb;color:#374151;border-radius:5px;padding:2px 10px;font-size:13px;font-weight:600;margin-left:10px;vertical-align:middle;white-space:nowrap">${_printEsc(key)}</span>`:'';
+    const keyBadge=key?`<span style="background:#e5e7eb;border:1px solid #d1d5db;color:#374151;border-radius:5px;padding:2px 10px;font-size:13px;font-weight:600;margin-left:10px;vertical-align:middle;white-space:nowrap">${_printEsc(key)}</span>`:'';
     const lines=st.headerLines.map(t=>`<div style="font-size:12px;color:#6b7280;margin-top:4px">${_printEsc(t)}</div>`).join('');
     const pgLabel=totalLabel?`<div class="ps-num" style="font-size:11px;color:#9ca3af;text-align:right;margin-bottom:2px">1/${totalLabel}</div>`:'';
     return `<div style="margin-bottom:24px;padding-bottom:14px;border-bottom:1px solid #e5e7eb">${pgLabel}<div style="font-size:28px;font-weight:700;color:#111827;line-height:1.15">${_printEsc(c.name)}${keyBadge}</div>${lines}</div>`;
@@ -3213,10 +3215,12 @@ async function updatePrintPreview(){
   const countEl=document.getElementById('print-page-count');
   const noteEl=document.getElementById('print-fit-note');
   _printPreviewPages=[];
+  _setPrintRoot([]);
   _setPrintButtonsDisabled(true);
   const res=await _buildPrintPages(c,{fontSize});
   if(seq!==_printPreviewSeq) return; // el slider se movió mientras se armaban las hojas
   _printPreviewPages=res.pages;
+  _setPrintRoot(res.pages);
   _setPrintButtonsDisabled(!res.pages.length);
   noteEl.textContent=res.note;
   noteEl.style.display=res.note?'':'none';
@@ -3235,37 +3239,43 @@ function _setPrintButtonsDisabled(v){
 }
 
 // ── Imprimir / guardar PDF ──
-// Pone las hojas de la vista previa en #print-root, activa body.imprimiendo (el CSS
-// de impresión oculta todo lo demás) y cambia el título para sugerir el nombre del PDF.
-// Todo se deshace al terminar o cancelar (afterprint), con respaldo al volver a tocar la app.
-let _printTitleBackup=null;
-function _printCleanup(){
-  document.documentElement.classList.remove('imprimiendo');
-  document.body.classList.remove('imprimiendo');
-  document.getElementById('print-root')?.remove();
-  if(_printTitleBackup!==null){ document.title=_printTitleBackup; _printTitleBackup=null; }
-  window.removeEventListener('afterprint',_printCleanup);
-  window.removeEventListener('pointerdown',_printCleanup);
-}
-function _printPages(pages, title){
-  _printCleanup();
-  const root=document.createElement('div');
-  root.id='print-root';
+// #print-root siempre tiene las hojas que muestra la vista previa (lo llena updatePrintPreview);
+// el CSS de impresión lo usa mientras la vista previa está abierta. Al imprimir solo se
+// cambia el título, para sugerir el nombre del PDF, y se restaura al terminar o cancelar.
+function _setPrintRoot(pages){
+  let root=document.getElementById('print-root');
+  if(!root){ root=document.createElement('div'); root.id='print-root'; document.body.appendChild(root); }
   root.innerHTML=pages.map(p=>`<div class="print-sheet">${p.replace('id="_cancion_print"','')}</div>`).join('');
-  document.body.appendChild(root);
+}
+let _printTitleBackup=null;
+let _printDialogOpened=false;
+function _printRestoreTitle(){
+  if(_printTitleBackup!==null){ document.title=_printTitleBackup; _printTitleBackup=null; }
+  window.removeEventListener('afterprint',_printRestoreTitle);
+  window.removeEventListener('pointerdown',_printRestoreTitle);
+}
+window.addEventListener('beforeprint',()=>{ _printDialogOpened=true; });
+function _printPages(title){
+  _printRestoreTitle();
   _printTitleBackup=document.title;
   document.title=title;
-  document.documentElement.classList.add('imprimiendo');
-  document.body.classList.add('imprimiendo');
-  window.addEventListener('afterprint',_printCleanup);
+  window.addEventListener('afterprint',_printRestoreTitle);
   // respaldo por si el navegador no avisa al cerrar el diálogo (algunos celulares)
-  setTimeout(()=>window.addEventListener('pointerdown',_printCleanup),1000);
+  setTimeout(()=>{ if(_printTitleBackup!==null) window.addEventListener('pointerdown',_printRestoreTitle); },1000);
+  _printDialogOpened=false;
   window.print();
+  // si el navegador ignoró el pedido (algunos frenan impresiones seguidas), avisar en vez de no hacer nada
+  setTimeout(()=>{
+    if(!_printDialogOpened){
+      _printRestoreTitle();
+      showToast('El navegador no abrió la impresión: esperá unos segundos y probá de nuevo, o usá ⌘P','amber');
+    }
+  },2500);
 }
 function printCancionPreview(){
   const c=getCanciones().find(c=>c.id===_printPreviewId);
   if(!c||!_printPreviewPages.length) return;
-  _printPages(_printPreviewPages, c.name+(c.key?' - '+c.key:''));
+  _printPages(c.name+(c.key?' - '+c.key:''));
 }
 
 async function downloadPrintCancion(){
