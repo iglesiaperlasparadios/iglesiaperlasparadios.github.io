@@ -1614,6 +1614,7 @@ select option { background: var(--bg3); }
         <i class="ti ti-download"></i> Descargar PNG
       </button>
     </div>
+    <div id="print-fit-note" style="display:none;padding:8px 16px;font-size:12px;font-weight:600;color:#b45309;background:#fffbeb;border-bottom:1px solid var(--border);flex-shrink:0"></div>
     <div id="print-preview-body" style="flex:1;overflow-y:auto;background:#c8c4bc;padding:24px;display:flex;flex-direction:column;gap:20px;align-items:center;min-height:300px"></div>
   </div>
 </div>
@@ -2729,7 +2730,11 @@ function _transposeText(text,n){
   }).join('\n');
 }
 const _CHORD_TOKEN=/^[A-G](#|b)?(m|maj|min|aug|dim|sus|add)?[0-9]*(\/[A-G](#|b)?)?$/;
-function _isChordLine(line){
+// Regla única de acordes para toda la app (editor, Coordinación, Cancionero, impresión):
+// es acorde si lo reconoce la regla por proporción (tolera notas como "(3 VECES)") o la
+// estricta del Cancionero (reconoce C11+, C7M, A7M/C#, Am.).
+function _isChordLine(line){ return isChordLine(line); }
+function _isChordLineRatio(line){
   const raw=line.trim().split(/\s+/).filter(t=>t.length>0);
   if(!raw.length) return false;
   const tokens=[];
@@ -2965,45 +2970,181 @@ function deleteCancion(id){
   renderCanciones();
 }
 
-function _measureSectionH(s, fontSize=22){
-  const tmp=document.createElement('div');
-  tmp.style.cssText='position:fixed;left:-9999px;top:0;width:698px;visibility:hidden;overflow:auto';
-  tmp.innerHTML=_renderSeccionesHTML([s],false,'normal',true,fontSize);
-  document.body.appendChild(tmp);
-  const h=tmp.offsetHeight;
-  document.body.removeChild(tmp);
-  return h;
+// ── Hojas A4 para imprimir canciones ──────────────────────────
+// Una sola generación de hojas para vista previa, PNG e impresión: las hojas se
+// arman probando el contenido dentro de una hoja A4 real fuera de pantalla, y lo
+// que no entra pasa a la hoja siguiente (partiendo secciones si hace falta).
+// Nunca modifica la canción guardada: trabaja sobre copias de sus secciones.
+const _PRINT_W=794, _PRINT_H=1123, _PRINT_PAD=48, _PRINT_MIN_FONT=14;
+const _printEsc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+
+// opts.mode: 'acordes' (default) | 'letra' · opts.shift: semitonos a correr los acordes
+function _printSecciones(c, opts){
+  const secs=_getSecciones(c).map(s=>({tipo:s.tipo, contenido:s.contenido||''}));
+  if(opts.mode==='letra')
+    return secs.map(s=>({tipo:s.tipo, contenido:_letraDeSeccion(s)})).filter(s=>s.contenido);
+  if(opts.shift) secs.forEach(s=>{
+    s.contenido=s.contenido.split('\n').map(l=>isChordLine(l)?_cnTransposeLine(l,opts.shift):l).join('\n');
+  });
+  return secs;
 }
 
-function _paginateSecciones(secciones, p1H, pNH, fontSize=22){
-  const pages=[];
-  let cur=[], curH=0;
-  for(const s of secciones){
-    const h=_measureSectionH(s,fontSize);
-    const avail=pages.length===0?p1H:pNH;
-    if(cur.length>0&&curH+h>avail){pages.push(cur);cur=[s];curH=h;}
-    else{cur.push(s);curH+=h;}
+// Grupos que no se separan entre hojas: con acordes, un renglón de acordes + su letra;
+// en modo letra, una estrofa. Un renglón en blanco es un grupo espaciador.
+function _printGroups(contenido, mode){
+  const lines=contenido.split('\n');
+  const groups=[]; let cur=[];
+  if(mode==='letra'){
+    for(const l of lines){
+      if(l.trim()) cur.push(l);
+      else { if(cur.length) groups.push(cur); cur=[]; groups.push(['']); }
+    }
+  } else {
+    for(const l of lines){
+      if(isChordLine(l)){ if(cur.length) groups.push(cur); cur=[l]; }
+      else cur.push(l);
+    }
   }
-  if(cur.length) pages.push(cur);
+  if(cur.length) groups.push(cur);
+  return groups;
+}
+
+function _printLineHTML(line, isChorus, st){
+  line=line.replace(/\s+$/,''); // los espacios del final no se ven: no deben achicar la letra
+  const lyricColor=isChorus?'#2563a8':'#111827';
+  const lyricStyle=isChorus?'font-style:italic;':'font-style:normal;';
+  if(st.mode==='letra')
+    return `<span style="display:block;font-family:'Outfit',sans-serif;white-space:pre-wrap;font-size:${st.fontSize}px;font-weight:500;${lyricStyle}color:${lyricColor};line-height:1.35">${_printEsc(line)}</span>`;
+  // Con acordes la línea no se parte (desalinearía los acordes), salvo que no entre ni al mínimo
+  const ws=st.wrap?'white-space:pre-wrap;overflow-wrap:anywhere':'white-space:pre';
+  if(isChordLine(line))
+    return `<span style="display:block;font-family:'Courier New',monospace;${ws};font-size:${st.fontSize}px;font-weight:700;font-style:normal;color:#ea580c;line-height:1.2">${_printEsc(line)}</span>`;
+  if(!line.trim()) return '<div style="height:4px"></div>';
+  return `<span style="display:block;font-family:'Courier New',monospace;${ws};font-size:${st.fontSize}px;font-weight:500;${lyricStyle}color:${lyricColor};line-height:1.2">${_printEsc(line)}</span>`;
+}
+
+function _printGroupHTML(grp, isChorus, st){
+  if(grp.every(l=>!l.trim())) return '<div style="height:8px"></div>';
+  return `<div style="margin-bottom:4px">${grp.map(l=>_printLineHTML(l,isChorus,st)).join('')}</div>`;
+}
+
+function _printHeaderHTML(c, pageNum, totalLabel, st){
+  if(pageNum===1){
+    const key=st.headerKey;
+    const keyBadge=key?`<span style="background:#e5e7eb;color:#374151;border-radius:5px;padding:2px 10px;font-size:13px;font-weight:600;margin-left:10px;vertical-align:middle;white-space:nowrap">${_printEsc(key)}</span>`:'';
+    const lines=st.headerLines.map(t=>`<div style="font-size:12px;color:#6b7280;margin-top:4px">${_printEsc(t)}</div>`).join('');
+    const pgLabel=totalLabel?`<div class="ps-num" style="font-size:11px;color:#9ca3af;text-align:right;margin-bottom:2px">1/${totalLabel}</div>`:'';
+    return `<div style="margin-bottom:24px;padding-bottom:14px;border-bottom:1px solid #e5e7eb">${pgLabel}<div style="font-size:28px;font-weight:700;color:#111827;line-height:1.15">${_printEsc(c.name)}${keyBadge}</div>${lines}</div>`;
+  }
+  return `<div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #e5e7eb;padding-bottom:8px;margin-bottom:20px"><span style="font-size:12px;color:#9ca3af">${_printEsc(c.name)}</span><span class="ps-num" style="font-size:12px;color:#9ca3af">${pageNum}/${totalLabel}</span></div>`;
+}
+
+// Ancho del renglón más ancho (px) con acordes, a un tamaño de letra dado
+function _printMaxLineWidth(secs, fontSize, host){
+  const st={mode:'acordes',fontSize,wrap:false};
+  host.innerHTML=secs.map(s=>s.contenido.split('\n').filter(l=>l.trim())
+    .map(l=>_printLineHTML(l,s.tipo==='coro',st).replace('display:block','display:inline-block')+'<br>').join('')).join('');
+  let max=0;
+  host.querySelectorAll('span').forEach(sp=>{ max=Math.max(max,sp.offsetWidth); });
+  host.innerHTML='';
+  return max;
+}
+
+// Reparte las secciones en hojas. Devuelve el HTML de cada hoja (cada una con id _cancion_print).
+function _printPaginate(c, secs, st, host, withNumbers){
+  const pages=[];
+  let page, body, secEl;
+  const limit=_PRINT_H-_PRINT_PAD;
+  const overflows=()=>body.getBoundingClientRect().bottom-page.getBoundingClientRect().top>limit;
+  const newPage=()=>{
+    if(page) pages.push(page);
+    host.innerHTML=`<div id="_cancion_print" style="width:${_PRINT_W}px;height:${_PRINT_H}px;background:#fff;font-family:'Outfit',sans-serif;padding:${_PRINT_PAD}px;box-sizing:border-box;overflow:hidden">${_printHeaderHTML(c,pages.length+1,withNumbers?'0':'',st)}<div class="ps-body"></div></div>`;
+    page=host.firstElementChild; body=page.querySelector('.ps-body'); secEl=null;
+  };
+  const startSection=label=>{
+    secEl=document.createElement('div');
+    secEl.style.marginTop=body.children.length?'28px':'0';
+    secEl.innerHTML=`<div style="font-size:11px;font-weight:600;color:#9ca3af;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">[${_printEsc(label)}]</div><div class="ps-lines"></div>`;
+    body.appendChild(secEl);
+  };
+  const totals={}; secs.forEach(s=>totals[s.tipo]=(totals[s.tipo]||0)+1);
+  const counts={};
+  newPage();
+  for(const s of secs){
+    counts[s.tipo]=(counts[s.tipo]||0)+1;
+    const label=(_SEC_TIPO_LABEL[s.tipo]||s.tipo)+(totals[s.tipo]>1?' '+counts[s.tipo]:'');
+    const isChorus=s.tipo==='coro';
+    const queue=_printGroups(s.contenido,st.mode);
+    let placed=0; secEl=null;
+    while(queue.length){
+      const grp=queue.shift();
+      const blank=grp.every(l=>!l.trim());
+      if(!secEl){
+        if(blank) continue; // no arrancar sección (ni hoja) con un espaciador
+        startSection(placed?label+' (cont.)':label);
+      }
+      const lines=secEl.querySelector('.ps-lines');
+      const tmp=document.createElement('div'); tmp.innerHTML=_printGroupHTML(grp,isChorus,st);
+      const el=tmp.firstElementChild;
+      lines.appendChild(el);
+      if(!overflows()){ placed++; continue; }
+      el.remove();
+      if(blank) continue;
+      const sectionEmpty=!lines.children.length;
+      const pageEmpty=sectionEmpty&&body.children.length===1;
+      if(pageEmpty){
+        // ni sola en una hoja vacía entra: partir el grupo renglón por renglón
+        if(grp.length>1){ queue.unshift(...grp.map(l=>[l])); continue; }
+        lines.appendChild(el); placed++; continue; // un único renglón: se deja (no hay forma de achicarlo más)
+      }
+      if(sectionEmpty) secEl.remove();
+      newPage();
+      queue.unshift(grp);
+    }
+  }
+  pages.push(page);
   return pages;
 }
 
-function _buildCancionPageHTML(c, secciones, pageNum, totalPages, fontSize=22){
-  const W=794, PAD=48;
-  const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
-  let header;
-  if(pageNum===1){
-    const keyBadge=c.key?`<span style="background:#e5e7eb;color:#374151;border-radius:5px;padding:2px 10px;font-size:13px;font-weight:600;margin-left:10px;vertical-align:middle;white-space:nowrap">${esc(c.key)}</span>`:'';
-    const capoLine=c.capo?`<div style="font-size:12px;color:#6b7280;margin-top:4px">${esc(c.capo)}</div>`:'';
-    const pgLabel=totalPages>1?`<div style="font-size:11px;color:#9ca3af;text-align:right;margin-bottom:2px">1/${totalPages}</div>`:'';
-    header=`<div style="margin-bottom:24px;padding-bottom:14px;border-bottom:1px solid #e5e7eb">${pgLabel}<div style="font-size:28px;font-weight:700;color:#111827;line-height:1.15">${esc(c.name)}${keyBadge}</div>${capoLine}</div>`;
-  } else {
-    header=`<div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #e5e7eb;padding-bottom:8px;margin-bottom:20px"><span style="font-size:12px;color:#9ca3af">${esc(c.name)}</span><span style="font-size:12px;color:#9ca3af">${pageNum}/${totalPages}</span></div>`;
+// Arma las hojas de una canción. Devuelve {pages:[html], fontSize, note}.
+// opts: mode, shift, fontSize, headerKey, headerLines (por defecto, el tono y capo guardados).
+async function _buildPrintPages(c, opts={}){
+  const st={mode:'acordes', shift:0, fontSize:20, headerKey:c.key||'', headerLines:c.capo?[c.capo]:[], wrap:false, ...opts};
+  try{ await document.fonts.load("700 28px 'Outfit'"); await document.fonts.load("500 20px 'Outfit'"); await document.fonts.ready; }catch(e){}
+  const secs=_printSecciones(c,st);
+  if(!secs.length) return {pages:[], fontSize:st.fontSize, note:''};
+  const host=document.createElement('div');
+  host.style.cssText='position:fixed;left:-9999px;top:0;visibility:hidden;pointer-events:none';
+  document.body.appendChild(host);
+  let note='';
+  try{
+    if(st.mode!=='letra'){
+      const innerW=_PRINT_W-2*_PRINT_PAD;
+      if(_printMaxLineWidth(secs,st.fontSize,host)>innerW){
+        let fs=st.fontSize-1;
+        while(fs>_PRINT_MIN_FONT && _printMaxLineWidth(secs,fs,host)>innerW) fs--;
+        st.fontSize=fs;
+        if(_printMaxLineWidth(secs,fs,host)>innerW){
+          st.wrap=true;
+          note=`Hay renglones que no entran ni a ${fs}px: se parten en dos para no perder texto`;
+        } else note=`Letra ajustada a ${fs}px para que entren los renglones largos`;
+      }
+    }
+    let pages=_printPaginate(c,secs,st,host,false);
+    if(pages.length>1) pages=_printPaginate(c,secs,st,host,true); // con "1/N" en el encabezado
+    const N=pages.length;
+    const html=pages.map((p,i)=>{
+      p.querySelectorAll('.ps-num').forEach(n=>{ n.textContent=N>1?`${i+1}/${N}`:''; });
+      return p.outerHTML;
+    });
+    return {pages:html, fontSize:st.fontSize, note};
+  } finally {
+    host.remove();
   }
-  return `<div id="_cancion_print" style="width:${W}px;height:1123px;background:#fff;font-family:'Outfit',sans-serif;padding:${PAD}px;box-sizing:border-box;overflow:hidden">${header}${_renderSeccionesHTML(secciones,false,'normal',true,fontSize)}</div>`;
 }
 
 let _printPreviewId=null;
+let _printPreviewSeq=0;
 
 function openPrintPreview(id){
   _printPreviewId=id;
@@ -3016,24 +3157,27 @@ function openPrintPreview(id){
   updatePrintPreview();
 }
 
-function updatePrintPreview(){
+async function updatePrintPreview(){
   const c=getCanciones().find(c=>c.id===_printPreviewId);
   if(!c) return;
+  const seq=++_printPreviewSeq;
   const fontSize=parseInt(document.getElementById('print-font-slider').value);
   document.getElementById('print-font-size-label').textContent=fontSize+'px';
-  const secciones=_getSecciones(c);
   const body=document.getElementById('print-preview-body');
   const countEl=document.getElementById('print-page-count');
-  if(!secciones.length){
+  const noteEl=document.getElementById('print-fit-note');
+  const res=await _buildPrintPages(c,{fontSize});
+  if(seq!==_printPreviewSeq) return; // el slider se movió mientras se armaban las hojas
+  noteEl.textContent=res.note;
+  noteEl.style.display=res.note?'':'none';
+  if(!res.pages.length){
     body.innerHTML='<p style="color:#9ca3af;font-size:14px;margin-top:40px">Sin contenido para previsualizar</p>';
     countEl.textContent='';
     return;
   }
-  const p1H=c.capo?920:942, pNH=975;
-  const pages=_paginateSecciones(secciones,p1H,pNH,fontSize);
-  const N=pages.length;
+  const N=res.pages.length;
   countEl.textContent=N+(N===1?' página':' páginas');
-  body.innerHTML=pages.map((pageSecs,i)=>`<div style="box-shadow:0 6px 28px rgba(0,0,0,0.55);flex-shrink:0">${_buildCancionPageHTML(c,pageSecs,i+1,N,fontSize)}</div>`).join('');
+  body.innerHTML=res.pages.map(p=>`<div style="box-shadow:0 6px 28px rgba(0,0,0,0.55);flex-shrink:0">${p}</div>`).join('');
 }
 
 async function downloadPrintCancion(){
@@ -3044,14 +3188,12 @@ async function downloadPrintCancion(){
   btn.disabled=true;
   showToast('Generando imagen...','amber');
   try{
-    const secciones=_getSecciones(c);
-    if(!secciones.length){showToast('Sin contenido para imprimir','amber');btn.disabled=false;return;}
-    const p1H=c.capo?920:942, pNH=975;
-    const pages=_paginateSecciones(secciones,p1H,pNH,fontSize);
+    const {pages}=await _buildPrintPages(c,{fontSize});
+    if(!pages.length){showToast('Sin contenido para imprimir','amber');btn.disabled=false;return;}
     const N=pages.length;
     const canvases=[];
     for(let i=0;i<N;i++){
-      canvases.push(await htmlToCanvas(_buildCancionPageHTML(c,pages[i],i+1,N,fontSize),'_cancion_print',{backgroundColor:'#ffffff',height:1123}));
+      canvases.push(await htmlToCanvas(pages[i],'_cancion_print',{backgroundColor:'#ffffff',height:_PRINT_H}));
     }
     const base=(c.name.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,''))||'cancion';
     if(N===1){
@@ -3140,11 +3282,28 @@ function _hasRealChord(tok){
   return parts.some(p => CHORD.test(p));
 }
 function isChordLine(l){
+  return _isChordLineStrict(l) || _isChordLineRatio(l);
+}
+function _isChordLineStrict(l){
   const toks = l.trim().split(/\s+/).filter(Boolean);
   if (!toks.length) return false;
   return toks.every(_tokenOk) && toks.some(_hasRealChord);
 }
 const lyricsOnly = c => c.split('\n').filter(l => !isChordLine(l)).join('\n');
+
+// Letra sola de una sección (la usan el visor y la impresión, para que coincidan).
+// Saca renglones de acorde vacíos (línea cruda vacía seguida de letra) sin tocar
+// separadores de estrofa legítimos (vacía seguida de otra vacía o de acordes).
+function _letraDeSeccion(sec){
+  const rawLines=(sec.contenido||'').split('\n');
+  const kept=rawLines.filter((l,i)=>{
+    if(l.trim()!=='') return true;
+    const next=rawLines[i+1];
+    const nextIsLyric=next!==undefined && next.trim()!=='' && !isChordLine(next);
+    return !nextIsLyric;
+  });
+  return lyricsOnly(kept.join('\n')).replace(/_/g,'').replace(/\n{3,}/g,'\n\n').trim();
+}
 
 // Transposición TEMPORAL del visor (solo en pantalla, modo con acordes).
 // Aislada de la transposición del editor (transposeChordsBy/_transposeNote/_isChordLine),
@@ -3391,16 +3550,7 @@ function renderCancionerViewer(){
     }).join('');
   } else {
     body.innerHTML=secciones.map(sec=>{
-      // saca renglones de acorde vacíos (línea cruda vacía seguida de letra) sin tocar
-      // separadores de estrofa legítimos (vacía seguida de otra vacía o de acordes)
-      const rawLines=(sec.contenido||'').split('\n');
-      const kept=rawLines.filter((l,i)=>{
-        if(l.trim()!=='') return true;
-        const next=rawLines[i+1];
-        const nextIsLyric=next!==undefined && next.trim()!=='' && !isChordLine(next);
-        return !nextIsLyric;
-      });
-      const letra=lyricsOnly(kept.join('\n')).replace(/_/g,'').replace(/\n{3,}/g,'\n\n').trim();
+      const letra=_letraDeSeccion(sec);
       if(!letra) return ''; // sección solo de acordes (intro/interludio) — se salta en este modo
       const label=_SEC_TIPO_LABEL[sec.tipo]||(sec.tipo?sec.tipo.charAt(0).toUpperCase()+sec.tipo.slice(1):'');
       return `<div class="cancionero-sec-label">${esc(label)}</div><div class="cancionero-lyrics">${esc(letra)}</div>`;
