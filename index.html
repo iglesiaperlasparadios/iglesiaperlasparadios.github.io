@@ -3066,9 +3066,12 @@ function _printHeaderHTML(c, pageNum, totalLabel, st){
     const keyBadge=key?`<span style="background:#e5e7eb;border:1px solid #d1d5db;color:#374151;border-radius:5px;padding:2px 10px;font-size:13px;font-weight:600;margin-left:10px;vertical-align:middle;white-space:nowrap">${_printEsc(key)}</span>`:'';
     const lines=st.headerLines.map(t=>`<div style="font-size:12px;color:#6b7280;margin-top:4px">${_printEsc(t)}</div>`).join('');
     const pgLabel=totalLabel?`<div class="ps-num" style="font-size:11px;color:#9ca3af;text-align:right;margin-bottom:2px">1/${totalLabel}</div>`:'';
-    return `<div style="margin-bottom:24px;padding-bottom:14px;border-bottom:1px solid #e5e7eb">${pgLabel}<div style="font-size:28px;font-weight:700;color:#111827;line-height:1.15">${_printEsc(c.name)}${keyBadge}</div>${lines}</div>`;
+    // advertencia (capo): recuadro llamativo, con borde grueso para que se note aunque se imprima en blanco y negro
+    const alert=st.headerAlert?`<div style="margin-top:12px;display:flex;align-items:center;gap:12px;padding:10px 14px;border:2px solid #ea580c;border-left-width:8px;border-radius:8px;background:#fff7ed"><span style="font-size:24px;line-height:1">⚠️</span><div><div style="font-size:18px;font-weight:800;color:#9a3412;letter-spacing:.02em;line-height:1.2">${_printEsc(st.headerAlert.title)}</div>${st.headerAlert.text?`<div style="font-size:13px;font-weight:600;color:#9a3412;margin-top:2px">${_printEsc(st.headerAlert.text)}</div>`:''}</div></div>`:'';
+    return `<div style="margin-bottom:24px;padding-bottom:14px;border-bottom:1px solid #e5e7eb">${pgLabel}<div style="font-size:28px;font-weight:700;color:#111827;line-height:1.15">${_printEsc(c.name)}${keyBadge}</div>${lines}${alert}</div>`;
   }
-  return `<div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #e5e7eb;padding-bottom:8px;margin-bottom:20px"><span style="font-size:12px;color:#9ca3af">${_printEsc(c.name)}</span><span class="ps-num" style="font-size:12px;color:#9ca3af">${pageNum}/${totalLabel}</span></div>`;
+  const tag=st.headerAlert?.tag?`<span style="font-size:12px;font-weight:800;color:#9a3412;border:1.5px solid #ea580c;border-radius:5px;padding:1px 8px;margin-right:10px">⚠️ ${_printEsc(st.headerAlert.tag)}</span>`:'';
+  return `<div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #e5e7eb;padding-bottom:8px;margin-bottom:20px"><span style="font-size:12px;color:#9ca3af">${_printEsc(c.name)}</span><span>${tag}<span class="ps-num" style="font-size:12px;color:#9ca3af">${pageNum}/${totalLabel}</span></span></div>`;
 }
 
 // Ancho del renglón más ancho (px) con acordes, a un tamaño de letra dado
@@ -3609,9 +3612,13 @@ function openCancionerPrint(){
   } else {
     const lines=[];
     if(tonoOffset) lines.push(`Tono cambiado: suena en ${suenaEn||'—'} (original en ${cleanKey||'—'})`);
-    if(capoFret) lines.push(`Capo en traste ${capoFret}: los acordes están escritos en forma de ${tonoFormas||'—'}`);
     opts.headerKey=suenaEn;
     opts.headerLines=lines;
+    if(capoFret) opts.headerAlert={
+      title:`CAPO EN TRASTE ${capoFret}`,
+      text:`Los acordes están escritos en forma de ${tonoFormas||'—'} · con el capo suena en ${suenaEn||'—'}`,
+      tag:`Capo ${capoFret}`
+    };
     opts.fileName=s.name+' - '+(suenaEn||'tono')+(capoFret?' capo '+capoFret:'');
   }
   openPrintPreview(s.id,opts);
