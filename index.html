@@ -3828,8 +3828,8 @@ function renderCancionerViewer(){
 const _PROY_ANOT=/^\(\s*(?:\d+\s*(?:x|veces?)|x\s*\d+|bis|(?:se\s+)?repite(?:\s+[^)]*)?)\s*\)$/i;
 const _PROY_FONT="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Segoe UI', Roboto, Arial, sans-serif"; // del sistema: no depende de Internet
 const _PROY_LH=1.22;        // interlineado dentro de un renglón que baja de línea
-const _PROY_FONT_K=0.075;   // tamaño de letra = 7,5% del alto de la pantalla
-const _PROY_MIN_PX=34;      // piso legible para proyectores chicos (800×600)
+const _PROY_FONT_K=0.085;   // tamaño de letra = 8,5% del alto de la pantalla
+const _PROY_MIN_PX=38;      // piso legible para proyectores chicos (800×600)
 const _PROY_SHRINK=0.8;     // un renglón que no entra solo puede achicarse hasta el 80%, no más
 const _PROY_MAX_VLINES=6;   // tope de líneas visibles por diapositiva (contando las que bajan de renglón): mejor más diapositivas que letra chica
 
@@ -3997,10 +3997,12 @@ function _proyCancion(item, canciones=getCanciones()){
   return canciones.find(c=>c.id===item.id)
       || canciones.find(c=>c.name.toLowerCase()===(item.name||'').toLowerCase()) || null;
 }
-function _proySetLista(lista){
-  const p=getProyeccion(), cur=p.lista[_proyPos.songIdx];
+// cur: la canción en curso, tomada de "lista" ANTES de modificarla (mismo objeto), para seguir
+// en ella aunque se reordene o cambie de fondo. Sin cur (lista nueva o vacía) vuelve al principio.
+function _proySetLista(lista, cur=null){
+  const p=getProyeccion();
   p.lista=lista; saveProyeccion(p);
-  const i=cur?lista.indexOf(cur):-1;  // mismo objeto si solo se reordenó
+  const i=cur?lista.indexOf(cur):-1;
   if(i>=0) _proyPos.songIdx=i; else { _proyPos.songIdx=0; _proyPos.slideIdx=-1; }
   _proyRender();
   renderProyeccion();
@@ -4048,18 +4050,20 @@ function proySetFondo(i,id){
   const lista=getProyeccion().lista;
   if(!lista[i]) return;
   lista[i].fondo=id;
-  _proySetLista(lista);
+  _proySetLista(lista, lista[_proyPos.songIdx]);
 }
 
 function proyMove(i,dir){
   const lista=getProyeccion().lista, j=i+dir;
   if(j<0||j>=lista.length) return;
+  const cur=lista[_proyPos.songIdx];
   [lista[i],lista[j]]=[lista[j],lista[i]];
-  _proySetLista(lista);
+  _proySetLista(lista, cur);
 }
 function proyQuitar(i){
-  const lista=getProyeccion().lista; lista.splice(i,1);
-  _proySetLista(lista);
+  const lista=getProyeccion().lista, cur=lista[_proyPos.songIdx];
+  lista.splice(i,1);
+  _proySetLista(lista, cur);
 }
 function proyVaciar(){
   if(!confirm('¿Vaciar la lista de proyección?')) return;
@@ -4080,9 +4084,10 @@ function confirmProyPicker(){
   btn.onclick=confirmPicker;
   if(pickerSI!=='proyeccion') return confirmPicker(); // el selector se abrió desde otra pantalla
   const canciones=getCanciones(), lista=getProyeccion().lista;
+  const cur=lista[_proyPos.songIdx];
   pickerSelected.forEach(id=>{ const c=canciones.find(c=>c.id===id); if(c) lista.push({id:c.id,name:c.name}); });
   closeModal('modal-picker');
-  _proySetLista(lista);
+  _proySetLista(lista, cur);
 }
 
 // Cargar la lista de una Coordinación guardada o de una Lista armada (reemplaza la actual).
