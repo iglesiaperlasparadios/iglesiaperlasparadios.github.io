@@ -283,7 +283,39 @@ select option { background: var(--bg3); }
 .proy-row { display: flex; align-items: center; gap: 6px; padding: 6px 8px; margin-bottom: 5px; background: var(--bg3); border-radius: 8px; }
 .proy-row-num { width: 20px; font-size: 12px; font-weight: 600; color: var(--text3); text-align: right; flex-shrink: 0; }
 .proy-row-name { flex: 1; font-size: 13px; font-weight: 500; min-width: 0; }
-.proy-row .btn-icon:disabled { opacity: .35; cursor: default; }
+.proy-row .btn-icon:disabled, .proy-song .btn-icon:disabled { opacity: .35; cursor: default; }
+.proy-row.current { background: var(--accent-bg); box-shadow: inset 3px 0 0 var(--accent); }
+.proy-row-name { cursor: pointer; }
+.proy-status-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.proy-status { flex: 1; font-size: 12px; color: var(--text2); display: flex; align-items: center; gap: 7px; }
+.proy-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text3); }
+.proy-dot.on { background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,.2); }
+.proy-song { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.proy-song-name { font-family: 'Fraunces', serif; font-size: 19px; font-weight: 600; line-height: 1.2; }
+.proy-song-meta { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.proy-secs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.proy-sec { font-family: 'Outfit', sans-serif; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border2); background: var(--bg2); color: var(--text); cursor: pointer; }
+.proy-sec:hover { border-color: var(--accent); }
+.proy-sec.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.proy-sec.instr { cursor: default; color: var(--text3); background: var(--bg3); border-style: dashed; font-weight: 500; }
+.proy-note { font-weight: 500; color: var(--amber); margin-left: 2px; }
+.proy-sec.active .proy-note { color: #fde2cf; }
+.proy-previews { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
+.proy-prev-title { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 5px; }
+.proy-prev { position: relative; overflow: hidden; background: #000; border-radius: 8px; flex-shrink: 0; }
+.proy-prev-cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 4px 8px; font-size: 11px; font-weight: 500; color: rgba(255,255,255,.75); background: linear-gradient(transparent, rgba(0,0,0,.7)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.proy-cap-black { color: #fff; font-weight: 700; letter-spacing: .08em; }
+.proy-cap-warn { color: #fbbf24; font-weight: 600; }
+.proy-controls { display: flex; gap: 8px; margin-top: 12px; }
+.proy-controls .btn { height: 40px; padding: 0 18px; font-size: 14px; }
+.proy-controls .btn-primary { flex: 1; justify-content: center; max-width: 260px; }
+.proy-black-on { background: #111827; border-color: #111827; color: #fff; }
+.proy-thumbs { display: flex; gap: 8px; overflow-x: auto; margin-top: 14px; padding: 3px 3px 6px; }
+.proy-thumb { cursor: pointer; border-radius: 10px; outline: 2px solid transparent; outline-offset: 1px; }
+.proy-thumb.active { outline-color: var(--accent); }
+.proy-keys { font-size: 11px; color: var(--text3); margin-top: 8px; line-height: 1.8; }
+.proy-keys kbd { font-family: 'Outfit', sans-serif; font-size: 10px; padding: 1px 5px; border: 1px solid var(--border2); border-bottom-width: 2px; border-radius: 4px; background: var(--bg2); color: var(--text2); }
+@media (max-width: 768px) { .proy-previews .proy-prev { max-width: 100%; } }
 /* índice del Cancionero — scopeado, no toca la lista de "Canciones" (editor) */
 #cancionero-index .song-lib-key { display: none; }
 #cancionero-index .song-lib-name { font-size: 15px; }
@@ -1191,6 +1223,15 @@ select option { background: var(--bg3); }
 <div class="page" id="page-proyeccion">
   <div class="page-title">Proyección</div>
   <div class="page-sub">Letras en la pantalla grande. Vos manejás desde acá; el público solo ve la letra.</div>
+
+  <div class="card">
+    <div class="proy-status-row">
+      <span id="proy-status" class="proy-status"></span>
+      <button class="btn btn-sm btn-primary" id="proy-open-btn" onclick="proyAbrir()"><i class="ti ti-external-link"></i> Abrir proyector</button>
+      <button class="btn btn-sm" id="proy-close-btn" onclick="proyCerrar()" style="display:none"><i class="ti ti-x"></i> Cerrar proyector</button>
+    </div>
+    <div id="proy-live"></div>
+  </div>
 
   <div class="card">
     <div class="card-title">Lista actual</div>
@@ -3830,11 +3871,16 @@ function _proyCancion(item, canciones=getCanciones()){
       || canciones.find(c=>c.name.toLowerCase()===(item.name||'').toLowerCase()) || null;
 }
 function _proySetLista(lista){
-  const p=getProyeccion(); p.lista=lista; saveProyeccion(p);
+  const p=getProyeccion(), cur=p.lista[_proyPos.songIdx];
+  p.lista=lista; saveProyeccion(p);
+  const i=cur?lista.indexOf(cur):-1;  // mismo objeto si solo se reordenó
+  if(i>=0) _proyPos.songIdx=i; else { _proyPos.songIdx=0; _proyPos.slideIdx=-1; }
+  _proyRender();
   renderProyeccion();
 }
 
 function renderProyeccion(){
+  renderProyLive();
   const lista=getProyeccion().lista, canciones=getCanciones();
   const el=document.getElementById('proy-lista');
   document.getElementById('proy-vaciar-btn').style.display=lista.length?'':'none';
@@ -3843,9 +3889,13 @@ function renderProyeccion(){
   el.innerHTML=lista.map((item,i)=>{
     const c=_proyCancion(item,canciones);
     const esc=_printEsc;
-    return `<div class="proy-row">
+    const d=_proyData(c), ov=d.slides.filter(s=>s.overflow).length;
+    const badge=!c?' <span class="badge badge-red">No está en la biblioteca</span>'
+      :!d.slides.length?' <span class="badge badge-amber">Sin letra</span>'
+      :ov?` <span class="badge badge-amber"><i class="ti ti-alert-triangle"></i> ${ov===1?'1 diapositiva no entra':ov+' diapositivas no entran'}</span>`:'';
+    return `<div class="proy-row${i===_proyPos.songIdx?' current':''}">
       <span class="proy-row-num">${i+1}</span>
-      <span class="proy-row-name">${esc(c?c.name:item.name)}${c?'':' <span class="badge badge-red">No está en la biblioteca</span>'}</span>
+      <span class="proy-row-name" onclick="proyGoSong(${i})" title="Ir a esta canción">${esc(c?c.name:item.name)}${badge}</span>
       <button class="btn btn-sm btn-icon" onclick="proyMove(${i},-1)" title="Subir" ${i===0?'disabled':''}><i class="ti ti-chevron-up"></i></button>
       <button class="btn btn-sm btn-icon" onclick="proyMove(${i},1)" title="Bajar" ${i===lista.length-1?'disabled':''}><i class="ti ti-chevron-down"></i></button>
       <button class="btn btn-sm btn-icon btn-danger" onclick="proyQuitar(${i})" title="Quitar de la lista"><i class="ti ti-x"></i></button>
@@ -3914,6 +3964,277 @@ function proyCargarDesde(v){
   if(!lista.length){ showToast('No hay canciones para cargar','amber'); return; }
   if(getProyeccion().lista.length&&!confirm('Esto reemplaza la lista actual. ¿Seguir?')) return;
   _proySetLista(lista);
+}
+
+// ── Proyector y panel en vivo ──
+// La ventana del proyector es una página vacía (about:blank) que escribe el panel: solo
+// muestra la letra sobre negro, sin controles. Todo se maneja desde el panel (o con el
+// teclado en cualquiera de las dos ventanas). La ventana guarda la posición actual, así
+// que si el panel se recarga se vuelve a enganchar solo y retoma donde estaba.
+const _PROY_WIN_NAME='mm_proyector';
+const _PROY_POS_KEY='mm_proy_pos'; // sessionStorage: posición, por si se recarga el panel sin proyector
+let _proyWin=null;
+let _proyPos={songIdx:0, slideIdx:-1, black:false}; // slideIdx -1 = antes de empezar; === slides.length = terminó
+let _proyCache=new Map();
+
+function _proyWinOk(){ try{ return !!(_proyWin&&!_proyWin.closed&&_proyWin.document.getElementById('proy-stage')); }catch{ return false; } }
+function _proySize(){
+  if(_proyWinOk()) return {w:_proyWin.innerWidth, h:_proyWin.innerHeight, real:true};
+  const p=getProyeccion().pantalla;
+  return p?.w&&p?.h ? {w:p.w,h:p.h,real:false} : {w:1280,h:720,real:false};
+}
+// Diapositivas de una canción para el tamaño actual (se recalculan si cambia la canción o la pantalla).
+function _proyData(c){
+  if(!c) return {slides:[],secciones:[],warnings:[]};
+  const {w,h}=_proySize();
+  const key=`${w}x${h}|${c.id}|${JSON.stringify(c.secciones||[])}|${c.lyrics||''}`;
+  if(!_proyCache.has(key)){
+    if(_proyCache.size>60) _proyCache.clear();
+    _proyCache.set(key,_proySlides(c,w,h,_proyWinOk()?_proyWin.document:document));
+  }
+  return _proyCache.get(key);
+}
+function _proyCurrent(){
+  const lista=getProyeccion().lista, item=lista[_proyPos.songIdx];
+  const c=item?_proyCancion(item):null;
+  return {lista, item, c, data:_proyData(c)};
+}
+// Lo que ve el público: nada si está en negro, antes/después de la canción o si la diapositiva no entra.
+function _proyOutputSlide(){
+  if(_proyPos.black) return null;
+  const s=_proyCurrent().data.slides[_proyPos.slideIdx];
+  return s&&!s.overflow ? s : null;
+}
+
+// ── Ventana del proyector ──
+function _proyWinHTML(){
+  return `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Proyector</title><style>
+html,body{margin:0;height:100%;background:#000;overflow:hidden;cursor:none}
+#proy-stage{position:fixed;inset:0;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box}
+#proy-stage .proy-text{animation:proyIn .18s ease-out}
+@keyframes proyIn{from{opacity:0}}
+#proy-hint{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;text-align:center;padding:24px;color:#9ca3af;font:16px ${_PROY_FONT};cursor:default}
+#proy-hint b{color:#e5e7eb;font-size:20px}
+body.hint #proy-hint{display:flex} body.hint{cursor:default}
+</style></head><body><div id="proy-stage"></div><div id="proy-hint"><b>Proyector</b>Pasá esta ventana a la pantalla del proyector y hacé doble clic para pantalla completa.<br>Este aviso desaparece en pantalla completa.</div>
+<script>
+function _fs(){ var d=document; return !!(d.fullscreenElement||d.webkitFullscreenElement)||(innerWidth>=screen.width&&innerHeight>=screen.height); }
+function _toggleFs(){ var d=document, el=d.documentElement;
+  if(d.fullscreenElement||d.webkitFullscreenElement){ (d.exitFullscreen||d.webkitExitFullscreen).call(d); }
+  else { (el.requestFullscreen||el.webkitRequestFullscreen).call(el); } }
+var _started=false; // una vez que se proyectó algo (o hubo pantalla completa) el aviso no vuelve, ni en negro
+function _hint(){ if(_fs()||document.getElementById('proy-stage').firstChild) _started=true; document.body.classList.toggle('hint', !_started); }
+function _panel(fn){ try{ if(opener&&!opener.closed&&typeof opener[fn]==='function') return opener[fn].apply(null,[].slice.call(arguments,1)); }catch(e){} }
+addEventListener('dblclick',_toggleFs);
+addEventListener('keydown',function(e){
+  if(e.key==='f'||e.key==='F'){ _toggleFs(); e.preventDefault(); return; }
+  if(_panel('proyKey',e)) e.preventDefault();
+});
+var _rt; addEventListener('resize',function(){ _hint(); clearTimeout(_rt); _rt=setTimeout(function(){ _panel('proyOnResize'); },200); });
+document.addEventListener('fullscreenchange',_hint); document.addEventListener('webkitfullscreenchange',_hint);
+setInterval(function(){ _panel('proyAttach',window); },1000); // si el panel se recargó, se vuelve a enganchar
+<\/script></body></html>`;
+}
+
+function proyAbrir(){
+  const {w,h}=_proySize();
+  const win=window.open('',_PROY_WIN_NAME,`popup,width=${Math.min(w,1280)},height=${Math.min(h,720)}`);
+  if(!win){ showToast('El navegador bloqueó la ventana del proyector: permití las ventanas emergentes','red'); return; }
+  let ok=false; try{ ok=!!win.document.getElementById('proy-stage'); }catch{}
+  if(!ok){ win.document.open(); win.document.write(_proyWinHTML()); win.document.close(); }
+  proyAttach(win);
+  win.focus();
+}
+function proyCerrar(){
+  if(!confirm('¿Cerrar la ventana del proyector?')) return;
+  try{ _proyWin?.close(); }catch{}
+  _proyWin=null; renderProyLive();
+}
+// La llama el panel al abrir, y la ventana cada segundo (así se reengancha tras recargar el panel).
+function proyAttach(win){
+  if(win===_proyWin&&_proyWinOk()) return;
+  _proyWin=win;
+  let prev=null; try{ prev=win.__proyState; }catch{}
+  if(prev) _proyRestore(prev); // ventana que ya estaba proyectando: retoma donde estaba
+  _proySaveSize();
+  _proyRender();
+}
+function _proyRestore(st){
+  const lista=getProyeccion().lista;
+  let i=lista.findIndex(it=>it.id&&it.id===st.songId);
+  if(i<0) i=Math.min(st.songIdx||0, Math.max(0,lista.length-1));
+  _proyPos={songIdx:i, slideIdx:st.slideIdx??-1, black:!!st.black};
+}
+function proyOnResize(){ _proyKeepPosition(()=>_proySaveSize()); }
+function _proySaveSize(){
+  if(!_proyWinOk()) return;
+  const p=getProyeccion(), w=_proyWin.innerWidth, h=_proyWin.innerHeight;
+  if(p.pantalla?.w!==w||p.pantalla?.h!==h){ p.pantalla={w,h}; saveProyeccion(p); }
+}
+// Si cambia el tamaño o la letra, las diapositivas se rearman: quedarse en la misma parte de la canción.
+function _proyKeepPosition(change){
+  const before=_proyCurrent().data.slides[_proyPos.slideIdx];
+  change();
+  const slides=_proyCurrent().data.slides;
+  if(before){
+    const first=before.lines.find(Boolean);
+    let j=slides.findIndex(s=>s.sec===before.sec&&s.lines.includes(first));
+    if(j<0) j=slides.findIndex(s=>s.sec===before.sec);
+    _proyPos.slideIdx=j>=0?j:Math.min(_proyPos.slideIdx,slides.length);
+  } else if(_proyPos.slideIdx>=0) _proyPos.slideIdx=slides.length;
+  _proyRender();
+}
+
+// Dibuja la salida en la ventana del proyector y actualiza el panel.
+function _proyRender(){
+  const {item}=_proyCurrent();
+  const state={songId:item?.id||'', songIdx:_proyPos.songIdx, slideIdx:_proyPos.slideIdx, black:_proyPos.black};
+  try{ sessionStorage.setItem(_PROY_POS_KEY,JSON.stringify(state)); }catch{}
+  if(_proyWinOk()){
+    const d=_proyWin.document, stage=d.getElementById('proy-stage');
+    const s=_proyOutputSlide(), w=_proyWin.innerWidth, h=_proyWin.innerHeight, box=_proyBox(w,h);
+    const html=s?_proyTextHTML(s.lines,h,s.scale):'';
+    if(stage.dataset.html!==html){ stage.dataset.html=html; stage.innerHTML=html; }
+    stage.style.padding=`${box.padY}px ${box.padX}px`;
+    try{ _proyWin.__proyState=state; _proyWin._hint&&_proyWin._hint(); }catch{}
+  }
+  renderProyLive();
+}
+
+// ── Navegación ──
+function proyNext(){
+  const {lista,data}=_proyCurrent(), n=data.slides.length;
+  if(_proyPos.slideIdx<n-1) _proyPos.slideIdx++;
+  else if(_proyPos.slideIdx<n) _proyPos.slideIdx=n;          // fin de la canción: pantalla vacía
+  else if(_proyPos.songIdx<lista.length-1){ _proyPos.songIdx++; _proyPos.slideIdx=0; }
+  _proyRender();
+}
+function proyPrev(){
+  if(_proyPos.slideIdx>0) _proyPos.slideIdx--;
+  else if(_proyPos.slideIdx===0) _proyPos.slideIdx=-1;
+  else if(_proyPos.songIdx>0){ _proyPos.songIdx--; _proyPos.slideIdx=_proyCurrent().data.slides.length; }
+  _proyRender();
+}
+function proyGoSlide(i){ _proyPos.slideIdx=i; _proyRender(); }
+function proyGoSec(si){
+  const j=_proyCurrent().data.slides.findIndex(s=>s.sec===si);
+  if(j>=0) proyGoSlide(j);
+}
+// C: al próximo coro (si ya está en uno, al siguiente; si no hay más, vuelve al primero)
+function proyGoCoro(){
+  const {data}=_proyCurrent(), slides=data.slides;
+  const cur=slides[_proyPos.slideIdx];
+  const isCoro=s=>data.secciones[s.sec]?.tipo==='coro';
+  let j=slides.findIndex((s,k)=>k>_proyPos.slideIdx&&isCoro(s)&&(!cur||s.sec!==cur.sec));
+  if(j<0) j=slides.findIndex(isCoro);
+  if(j>=0) proyGoSlide(j); else showToast('Esta canción no tiene coro','amber');
+}
+function proyGoSong(i){
+  const lista=getProyeccion().lista;
+  if(i<0||i>=lista.length) return;
+  _proyPos.songIdx=i; _proyPos.slideIdx=-1;
+  _proyRender();
+}
+function proyToggleBlack(){ _proyPos.black=!_proyPos.black; _proyRender(); }
+
+// Teclado: sirve en el panel (en esta sección) y en la ventana del proyector.
+function proyKey(e){
+  if(e.metaKey||e.ctrlKey||e.altKey) return false;
+  const k=e.key;
+  if(['ArrowRight','ArrowDown','PageDown',' ','Enter'].includes(k)) proyNext();
+  else if(['ArrowLeft','ArrowUp','PageUp'].includes(k)) proyPrev();
+  else if(k==='b'||k==='B'||k==='.') proyToggleBlack();
+  else if(k==='c'||k==='C') proyGoCoro();
+  else return false;
+  return true;
+}
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('page-proyeccion')?.classList.contains('active')) return;
+  const t=e.target;
+  if(t.closest?.('input,select,textarea')||document.querySelector('.modal-overlay.open')) return;
+  // preventDefault también evita que Espacio/Enter "clickeen" el botón con foco (avanzaría dos veces)
+  if(proyKey(e)){ e.preventDefault(); if(t.matches?.('button')) t.blur(); }
+});
+// panel recargado: retomar la posición de esta pestaña (la ventana del proyector, si sigue abierta, manda)
+try{ const st=JSON.parse(sessionStorage.getItem(_PROY_POS_KEY)||'null'); if(st) _proyRestore(st); }catch{}
+setInterval(()=>{ if(_proyWin&&!_proyWinOk()){ _proyWin=null; if(document.getElementById('page-proyeccion')?.classList.contains('active')) renderProyLive(); } },1000);
+
+// ── Panel en vivo ──
+function _proyPreviewHTML(slide, w, h, width, caption=''){
+  const box=_proyBox(w,h), k=width/w;
+  return `<div class="proy-prev" style="width:${width}px;height:${Math.round(width*h/w)}px">
+    <div style="position:absolute;left:0;top:0;width:${w}px;height:${h}px;transform:scale(${k});transform-origin:0 0;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;padding:${box.padY}px ${box.padX}px">${slide?_proyTextHTML(slide.lines,h,slide.scale):''}</div>
+    ${caption?`<div class="proy-prev-cap">${caption}</div>`:''}
+  </div>`;
+}
+function renderProyLive(){
+  const el=document.getElementById('proy-live');
+  if(!el) return;
+  const esc=_printEsc;
+  const {lista,c,data}=_proyCurrent();
+  const {w,h,real}=_proySize();
+  const open=_proyWinOk();
+  document.getElementById('proy-status').innerHTML=open
+    ? `<span class="proy-dot on"></span> Proyector abierto · ${w}×${h}`
+    : `<span class="proy-dot"></span> Proyector cerrado${real?'':` · vista previa para ${w}×${h}`}`;
+  document.getElementById('proy-open-btn').style.display=open?'none':'';
+  document.getElementById('proy-close-btn').style.display=open?'':'none';
+  if(!lista.length){ el.innerHTML='<div class="empty-state"><i class="ti ti-presentation-off"></i>Agregá canciones a la lista para empezar</div>'; return; }
+  if(_proyPos.songIdx>=lista.length){ _proyPos.songIdx=lista.length-1; _proyPos.slideIdx=-1; }
+
+  const slides=data.slides, n=slides.length, idx=_proyPos.slideIdx;
+  const cur=slides[idx], out=_proyOutputSlide();
+  const next=idx<n-1?slides[idx+1]:null;
+  const nextSong=lista[_proyPos.songIdx+1];
+  const nextSongName=nextSong?(_proyCancion(nextSong)?.name||nextSong.name):'';
+
+  // en pantalla
+  let cap;
+  if(_proyPos.black) cap='<span class="proy-cap-black"><i class="ti ti-square-filled"></i> NEGRO</span>';
+  else if(cur?.overflow) cap='<span class="proy-cap-warn"><i class="ti ti-alert-triangle"></i> No entra: no se proyecta</span>';
+  else if(idx<0) cap='Antes de empezar';
+  else if(idx>=n) cap=n?'Fin de la canción':'Sin letra para proyectar';
+  else cap=esc(cur.label)+(cur.parts>1?` · ${cur.part}/${cur.parts}`:'');
+  // siguiente
+  // una diapositiva que no entra nunca se dibuja (tampoco en las vistas previas)
+  const prev=(sl,width,caption)=>_proyPreviewHTML(sl&&!sl.overflow?sl:null,w,h,width,sl?.overflow?'<span class="proy-cap-warn"><i class="ti ti-alert-triangle"></i> No entra</span>':caption);
+  let nextHTML;
+  if(next) nextHTML=prev(next,220,esc(next.label)+(next.parts>1?` · ${next.part}/${next.parts}`:''));
+  else if(idx<n) nextHTML=prev(null,220,'Fin de la canción');
+  else nextHTML=prev(nextSong?_proyData(_proyCancion(nextSong)).slides[0]:null,220,nextSong?'Próxima: '+esc(nextSongName):'Fin de la lista');
+
+  const secChips=data.secciones.map((s,si)=>{
+    const active=cur&&cur.sec===si;
+    const notes=s.notes.length?` <span class="proy-note">${esc(s.notes.join(' '))}</span>`:'';
+    if(s.instrumental) return `<span class="proy-sec instr" title="Instrumental: no tiene diapositiva">${esc(s.label)} · instrumental${notes}</span>`;
+    return `<button class="proy-sec${active?' active':''}" onclick="proyGoSec(${si})">${esc(s.label)}${notes}</button>`;
+  }).join('');
+
+  const overflowN=slides.filter(s=>s.overflow).length;
+  const warn=overflowN?`<div class="alert alert-amber" style="margin:12px 0 0"><i class="ti ti-alert-triangle"></i><div>${overflowN===1?'Una diapositiva no entra':overflowN+' diapositivas no entran'} en la pantalla ni achicada${overflowN===1?'':'s'}. No se proyecta${overflowN===1?'':'n'}: la salida queda en negro. Conviene partir ese renglón en Canciones.</div></div>`:'';
+
+  el.innerHTML=`
+    <div class="proy-song">
+      <button class="btn btn-sm btn-icon" onclick="proyGoSong(${_proyPos.songIdx-1})" ${_proyPos.songIdx===0?'disabled':''} title="Canción anterior"><i class="ti ti-player-skip-back"></i></button>
+      <div style="flex:1;min-width:0">
+        <div class="proy-song-name">${esc(c?c.name:lista[_proyPos.songIdx].name)}</div>
+        <div class="proy-song-meta">Canción ${_proyPos.songIdx+1} de ${lista.length}${nextSongName?' · después: '+esc(nextSongName):''}</div>
+      </div>
+      <button class="btn btn-sm btn-icon" onclick="proyGoSong(${_proyPos.songIdx+1})" ${_proyPos.songIdx>=lista.length-1?'disabled':''} title="Canción siguiente"><i class="ti ti-player-skip-forward"></i></button>
+    </div>
+    <div class="proy-secs">${secChips||'<span style="font-size:12px;color:var(--text3)">Esta canción no tiene secciones cargadas</span>'}</div>
+    <div class="proy-previews">
+      <div><div class="proy-prev-title">En pantalla</div>${_proyPreviewHTML(out,w,h,400,cap)}</div>
+      <div><div class="proy-prev-title">Siguiente</div>${nextHTML}</div>
+    </div>
+    <div class="proy-controls">
+      <button class="btn" onclick="proyPrev()"><i class="ti ti-chevron-left"></i> Anterior</button>
+      <button class="btn${_proyPos.black?' proy-black-on':''}" onclick="proyToggleBlack()"><i class="ti ti-square${_proyPos.black?'-filled':''}"></i> ${_proyPos.black?'Volver a mostrar':'Negro'}</button>
+      <button class="btn btn-primary" onclick="proyNext()">Siguiente <i class="ti ti-chevron-right"></i></button>
+    </div>
+    ${warn}
+    <div class="proy-thumbs">${slides.map((s,i)=>`<div class="proy-thumb${i===idx?' active':''}${s.overflow?' overflow':''}" onclick="proyGoSlide(${i})">${prev(s,150,esc(s.label)+(s.parts>1?` ${s.part}/${s.parts}`:''))}</div>`).join('')}</div>
+    <div class="proy-keys"><kbd>→</kbd> <kbd>Espacio</kbd> siguiente · <kbd>←</kbd> anterior · <kbd>B</kbd> negro · <kbd>C</kbd> coro · en la ventana del proyector: doble clic o <kbd>F</kbd> pantalla completa</div>`;
 }
 
 // ═══════════════════════════════════════════════
