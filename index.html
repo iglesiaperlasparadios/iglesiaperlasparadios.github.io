@@ -4265,12 +4265,13 @@ var _started=false; // una vez que se proyectó letra (o hubo pantalla completa)
 function _hint(){ if(_fs()) _started=true; document.body.classList.toggle('hint', !_started); }
 
 // ── Salida ──
-// Fundido de 200 ms entre letras con el mismo fondo y 280 ms si cambia el fondo (fondo, letra y
-// color cruzan juntos: nunca letra blanca sobre un fondo claro). Cada escena es opaca, así que
-// entre una y otra no aparece negro ni blanco. El negro entra y sale sin animación. Si llega
+// Fundido de 200 ms entre letras con el mismo fondo y 280 ms si cambia el fondo. El fondo cruza
+// de forma continua (cada escena es opaca: entre una y otra no aparece negro ni blanco); la letra
+// vieja se va en el primer tercio y la nueva aparece en la segunda mitad, así nunca se superponen
+// ni queda letra blanca sobre un fondo claro. El negro entra y sale sin animación. Si llega
 // otro pedido durante un fundido, se corta y se muestra el último al instante: no hay cola.
 // Con "reducir movimiento" activado en el sistema, todo es instantáneo.
-var S={active:0, anim:null, sig:null};
+var S={active:0, anim:null, anims:[], sig:null};
 var RM=window.matchMedia?matchMedia('(prefers-reduced-motion: reduce)'):{matches:false};
 function _sc(i){ return document.getElementById('proy-sc'+i); }
 function __proyShow(o){
@@ -4281,7 +4282,7 @@ function __proyShow(o){
   var first=S.sig===null, prevBg=first?null:_sc(S.active).getAttribute('data-bg');
   S.sig=sig;
   var interrupted=false;
-  if(S.anim){ interrupted=true; var an0=S.anim; S.anim=null; try{ an0.cancel(); }catch(e){} }
+  if(S.anim){ interrupted=true; var old=S.anims; S.anim=null; S.anims=[]; old.forEach(function(a){ try{ a.cancel(); }catch(e){} }); }
   var out=_sc(S.active), inc=_sc(1-S.active);
   inc.style.background=o.bg; inc.setAttribute('data-bg',o.bg);
   inc.style.padding=o.pad; inc.innerHTML=o.html;
@@ -4291,9 +4292,13 @@ function __proyShow(o){
     inc.style.opacity=1; out.style.opacity=0; _hint(); return;
   }
   inc.style.opacity=1;
-  var an=inc.animate([{opacity:0},{opacity:1}],{duration:prevBg===o.bg?200:280, easing:'ease-out'});
-  S.anim=an;
-  an.onfinish=function(){ if(S.anim!==an) return; S.anim=null; out.style.opacity=0; };
+  var dur=prevBg===o.bg?200:280;
+  var an=inc.animate([{opacity:0},{opacity:1}],{duration:dur, easing:'ease-out'});
+  S.anim=an; S.anims=[an];
+  var tIn=inc.firstElementChild, tOut=out.firstElementChild;
+  if(tIn) S.anims.push(tIn.animate([{opacity:0},{opacity:0,offset:.5},{opacity:1}],{duration:dur}));
+  if(tOut) S.anims.push(tOut.animate([{opacity:1},{opacity:0,offset:.35},{opacity:0}],{duration:dur}));
+  an.onfinish=function(){ if(S.anim!==an) return; S.anim=null; S.anims=[]; out.style.opacity=0; };
   _hint();
 }
 
