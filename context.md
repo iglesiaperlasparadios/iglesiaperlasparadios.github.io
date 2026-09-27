@@ -10,6 +10,7 @@ Para no tener que armar todo a mano cada mes y cada domingo:
 - **Coordinación:** el guión del servicio paso a paso (canciones, textos, versículos, oraciones y eventos como ofrenda, santa cena o predicación). Genera el "Programa del domingo" como imagen.
 - **Canciones:** la biblioteca con letra, acordes, tonos y categorías. Vista previa en hojas A4 para descargar en PDF o PNG.
 - **Cancionero:** modo lectura para la congregación, con transposición de tono/capo y auto-scroll. Se comparte por link con `?lectura`. Los músicos pueden descargar en PDF lo que están viendo (solo letra, o acordes con el tono y capo elegidos; si cambiaron el original, la hoja lo avisa).
+- **Proyección:** letras en la pantalla grande. Una ventana aparte muestra solo la letra y se maneja desde el panel o con el teclado (siguiente, negro, saltar al coro). La lista actual se guarda en el navegador y en el backup.
 - **Listas armadas y Bandas:** sets de canciones y equipos que se reutilizan.
 - **Participación y Estadísticas:** quién está tocando mucho o poco, qué canciones se repiten y cuáles conviene rotar.
 - **Configuración:** datos de la iglesia, logo y lista de miembros.
@@ -48,4 +49,5 @@ Cómo trabajamos:
 - **Julio–agosto:** rediseño visual de toda la app con un sistema de diseño unificado (menú, Cronograma, Canciones, Cancionero, Coordinación, Participación, Estadísticas).
 - **Nuevo:** Cancionero con modo lectura, sincronización de canciones con Firebase, lista de miembros, estadísticas tipo dashboard ("Para rotar" mira los últimos 6 meses) y la importación del guión completo desde el cronograma.
 - **Septiembre:** logo nuevo (anillo de colores) e impresión de canciones: hojas A4 sin texto cortado, PDF desde Canciones y desde el Cancionero con tono/capo.
+- **Septiembre (fin):** Proyección, etapa 1 (commits locales, sin publicar hasta probarla con el proyector real).
 - **Pendiente:** imprimir un domingo completo en un solo PDF.
