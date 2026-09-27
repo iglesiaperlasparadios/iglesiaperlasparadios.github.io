@@ -4178,7 +4178,7 @@ function proyCargarDesde(v){
 // que si el panel se recarga se vuelve a enganchar solo y retoma donde estaba.
 const _PROY_WIN_NAME='mm_proyector';
 const _PROY_POS_KEY='mm_proy_pos'; // sessionStorage: posición, por si se recarga el panel sin proyector
-const _PROY_WIN_V='2';              // versión de la página del proyector: si una ventana vieja no coincide, se reescribe
+const _PROY_WIN_V='3';              // versión de la página del proyector: si una ventana vieja no coincide, se reescribe
 let _proyWin=null;
 // Salida (lo que ve el público). slideIdx -1 = antes de empezar; === slides.length = terminó.
 // mode: 'letra' | 'fondo' (solo el fondo de la canción, sin letra) | 'negro' (negro puro).
@@ -4224,6 +4224,15 @@ function _proyOutputSlide(){
   const s=_proyCurrent().data.slides[_proyPos.slideIdx];
   return s&&!s.overflow ? s : null;
 }
+// Lo que tiene la escena del proyector: el modo actual, o el anterior si está en negro.
+// Una diapositiva que no entra nunca se dibuja: queda negro puro.
+let _proyLastSize='';
+function _proyScene(){
+  const m=_proyPos.mode==='negro'?(_proyPos.prevMode||'letra'):_proyPos.mode;
+  const {item,data}=_proyCurrent(), s=data.slides[_proyPos.slideIdx];
+  if(m==='letra'&&s?.overflow) return {slide:null, fondo:'negro'};
+  return {slide:m==='letra'?s||null:null, fondo:item?.fondo||_PROY_FONDO_DEF};
+}
 // Fondo de la salida: negro puro en pantalla negra o si la diapositiva no entra; si no, el de la canción.
 function _proyOutputFondo(){
   if(_proyPos.mode==='negro') return 'negro';
@@ -4234,22 +4243,60 @@ function _proyOutputFondo(){
 
 // ── Ventana del proyector ──
 function _proyWinHTML(){
+  // Dos escenas completas (fondo + letra) que se cruzan, y una capa de negro encima.
+  // El dibujo y las transiciones viven en esta ventana (__proyShow): si el panel se recarga
+  // a mitad de un fundido, nada queda a medias. El panel solo le pasa qué mostrar.
   return `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Proyector</title><style>
 html,body{margin:0;height:100%;background:#000;overflow:hidden;cursor:none}
-#proy-stage{position:fixed;inset:0;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box}
-#proy-stage .proy-text{animation:proyIn .18s ease-out}
-@keyframes proyIn{from{opacity:0}}
-#proy-hint{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;text-align:center;padding:24px;color:#9ca3af;font:16px ${_PROY_FONT};cursor:default}
+#proy-stage{position:fixed;inset:0;overflow:hidden}
+.proy-scene{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;opacity:0;background:#000}
+#proy-black{position:absolute;inset:0;background:#000;z-index:5;display:none}
+body.negro #proy-black{display:block}
+#proy-hint{position:fixed;inset:0;z-index:10;background:#000;display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;text-align:center;padding:24px;color:#9ca3af;font:16px ${_PROY_FONT};cursor:default}
 #proy-hint b{color:#e5e7eb;font-size:20px}
 body.hint #proy-hint{display:flex} body.hint{cursor:default}
-</style></head><body><div id="proy-stage" data-v="${_PROY_WIN_V}"></div><div id="proy-hint"><b>Proyector</b>Pasá esta ventana a la pantalla del proyector y hacé doble clic para pantalla completa.<br>Este aviso desaparece en pantalla completa.</div>
+</style></head><body><div id="proy-stage" data-v="${_PROY_WIN_V}"><div class="proy-scene" id="proy-sc0"></div><div class="proy-scene" id="proy-sc1"></div><div id="proy-black"></div></div><div id="proy-hint"><b>Proyector</b>Pasá esta ventana a la pantalla del proyector y hacé doble clic para pantalla completa.<br>Este aviso desaparece en pantalla completa.</div>
 <script>
 function _fs(){ var d=document; return !!(d.fullscreenElement||d.webkitFullscreenElement)||(innerWidth>=screen.width&&innerHeight>=screen.height); }
 function _toggleFs(){ var d=document, el=d.documentElement;
   if(d.fullscreenElement||d.webkitFullscreenElement){ (d.exitFullscreen||d.webkitExitFullscreen).call(d); }
   else { (el.requestFullscreen||el.webkitRequestFullscreen).call(el); } }
-var _started=false; // una vez que se proyectó algo (o hubo pantalla completa) el aviso no vuelve, ni en negro
-function _hint(){ if(_fs()||document.getElementById('proy-stage').firstChild) _started=true; document.body.classList.toggle('hint', !_started); }
+var _started=false; // una vez que se proyectó letra (o hubo pantalla completa) el aviso no vuelve, ni en negro
+function _hint(){ if(_fs()) _started=true; document.body.classList.toggle('hint', !_started); }
+
+// ── Salida ──
+// Fundido de 200 ms entre letras con el mismo fondo y 280 ms si cambia el fondo (fondo, letra y
+// color cruzan juntos: nunca letra blanca sobre un fondo claro). Cada escena es opaca, así que
+// entre una y otra no aparece negro ni blanco. El negro entra y sale sin animación. Si llega
+// otro pedido durante un fundido, se corta y se muestra el último al instante: no hay cola.
+// Con "reducir movimiento" activado en el sistema, todo es instantáneo.
+var S={active:0, anim:null, sig:null};
+var RM=window.matchMedia?matchMedia('(prefers-reduced-motion: reduce)'):{matches:false};
+function _sc(i){ return document.getElementById('proy-sc'+i); }
+function __proyShow(o){
+  document.body.classList.toggle('negro', !!o.black);
+  if(o.html) _started=true;
+  var sig=o.bg+'|'+o.pad+'|'+o.html;
+  if(sig===S.sig){ _hint(); return; }
+  var first=S.sig===null, prevBg=first?null:_sc(S.active).getAttribute('data-bg');
+  S.sig=sig;
+  var interrupted=false;
+  if(S.anim){ interrupted=true; var an0=S.anim; S.anim=null; try{ an0.cancel(); }catch(e){} }
+  var out=_sc(S.active), inc=_sc(1-S.active);
+  inc.style.background=o.bg; inc.setAttribute('data-bg',o.bg);
+  inc.style.padding=o.pad; inc.innerHTML=o.html;
+  inc.style.zIndex=2; out.style.zIndex=1;
+  S.active=1-S.active;
+  if(first||interrupted||o.instant||o.black||RM.matches||!inc.animate){
+    inc.style.opacity=1; out.style.opacity=0; _hint(); return;
+  }
+  inc.style.opacity=1;
+  var an=inc.animate([{opacity:0},{opacity:1}],{duration:prevBg===o.bg?200:280, easing:'ease-out'});
+  S.anim=an;
+  an.onfinish=function(){ if(S.anim!==an) return; S.anim=null; out.style.opacity=0; };
+  _hint();
+}
+
 function _panel(fn){ try{ if(opener&&!opener.closed&&typeof opener[fn]==='function') return opener[fn].apply(null,[].slice.call(arguments,1)); }catch(e){} }
 addEventListener('dblclick',_toggleFs);
 addEventListener('keydown',function(e){
@@ -4259,6 +4306,7 @@ addEventListener('keydown',function(e){
 var _rt; addEventListener('resize',function(){ _hint(); clearTimeout(_rt); _rt=setTimeout(function(){ _panel('proyOnResize'); },200); });
 document.addEventListener('fullscreenchange',_hint); document.addEventListener('webkitfullscreenchange',_hint);
 setInterval(function(){ _panel('proyAttach',window); },1000); // si el panel se recargó, se vuelve a enganchar
+_hint();
 <\/script></body></html>`;
 }
 
@@ -4319,15 +4367,19 @@ function _proyRender(){
   const state={songId:item?.id||'', songIdx:_proyPos.songIdx, slideIdx:_proyPos.slideIdx, mode:_proyPos.mode, prevMode:_proyPos.prevMode};
   try{ sessionStorage.setItem(_PROY_POS_KEY,JSON.stringify(state)); }catch{}
   if(_proyWinOk()){
-    const d=_proyWin.document, stage=d.getElementById('proy-stage');
-    const s=_proyOutputSlide(), w=_proyWin.innerWidth, h=_proyWin.innerHeight, box=_proyBox(w,h);
-    const fo=_proyOutputFondo();
-    const html=s?_proyTextHTML(s.lines,h,s.scale,_proyFondo(fo).letra):'';
-    const bg=_proyFondoCSS(fo);
-    if(d.body.dataset.bg!==bg){ d.body.dataset.bg=bg; d.body.style.background=bg; }
-    if(stage.dataset.html!==html){ stage.dataset.html=html; stage.innerHTML=html; }
-    stage.style.padding=`${box.padY}px ${box.padX}px`;
-    try{ _proyWin.__proyState=state; _proyWin._hint&&_proyWin._hint(); }catch{}
+    // En negro, la escena de abajo ya tiene lo que se verá al volver (el modo anterior), así
+    // B muestra exactamente esa diapositiva al instante. El negro es una capa aparte.
+    const w=_proyWin.innerWidth, h=_proyWin.innerHeight, box=_proyBox(w,h);
+    const {slide,fondo}=_proyScene();
+    const size=`${w}x${h}`, resized=_proyLastSize!==size; _proyLastSize=size;
+    try{
+      _proyWin.__proyState=state;
+      _proyWin.__proyShow({
+        bg:_proyFondoCSS(fondo), pad:`${box.padY}px ${box.padX}px`,
+        html:slide?_proyTextHTML(slide.lines,h,slide.scale,_proyFondo(fondo).letra):'',
+        black:_proyPos.mode==='negro', instant:resized
+      });
+    }catch{}
   }
   renderProyLive();
   if(_proyListaSong!==`${_proyPos.songIdx}/${_proyBrowseIdx()}`&&document.getElementById('proy-lista')) _proyRenderLista();
