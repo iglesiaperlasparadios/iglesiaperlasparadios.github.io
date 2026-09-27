@@ -309,17 +309,17 @@ select option { background: var(--bg3); }
 .proy-item { border-radius: 10px; padding: 6px 8px 7px; margin-bottom: 4px; border: 1px solid transparent; transition: background .15s; }
 .proy-item:hover { background: var(--bg3); }
 .proy-item.current { background: var(--accent-bg); border-color: #cddcf2; }
-.proy-item-main { display: flex; align-items: center; gap: 8px; width: 100%; background: none; border: 0; padding: 2px 0; font-family: 'Outfit', sans-serif; text-align: left; cursor: pointer; color: var(--text); }
+.proy-item-main { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; background: none; border: 0; padding: 2px 0; font-family: 'Outfit', sans-serif; text-align: left; cursor: pointer; color: var(--text); }
 .proy-item-num { width: 18px; font-size: 12px; font-weight: 600; color: var(--text3); text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums; }
 .proy-item.current .proy-item-num { color: var(--accent); }
 .proy-item-name { flex: 1; min-width: 0; font-size: 14px; font-weight: 500; line-height: 1.3; }
 .proy-item.current .proy-item-name { font-weight: 600; color: var(--accent); }
-.proy-item-now { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); flex-shrink: 0; }
+.proy-item-now { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); flex-shrink: 0; margin-right: 4px; }
 .proy-item-badge { margin: 3px 0 0 26px; }
-.proy-item-tools { display: flex; align-items: center; gap: 1px; margin: 5px 0 0 26px; }
-.proy-swatches { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; }
+.proy-item-head { display: flex; align-items: center; gap: 1px; }
+.proy-swatches { display: flex; align-items: center; gap: 5px; margin: 6px 0 0 26px; }
 .proy-swatch-name { font-size: 11px; color: var(--text3); margin-left: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.proy-swatch { width: 15px; height: 15px; flex-shrink: 0; border-radius: 50%; border: 1px solid rgba(15,23,42,.18); cursor: pointer; padding: 0; }
+.proy-swatch { width: 17px; height: 17px; flex-shrink: 0; border-radius: 50%; border: 1px solid rgba(15,23,42,.2); cursor: pointer; padding: 0; background-size: cover !important; }
 .proy-swatch.on { box-shadow: 0 0 0 2px var(--bg2), 0 0 0 4px var(--accent); }
 .proy-icon { width: 22px; height: 22px; flex-shrink: 0; border-radius: 6px; border: 0; background: none; color: var(--text3); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; }
 .proy-icon:hover:not(:disabled) { background: var(--bg4); color: var(--text); }
@@ -3827,7 +3827,6 @@ function renderCancionerViewer(){
 // (se repite…). Cualquier otro texto entre paréntesis se proyecta, porque puede ser letra.
 const _PROY_ANOT=/^\(\s*(?:\d+\s*(?:x|veces?)|x\s*\d+|bis|(?:se\s+)?repite(?:\s+[^)]*)?)\s*\)$/i;
 const _PROY_FONT="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Segoe UI', Roboto, Arial, sans-serif"; // del sistema: no depende de Internet
-const _PROY_COLOR='#f4efe6'; // blanco cálido
 const _PROY_LH=1.22;        // interlineado dentro de un renglón que baja de línea
 const _PROY_FONT_K=0.075;   // tamaño de letra = 7,5% del alto de la pantalla
 const _PROY_MIN_PX=34;      // piso legible para proyectores chicos (800×600)
@@ -3862,31 +3861,71 @@ function _proySecciones(c){
 
 // Estilos del escenario y de una diapositiva (los usan la medición, el proyector y las vistas previas).
 function _proyFontPx(h){ return Math.max(_PROY_MIN_PX, Math.round(h*_PROY_FONT_K)); }
-function _proyTextHTML(lines, h, scale=1){
+function _proyTextHTML(lines, h, scale=1, color=_PROY_LETRA_CLARA){
   const fs=Math.round(_proyFontPx(h)*scale);
   // cada renglón de la letra es un bloque: si no entra y baja de línea, sus partes quedan
   // juntas (interlineado _PROY_LH) y separadas del renglón siguiente (.3em), así se lee la frase.
   // Sin sombras ni contornos: el contraste lo dan los fondos.
-  return `<div class="proy-text" style="font-family:${_PROY_FONT};font-weight:600;font-size:${fs}px;line-height:${_PROY_LH};letter-spacing:-.005em;color:${_PROY_COLOR};text-align:center;text-wrap:balance;overflow-wrap:anywhere;-webkit-font-smoothing:antialiased">${
+  return `<div class="proy-text" style="font-family:${_PROY_FONT};font-weight:600;font-size:${fs}px;line-height:${_PROY_LH};letter-spacing:-.005em;color:${color};text-align:center;text-wrap:balance;overflow-wrap:anywhere;-webkit-font-smoothing:antialiased">${
     lines.map(l=>l?`<div style="margin:.3em 0">${_printEsc(l)}</div>`:`<div style="height:.5em"></div>`).join('')}</div>`;
 }
 // área útil: la pantalla menos márgenes amplios (los proyectores además suelen recortar bordes)
 function _proyBox(w,h){ const padX=Math.round(w*0.08), padY=Math.round(h*0.1); return {padX, padY, innerW:w-2*padX, innerH:h-2*padY}; }
 
-// Fondos: el centro (detrás de la letra) es liso, y solo los bordes oscurecen apenas, así el
-// contraste de la letra es el mismo en toda la zona de texto.
+// Fondos: capas y curvas suaves dibujadas en SVG (nítidas en cualquier resolución, sin
+// depender de Internet). Las formas fuertes van hacia bordes y esquinas; encima, un velo del
+// color base empareja el centro, así la letra tiene el mismo contraste en toda la zona de texto.
+// Cada fondo trae su color de letra: blanco cálido en los oscuros, casi negro en los claros.
+const _PROY_LETRA_CLARA='#f4efe6', _PROY_LETRA_OSCURA='#1a1d23';
 const _PROY_FONDOS=[
-  {id:'grafito', nombre:'Grafito',       centro:'#26282c', borde:'#1c1d20'},
-  {id:'noche',   nombre:'Azul noche',    centro:'#152238', borde:'#0e1727'},
-  {id:'verde',   nombre:'Verde profundo',centro:'#14291f', borde:'#0d1c15'},
-  {id:'violeta', nombre:'Violeta oscuro',centro:'#241c36', borde:'#191326'},
-  {id:'negro',   nombre:'Negro',         centro:'#000000', borde:'#000000'},
+  {id:'verde',  nombre:'Verde azulado', base:'#1f4948', letra:_PROY_LETRA_CLARA, capas:
+    '<path d="M900 0C1000 250 1150 420 1600 470V0Z" fill="#183a3a"/>'+
+    '<path d="M0 250C500 280 900 450 1250 700C1400 800 1500 870 1600 900H0Z" fill="url(#g1)"/>'+
+    '<path d="M1600 300C1480 420 1380 520 1150 560C1350 600 1500 700 1600 820Z" fill="#1a4141"/>',
+    grad:['#2e5f5e','#245150']},
+  {id:'noche',  nombre:'Azul noche',    base:'#172742', letra:_PROY_LETRA_CLARA, capas:
+    '<path d="M0 0H760L0 400Z" fill="#111d33"/>'+
+    '<path d="M0 900L1600 500V900Z" fill="url(#g1)"/>'+
+    '<path d="M0 900L1600 720V900Z" fill="#26406a"/>',
+    grad:['#1b2d4c','#213860']},
+  {id:'grafito',nombre:'Grafito',       base:'#2b2d31', letra:_PROY_LETRA_CLARA, capas:
+    '<path d="M0 0H1600V150C1100 260 500 110 0 230Z" fill="#242629"/>'+
+    '<path d="M0 640C420 560 920 660 1600 520V900H0Z" fill="url(#g1)"/>',
+    grad:['#34363b','#2e3034']},
+  {id:'azul',   nombre:'Azul grisáceo', base:'#a9b8ce', letra:_PROY_LETRA_OSCURA, capas:
+    '<path d="M0 0H1600V260C1000 200 500 120 0 160Z" fill="#b6c3d6"/>'+
+    '<path d="M0 900L1600 430V900Z" fill="url(#g1)"/>'+
+    '<path d="M0 900L1600 750V900Z" fill="#91a4c1"/>'+
+    '<path d="M0 900L1600 830V900Z" fill="#5f7aa0"/>',
+    grad:['#a7b6cc','#9dafc7']},
+  {id:'arena',  nombre:'Arena',         base:'#e7dece', letra:_PROY_LETRA_OSCURA, capas:
+    '<path d="M1050 0C1150 200 1350 300 1600 330V0Z" fill="#efe8dc"/>'+
+    '<path d="M0 900C300 700 760 640 1600 730V900Z" fill="url(#g1)"/>'+
+    '<path d="M0 900V610C160 710 320 810 540 900Z" fill="#cdbd9f"/>',
+    grad:['#ddd1bb','#d6c8af']},
+  {id:'perla',  nombre:'Gris perla',    base:'#dde2e8', letra:_PROY_LETRA_OSCURA, capas:
+    '<path d="M0 0H900L0 520Z" fill="#e7ebf0"/>'+
+    '<path d="M1600 900H700L1600 380Z" fill="url(#g1)"/>'+
+    '<path d="M1600 900H1150L1600 640Z" fill="#bcc5d1"/>',
+    grad:['#d6dce3','#ccd3dc']},
+  {id:'negro',  nombre:'Negro',         base:'#000000', letra:_PROY_LETRA_CLARA, capas:'', grad:null},
 ];
-const _PROY_FONDO_DEF='grafito';
+const _PROY_FONDO_DEF='verde';
 function _proyFondo(id){ return _PROY_FONDOS.find(f=>f.id===id)||_PROY_FONDOS.find(f=>f.id===_PROY_FONDO_DEF); }
+const _proyFondoCache={};
 function _proyFondoCSS(id){
   const f=_proyFondo(id);
-  return `radial-gradient(ellipse 80% 75% at 50% 50%, ${f.centro} 0%, ${f.centro} 55%, ${f.borde} 100%) ${f.borde}`;
+  if(!f.capas) return f.base;
+  if(!_proyFondoCache[f.id]){
+    // preserveAspectRatio="none": en 4:3 las formas se estiran un poco pero siguen en los bordes
+    const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="none"><defs>`+
+      `<linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${f.grad[0]}"/><stop offset="1" stop-color="${f.grad[1]}"/></linearGradient>`+
+      `<radialGradient id="velo" cx=".5" cy=".5" r=".62"><stop offset="0" stop-color="${f.base}" stop-opacity=".82"/><stop offset=".62" stop-color="${f.base}" stop-opacity=".55"/><stop offset="1" stop-color="${f.base}" stop-opacity="0"/></radialGradient>`+
+      `</defs><rect width="1600" height="900" fill="${f.base}"/>${f.capas}<rect width="1600" height="900" fill="url(#velo)"/></svg>`;
+    // comillas simples: esta cadena va dentro de atributos style="…" (el SVG codificado no tiene ')
+    _proyFondoCache[f.id]=`url('data:image/svg+xml,${encodeURIComponent(svg)}') center / 100% 100% no-repeat, ${f.base}`;
+  }
+  return _proyFondoCache[f.id];
 }
 
 // Arma las diapositivas de una canción para una pantalla de w×h.
@@ -3988,20 +4027,20 @@ function _proyRenderLista(){
       :!d.slides.length?'<span class="badge badge-amber">Sin letra</span>'
       :ov?`<span class="badge badge-amber"><i class="ti ti-alert-triangle"></i> ${ov===1?'1 diapositiva no entra':ov+' no entran'}</span>`:'';
     const fondo=_proyFondo(item.fondo).id;
-    const swatches=_PROY_FONDOS.map(f=>`<button class="proy-swatch${f.id===fondo?' on':''}" style="background:${f.centro}" onclick="proySetFondo(${i},'${f.id}')" title="Fondo: ${f.nombre}" aria-label="Fondo ${f.nombre}"></button>`).join('');
+    const swatches=_PROY_FONDOS.map(f=>`<button class="proy-swatch${f.id===fondo?' on':''}" style="background:${_proyFondoCSS(f.id)}" onclick="proySetFondo(${i},'${f.id}')" title="Fondo: ${f.nombre}" aria-label="Fondo ${f.nombre}"></button>`).join('');
     return `<div class="proy-item${i===_proyPos.songIdx?' current':''}">
-      <button class="proy-item-main" onclick="proyGoSong(${i})" title="Ir a esta canción">
-        <span class="proy-item-num">${i+1}</span>
-        <span class="proy-item-name">${esc(c?c.name:item.name)}</span>
-        ${i===_proyPos.songIdx?'<span class="proy-item-now">En curso</span>':''}
-      </button>
-      ${badge?`<div class="proy-item-badge">${badge}</div>`:''}
-      <div class="proy-item-tools">
-        <div class="proy-swatches">${swatches}<span class="proy-swatch-name">${_proyFondo(item.fondo).nombre}</span></div>
+      <div class="proy-item-head">
+        <button class="proy-item-main" onclick="proyGoSong(${i})" title="Ir a esta canción">
+          <span class="proy-item-num">${i+1}</span>
+          <span class="proy-item-name">${esc(c?c.name:item.name)}</span>
+          ${i===_proyPos.songIdx?'<span class="proy-item-now">En curso</span>':''}
+        </button>
         <button class="proy-icon" onclick="proyMove(${i},-1)" title="Subir" ${i===0?'disabled':''}><i class="ti ti-chevron-up"></i></button>
         <button class="proy-icon" onclick="proyMove(${i},1)" title="Bajar" ${i===lista.length-1?'disabled':''}><i class="ti ti-chevron-down"></i></button>
         <button class="proy-icon danger" onclick="proyQuitar(${i})" title="Quitar de la lista"><i class="ti ti-x"></i></button>
       </div>
+      ${badge?`<div class="proy-item-badge">${badge}</div>`:''}
+      <div class="proy-swatches">${swatches}<span class="proy-swatch-name">${_proyFondo(item.fondo).nombre}</span></div>
     </div>`;
   }).join('');
 }
@@ -4210,8 +4249,9 @@ function _proyRender(){
   if(_proyWinOk()){
     const d=_proyWin.document, stage=d.getElementById('proy-stage');
     const s=_proyOutputSlide(), w=_proyWin.innerWidth, h=_proyWin.innerHeight, box=_proyBox(w,h);
-    const html=s?_proyTextHTML(s.lines,h,s.scale):'';
-    const bg=_proyFondoCSS(_proyOutputFondo());
+    const fo=_proyOutputFondo();
+    const html=s?_proyTextHTML(s.lines,h,s.scale,_proyFondo(fo).letra):'';
+    const bg=_proyFondoCSS(fo);
     if(d.body.dataset.bg!==bg){ d.body.dataset.bg=bg; d.body.style.background=bg; }
     if(stage.dataset.html!==html){ stage.dataset.html=html; stage.innerHTML=html; }
     stage.style.padding=`${box.padY}px ${box.padX}px`;
@@ -4285,7 +4325,7 @@ setInterval(()=>{ if(_proyWin&&!_proyWinOk()){ _proyWin=null; if(document.getEle
 function _proyPreviewHTML(slide, fondo, w, h, overlay=''){
   const box=_proyBox(w,h);
   return `<div class="proy-prev" data-w="${w}" style="aspect-ratio:${w}/${h};background:${_proyFondoCSS(fondo)}">
-    <div class="proy-prev-in" style="width:${w}px;height:${h}px;padding:${box.padY}px ${box.padX}px">${slide&&!slide.overflow?_proyTextHTML(slide.lines,h,slide.scale):''}</div>
+    <div class="proy-prev-in" style="width:${w}px;height:${h}px;padding:${box.padY}px ${box.padX}px">${slide&&!slide.overflow?_proyTextHTML(slide.lines,h,slide.scale,_proyFondo(fondo).letra):''}</div>
     ${overlay?`<div class="proy-prev-over">${overlay}</div>`:''}
   </div>`;
 }
