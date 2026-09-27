@@ -331,7 +331,8 @@ body.proy-cabina .proy-head { display: none; }
 .proy-item { border-radius: 8px; padding: 5px 4px 5px 6px; margin-bottom: 2px; border: 1px solid transparent; }
 .proy-item:hover { background: var(--bg3); }
 .proy-item.current { background: var(--accent-bg); border-color: #cddcf2; }
-.proy-item.live { box-shadow: inset 3px 0 0 #22c55e; }
+.proy-item.live { box-shadow: inset 3px 0 0 #2f8f5b; }
+.proy-item.ready { box-shadow: inset 3px 0 0 #94a3b8; }
 .proy-item-head { display: flex; align-items: center; gap: 1px; }
 .proy-item-main { display: flex; align-items: center; gap: 7px; flex: 1; min-width: 0; background: none; border: 0; padding: 3px 0; font-family: 'Outfit', sans-serif; text-align: left; cursor: pointer; color: var(--text); }
 .proy-item-num { align-self: flex-start; margin-top: 1px; width: 16px; font-size: 12px; font-weight: 600; color: var(--text3); text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums; }
@@ -351,10 +352,19 @@ body.proy-cabina .proy-head { display: none; }
 
 /* centro: la canción que se mira */
 .proy-center-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.proy-center-title { font-family: 'Fraunces', serif; font-size: 21px; font-weight: 600; line-height: 1.2; }
+.proy-center-title { font-size: 20px; font-weight: 600; line-height: 1.25; letter-spacing: -.01em; }
 .proy-tag { font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; padding: 3px 8px; border-radius: 5px; }
 .proy-tag.live { color: var(--green); background: var(--green-bg); }
 .proy-tag.prep { color: var(--accent); background: var(--accent-bg); }
+.proy-tag.ready { color: #475569; background: var(--bg3); }
+.proy-sec.ready { background: var(--bg3); border-color: #64748b; color: #334155; }
+.proy-item-ready { font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; flex-shrink: 0; padding: 2px 5px; border-radius: 4px; color: #475569; background: var(--bg3); }
+.proy-fondo-toggle { margin-top: 20px; display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border: 1px solid var(--border2); border-radius: 8px; background: var(--bg2); font-family: 'Outfit', sans-serif; font-size: 13px; color: var(--text2); cursor: pointer; }
+.proy-fondo-toggle:hover { border-color: var(--accent); }
+.proy-fondo-toggle strong { color: var(--text); font-weight: 600; }
+.proy-fondo-toggle + .proy-fondo-live, .proy-fondo-toggle + .proy-fondos { margin-top: 12px; }
+.proy-ctl:disabled { opacity: .4; cursor: default; transform: none; }
+.proy-ctl-next:disabled { background: var(--bg3); border-color: var(--border2); color: var(--text3); opacity: 1; }
 .proy-center-help { font-size: 12px; color: var(--text2); margin: 5px 0 12px; line-height: 1.5; }
 .proy-link { background: none; border: 0; padding: 0; font: inherit; font-weight: 600; color: var(--accent); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 .proy-empty { font-size: 12px; color: var(--text3); }
@@ -370,8 +380,10 @@ body.proy-cabina .proy-head { display: none; }
 .proy-thumb { background: none; border: 0; padding: 0; cursor: pointer; text-align: left; font-family: 'Outfit', sans-serif; min-width: 0; }
 .proy-thumb .proy-prev { border-radius: 7px; box-shadow: 0 0 0 1px var(--border); transition: box-shadow .12s; }
 .proy-thumb:hover .proy-prev { box-shadow: 0 0 0 2px var(--accent); }
-.proy-thumb.live .proy-prev { box-shadow: 0 0 0 3px #22c55e; }
-.proy-thumb.prep .proy-prev { box-shadow: 0 0 0 3px var(--amber); }
+.proy-thumb.live .proy-prev { box-shadow: 0 0 0 2px #2f8f5b; }
+.proy-thumb.ready .proy-prev { box-shadow: 0 0 0 2px #64748b; }
+.proy-thumb.ready .proy-thumb-tag { color: #475569; }
+.proy-thumb.prep .proy-prev { box-shadow: 0 0 0 2px var(--amber); }
 .proy-thumb-cap { display: flex; justify-content: space-between; gap: 6px; font-size: 12px; color: var(--text2); margin-top: 6px; }
 .proy-thumb-cap > span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .proy-thumb-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; flex-shrink: 0; }
@@ -399,8 +411,8 @@ body.proy-cabina .proy-head { display: none; }
 .proy-prev-over { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
 .proy-over-black { font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: #6b7280; }
 .proy-over-warn { font-size: 12px; font-weight: 600; color: #fbbf24; display: inline-flex; align-items: center; gap: 5px; }
-.proy-now-frame { border-radius: 11px; padding: 3px; background: var(--border); }
-.proy-now-frame.live { background: #22c55e; }
+.proy-now-frame { border-radius: 10px; padding: 2px; background: var(--border); }
+.proy-now-frame.live { background: #2f8f5b; }
 .proy-now-frame.black { background: #111827; }
 .proy-now-frame.bg { background: #6366f1; }
 .proy-now-frame.warn { background: var(--amber); }
@@ -4077,8 +4089,9 @@ function renderProyeccion(){
   _proyRenderLista();
 }
 let _proyListaSong=''; // canciones marcadas (salida/mirada) la última vez que se dibujó la lista
+let _proyListaOpen=null; // si había proyector conectado la última vez que se dibujó la lista
 function _proyRenderLista(){
-  _proyListaSong=`${_proyPos.songIdx}/${_proyBrowseIdx()}`;
+  _proyListaSong=`${_proyPos.songIdx}/${_proyBrowseIdx()}`; _proyListaOpen=_proyWinOk();
   const lista=getProyeccion().lista, canciones=getCanciones();
   const el=document.getElementById('proy-lista');
   document.getElementById('proy-vaciar-btn').style.display=lista.length?'':'none';
@@ -4094,12 +4107,12 @@ function _proyRenderLista(){
       :ov?`<span class="badge badge-amber"><i class="ti ti-alert-triangle"></i> ${ov===1?'1 diapositiva no entra':ov+' no entran'}</span>`:'';
     const fo=_proyFondo(item.fondo);
     const isLive=i===_proyPos.songIdx, isBrowse=i===_proyBrowseIdx();
-    return `<div class="proy-item${isBrowse?' current':''}${isLive?' live':''}">
+    return `<div class="proy-item${isBrowse?' current':''}${isLive?(_proyWinOk()?' live':' ready'):''}">
       <div class="proy-item-head">
         <button class="proy-item-main" onclick="proyGoSong(${i})" title="Mirar esta canción (no cambia la salida)">
           <span class="proy-item-num">${i+1}</span>
           <span class="proy-item-chip" style="background:${_proyFondoCSS(fo.id)}" title="Fondo: ${fo.nombre}"></span>
-          <span class="proy-item-text"><span class="proy-item-name">${esc(c?c.name:item.name)}</span>${isLive?'<span class="proy-item-now">En pantalla</span>':isBrowse?'<span class="proy-item-prep">Preparando</span>':''}</span>
+          <span class="proy-item-text"><span class="proy-item-name">${esc(c?c.name:item.name)}</span>${isLive?(_proyWinOk()?'<span class="proy-item-now">En pantalla</span>':'<span class="proy-item-ready">Lista</span>'):isBrowse?'<span class="proy-item-prep">Preparando</span>':''}</span>
         </button>
         <button class="proy-icon" onclick="proyMove(${i},-1)" title="Subir" ${i===0?'disabled':''}><i class="ti ti-chevron-up"></i></button>
         <button class="proy-icon" onclick="proyMove(${i},1)" title="Bajar" ${i===lista.length-1?'disabled':''}><i class="ti ti-chevron-down"></i></button>
@@ -4147,7 +4160,7 @@ function _proyRenderCargar(){
   const guiones=getSavedGuionList().filter(g=>(g.blocks||[]).some(b=>b.type==='cancion'));
   const listas=getListas();
   const esc=_printEsc;
-  document.getElementById('proy-cargar').innerHTML='<option value="">Cargar desde…</option>'+
+  document.getElementById('proy-cargar').innerHTML='<option value="">Cargar…</option>'+
     (guiones.length?'<optgroup label="Coordinación">'+guiones.map(g=>`<option value="g:${esc(g.id)}">${esc(g.date||'')}${g.title?' · '+esc(g.title):''}</option>`).join('')+'</optgroup>':'')+
     (listas.length?'<optgroup label="Listas armadas">'+listas.map(l=>`<option value="l:${esc(l.id)}">${esc(l.name)}</option>`).join('')+'</optgroup>':'');
 }
@@ -4267,7 +4280,7 @@ function _hint(){ if(_fs()) _started=true; document.body.classList.toggle('hint'
 // ── Salida ──
 // Fundido de 200 ms entre letras con el mismo fondo y 280 ms si cambia el fondo. El fondo cruza
 // de forma continua (cada escena es opaca: entre una y otra no aparece negro ni blanco); la letra
-// vieja se va en el primer tercio y la nueva aparece en la segunda mitad, así nunca se superponen
+// vieja se va en el primer 40% y la nueva entra en el resto, sin pausa entre ambas: nunca se superponen
 // ni queda letra blanca sobre un fondo claro. El negro entra y sale sin animación. Si llega
 // otro pedido durante un fundido, se corta y se muestra el último al instante: no hay cola.
 // Con "reducir movimiento" activado en el sistema, todo es instantáneo.
@@ -4296,8 +4309,8 @@ function __proyShow(o){
   var an=inc.animate([{opacity:0},{opacity:1}],{duration:dur, easing:'ease-out'});
   S.anim=an; S.anims=[an];
   var tIn=inc.firstElementChild, tOut=out.firstElementChild;
-  if(tIn) S.anims.push(tIn.animate([{opacity:0},{opacity:0,offset:.5},{opacity:1}],{duration:dur}));
-  if(tOut) S.anims.push(tOut.animate([{opacity:1},{opacity:0,offset:.35},{opacity:0}],{duration:dur}));
+  if(tIn) S.anims.push(tIn.animate([{opacity:0},{opacity:0,offset:.4},{opacity:1}],{duration:dur}));
+  if(tOut) S.anims.push(tOut.animate([{opacity:1},{opacity:0,offset:.4},{opacity:0}],{duration:dur}));
   an.onfinish=function(){ if(S.anim!==an) return; S.anim=null; S.anims=[]; out.style.opacity=0; };
   _hint();
 }
@@ -4362,7 +4375,7 @@ function _proyKeepPosition(change){
     let j=slides.findIndex(s=>s.sec===before.sec&&s.lines.includes(first));
     if(j<0) j=slides.findIndex(s=>s.sec===before.sec);
     _proyPos.slideIdx=j>=0?j:Math.min(_proyPos.slideIdx,slides.length);
-  } else if(_proyPos.slideIdx>=0) _proyPos.slideIdx=slides.length;
+  } else if(_proyPos.slideIdx>=0) _proyPos.slideIdx=Math.max(0,Math.min(_proyPos.slideIdx,slides.length-1));
   _proyRender();
 }
 
@@ -4391,19 +4404,28 @@ function _proyRender(){
 }
 
 // ── Navegación ──
+// Siguiente: la próxima diapositiva o, al terminar la canción, la primera de la próxima.
+// En la última diapositiva de la lista no hace nada (el botón queda deshabilitado) y la
+// letra se conserva: nunca aparece un fondo vacío que no se eligió.
+function _proyCanNext(){
+  const {lista,data}=_proyCurrent();
+  return _proyPos.slideIdx<data.slides.length-1||_proyPos.songIdx<lista.length-1;
+}
+function _proyCanPrev(){ return _proyPos.slideIdx>0||_proyPos.songIdx>0; }
 function proyNext(){
   const {lista,data}=_proyCurrent(), n=data.slides.length;
   if(_proyPos.slideIdx<n-1) _proyPos.slideIdx++;
-  else if(_proyPos.slideIdx<n) _proyPos.slideIdx=n;          // fin de la canción: pantalla vacía
   else if(_proyPos.songIdx<lista.length-1){ _proyPos.songIdx++; _proyPos.slideIdx=0; _proyFollow(); }
+  else return;
   _proyRender();
 }
 // si el panel estaba mirando la canción en salida, la sigue cuando la salida pasa a otra
 function _proyFollow(){ if(_proyBrowse===_proyPos.songIdx) _proyBrowse=null; }
 function proyPrev(){
-  if(_proyPos.slideIdx>0) _proyPos.slideIdx--;
-  else if(_proyPos.slideIdx===0) _proyPos.slideIdx=-1;
-  else if(_proyPos.songIdx>0){ _proyPos.songIdx--; _proyPos.slideIdx=_proyCurrent().data.slides.length; _proyFollow(); }
+  const n=_proyCurrent().data.slides.length;
+  if(_proyPos.slideIdx>0) _proyPos.slideIdx=Math.min(_proyPos.slideIdx,n)-1;
+  else if(_proyPos.songIdx>0){ _proyPos.songIdx--; _proyPos.slideIdx=Math.max(0,_proyCurrent().data.slides.length-1); _proyFollow(); }
+  else return;
   _proyRender();
 }
 // Tocar una diapositiva (o una sección) de la canción que se está mirando: esa pasa a la salida.
@@ -4513,6 +4535,10 @@ function proySetCabina(on){
   requestAnimationFrame(_proyLayout);
 }
 
+// Galería de fondos: plegada durante el uso normal (se abre con "Fondo: … ▾").
+let _proyFondosOpen=false;
+function proyToggleFondos(){ _proyFondosOpen=!_proyFondosOpen; renderProyLive(); }
+
 const _proySlideLabel=s=>_printEsc(s.label)+(s.parts>1?` · ${s.part}/${s.parts}`:'');
 const _PROY_MODE_TXT={letra:'En vivo',fondo:'Solo fondo',negro:'Pantalla negra'};
 
@@ -4528,6 +4554,9 @@ function renderProyLive(){
   const cur=slides[idx], out=_proyOutputSlide(), mode=_proyPos.mode;
   const fondo=item?.fondo||_PROY_FONDO_DEF;
   const cabina=document.body.classList.contains('proy-cabina');
+  // "En pantalla" solo si la ventana del proyector está abierta y conectada; si no, la
+  // selección se conserva pero se informa como "Lista para proyectar".
+  const liveTxt=open?'En pantalla':'Lista para proyectar', liveCls=open?'live':'ready';
 
   // ── barra: estado real de la salida, siempre a la vista ──
   let state, stateCls;
@@ -4570,15 +4599,15 @@ function renderProyLive(){
   const nextItem=lista[_proyPos.songIdx+1];
   const nextC=nextItem?_proyCancion(nextItem):null;
   const nextName=nextItem?(nextC?.name||nextItem.name):'';
+  // "Sigue" anticipa exactamente lo que hará Siguiente
   let nextHTML, nextCap;
   if(next){ nextHTML=_proyPreviewHTML(next,fondo,w,h,warnOver(next)); nextCap=_proySlideLabel(next); }
-  else if(idx<n){ nextHTML=_proyPreviewHTML(null,fondo,w,h); nextCap='Fin de la canción'; }
-  else if(nextItem){ const s0=_proyData(nextC).slides[0]; nextHTML=_proyPreviewHTML(s0,nextItem.fondo||_PROY_FONDO_DEF,w,h,warnOver(s0)); nextCap=`Próxima canción: <strong>${esc(nextName)}</strong>`; }
-  else { nextHTML=_proyPreviewHTML(null,fondo,w,h); nextCap='Fin de la lista'; }
+  else if(nextItem){ const s0=_proyData(nextC).slides[0]; nextHTML=_proyPreviewHTML(s0,nextItem.fondo||_PROY_FONDO_DEF,w,h,s0?warnOver(s0):'<span class="proy-over-black">Sin letra</span>'); nextCap=`Próxima canción: <strong>${esc(nextName)}</strong>${s0?' · '+_proySlideLabel(s0):''}`; }
+  else { nextHTML=_proyPreviewHTML(null,'negro',w,h,'<span class="proy-over-black">Fin de la lista</span>'); nextCap='Es la última diapositiva: Siguiente no hace nada.'; }
   const overflowN=slides.filter(s=>s.overflow).length;
   const nowCap=cur?`${esc(c?c.name:item.name)} · ${_proySlideLabel(cur)}`:esc(c?c.name:item.name);
   outEl.innerHTML=`
-    <div class="proy-label"><span class="proy-label-dot ${stateCls}"></span>En pantalla</div>
+    <div class="proy-label"><span class="proy-label-dot ${stateCls}"></span>${open?'En pantalla':'Vista previa'}</div>
     <div class="proy-now-frame ${stateCls}">${_proyPreviewHTML(out,_proyOutputFondo(),w,h,nowOver)}</div>
     <div class="proy-now-cap">${nowCap}${mode!=='letra'&&cur?' <span class="proy-bar-prep">preparada</span>':''}</div>
     <div class="proy-modes" role="group" aria-label="Qué se ve en la pantalla">
@@ -4587,8 +4616,8 @@ function renderProyLive(){
       <button class="${mode==='negro'?'on black':''}" onclick="proyToggleBlack()" title="Negro inmediato; otra vez vuelve al modo anterior (B)">Negro</button>
     </div>
     <div class="proy-controls">
-      <button class="proy-ctl" onclick="proyPrev()"><i class="ti ti-chevron-left"></i> Anterior</button>
-      <button class="proy-ctl proy-ctl-next" onclick="proyNext()">Siguiente <i class="ti ti-chevron-right"></i></button>
+      <button class="proy-ctl" onclick="proyPrev()" ${_proyCanPrev()?'':'disabled'}><i class="ti ti-chevron-left"></i> Anterior</button>
+      <button class="proy-ctl proy-ctl-next" onclick="proyNext()" ${_proyCanNext()?'':'disabled'}>Siguiente <i class="ti ti-chevron-right"></i></button>
     </div>
     ${overflowN?`<div class="proy-warn"><i class="ti ti-alert-triangle"></i> ${overflowN===1?'Una diapositiva no entra':overflowN+' diapositivas no entran'} ni achicada${overflowN===1?'':'s'}: la salida queda en negro. Conviene partir ese renglón en Canciones.</div>`:''}
     <div class="proy-label" style="margin-top:18px">Sigue</div>
@@ -4600,7 +4629,7 @@ function renderProyLive(){
   // Solo se redibuja entera si cambió la canción, su fondo, su letra o el tamaño; al navegar
   // se actualizan las marcas, así se conserva el scroll y cada tecla es liviana.
   const br=_proyBrowsed(), bFondo=br.item?.fondo||_PROY_FONDO_DEF;
-  const sig=`${br.idx}|${bFondo}|${w}x${h}|${br.data.slides.length}|${JSON.stringify(br.c?.secciones||'')}|${br.live}`;
+  const sig=`${br.idx}|${bFondo}|${w}x${h}|${br.data.slides.length}|${JSON.stringify(br.c?.secciones||'')}|${br.live}|${open}|${_proyFondosOpen}`;
   if(center.dataset.sig!==sig){
     center.dataset.sig=sig;
     const secChips=br.data.secciones.map((s,si)=>{
@@ -4614,29 +4643,36 @@ function renderProyLive(){
     center.innerHTML=`
       <div class="proy-center-head">
         <div class="proy-center-title">${esc(br.c?.name||br.item?.name||'')}</div>
-        ${br.live?'<span class="proy-tag live">En pantalla</span>':'<span class="proy-tag prep">Preparando</span>'}
+        ${br.live?`<span class="proy-tag ${liveCls}">${liveTxt}</span>`:'<span class="proy-tag prep">Preparando</span>'}
       </div>
       <div class="proy-center-help">${br.live
-        ?'Tocá una diapositiva o una sección para proyectarla.'
-        :`La salida sigue en <strong>${esc(c?c.name:item.name)}</strong>. Tocá una diapositiva de esta canción para proyectarla. <button class="proy-link" onclick="proyGoSong(${_proyPos.songIdx})">Volver a la canción en pantalla</button>`}</div>
+        ?(open?'Tocá una diapositiva o una sección para proyectarla.':'Tocá una diapositiva para dejarla lista. Se va a ver al abrir el proyector.')
+        :`${open?'La salida sigue en':'La canción actual es'} <strong>${esc(c?c.name:item.name)}</strong>. Tocá una diapositiva de esta canción para ${open?'proyectarla':'elegirla'}. <button class="proy-link" onclick="proyGoSong(${_proyPos.songIdx})">Volver a la canción actual</button>`}</div>
       <div class="proy-secs">${secChips||'<span class="proy-empty">Esta canción no tiene secciones cargadas</span>'}</div>
       <div class="proy-thumbs">${br.data.slides.map((s,i)=>`<button class="proy-thumb" data-i="${i}" onclick="proyGoSlide(${i})">${_proyPreviewHTML(s,bFondo,w,h,warnOver(s))}<span class="proy-thumb-cap"><span>${i+1} · ${_proySlideLabel(s)}</span><span class="proy-thumb-tag"></span></span></button>`).join('')||'<span class="proy-empty">Sin diapositivas</span>'}</div>
-      <div class="proy-block-title">Fondo de esta canción</div>
-      ${br.live?'<div class="proy-fondo-live"><i class="ti ti-broadcast"></i> Esta canción está en pantalla: el cambio de fondo se ve en la salida.</div>':''}
-      <div class="proy-fondos">${gallery}</div>`;
+      <button class="proy-fondo-toggle" onclick="proyToggleFondos()" aria-expanded="${_proyFondosOpen}">
+        <span class="proy-item-chip" style="background:${_proyFondoCSS(bFondo)}"></span>
+        Fondo: <strong>${_proyFondo(bFondo).nombre}</strong>
+        <i class="ti ti-chevron-${_proyFondosOpen?'up':'down'}"></i>
+      </button>
+      ${_proyFondosOpen?`${br.live&&open?'<div class="proy-fondo-live"><i class="ti ti-broadcast"></i> Esta canción está en pantalla: el cambio de fondo se ve en la salida.</div>':''}
+      <div class="proy-fondos">${gallery}</div>`:''}`;
   }
   // marcas: diapositiva y sección en salida (verde + rótulo), o preparada si la salida no muestra letra
   const liveIdx=br.live?idx:-99, liveSec=br.live&&cur?cur.sec:-99;
   center.querySelectorAll('.proy-thumb').forEach(t=>{
     const on=+t.dataset.i===liveIdx;
-    t.classList.toggle('live',on&&mode==='letra');
+    t.classList.toggle('live',on&&mode==='letra'&&open);
+    t.classList.toggle('ready',on&&mode==='letra'&&!open);
     t.classList.toggle('prep',on&&mode!=='letra');
-    t.querySelector('.proy-thumb-tag').textContent=on?(mode==='letra'?'En pantalla':'Preparada'):'';
+    t.querySelector('.proy-thumb-tag').textContent=on?(mode==='letra'?liveTxt:'Preparada'):'';
   });
-  center.querySelectorAll('.proy-sec[data-sec]').forEach(b=>b.classList.toggle('active',+b.dataset.sec===liveSec));
+  center.querySelectorAll('.proy-sec[data-sec]').forEach(b=>{ b.classList.toggle('active',+b.dataset.sec===liveSec&&open); b.classList.toggle('ready',+b.dataset.sec===liveSec&&!open); });
+  // la lista también distingue "En pantalla" de "Lista" según haya proyector
+  if(_proyListaOpen!==open){ _proyListaOpen=open; _proyRenderLista(); }
   _proyFitPreviews(outEl);
   _proyFitPreviews(center);
-  if(br.live&&document.getElementById('proy-grid')?.dataset.size!=='narrow') center.querySelector('.proy-thumb.live, .proy-thumb.prep')?.scrollIntoView({block:'nearest'});
+  if(br.live&&document.getElementById('proy-grid')?.dataset.size!=='narrow') center.querySelector('.proy-thumb.live, .proy-thumb.ready, .proy-thumb.prep')?.scrollIntoView({block:'nearest'});
 }
 
 // ═══════════════════════════════════════════════
