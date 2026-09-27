@@ -3688,6 +3688,115 @@ function renderCancionerViewer(){
 }
 
 // ═══════════════════════════════════════════════
+// PROYECCIÓN — armado de diapositivas (solo letra)
+// Convierte una canción en diapositivas para proyectar. Trabaja sobre copias: nunca
+// modifica la canción guardada. La letra sale de _letraDeSeccion (la misma del
+// Cancionero en modo letra). Los cortes se deciden midiendo el texto ya dibujado en un
+// escenario del tamaño real de la pantalla: si no entra, pasa a otra diapositiva.
+// ═══════════════════════════════════════════════
+
+// Solo estas formas se consideran indicación (no letra): (5 VECES), (x2), (2x), (bis),
+// (se repite…). Cualquier otro texto entre paréntesis se proyecta, porque puede ser letra.
+const _PROY_ANOT=/^\(\s*(?:\d+\s*(?:x|veces?)|x\s*\d+|bis|(?:se\s+)?repite(?:\s+[^)]*)?)\s*\)$/i;
+const _PROY_FONT="'Helvetica Neue', Helvetica, Arial, 'Segoe UI', Roboto, sans-serif"; // del sistema: no depende de Internet
+const _PROY_FONT_K=0.075;   // tamaño de letra = 7,5% del alto de la pantalla
+const _PROY_MIN_PX=34;      // piso legible para proyectores chicos (800×600)
+const _PROY_SHRINK=0.8;     // un renglón que no entra solo puede achicarse hasta el 80%, no más
+const _PROY_MAX_VLINES=8;   // tope de líneas visibles por diapositiva (contando las que bajan de renglón), para leer cómodo
+
+// Secciones de una canción listas para proyectar: {tipo,label,lines,notes,instrumental}.
+// lines conserva los renglones en blanco entre estrofas ('') para decidir dónde cortar.
+function _proySecciones(c){
+  const secs=_getSecciones(c);
+  const totals={}; secs.forEach(s=>totals[s.tipo]=(totals[s.tipo]||0)+1);
+  const counts={};
+  return secs.map(s=>{
+    counts[s.tipo]=(counts[s.tipo]||0)+1;
+    const label=(_SEC_TIPO_LABEL[s.tipo]||s.tipo||'Sección')+(totals[s.tipo]>1?' '+counts[s.tipo]:'');
+    const notes=[], lines=[];
+    for(const raw of _letraDeSeccion({tipo:s.tipo,contenido:s.contenido||''}).split('\n')){
+      const l=raw.trim();
+      if(_PROY_ANOT.test(l)) notes.push(l); else lines.push(l);
+    }
+    while(lines.length&&!lines[0]) lines.shift();
+    while(lines.length&&!lines[lines.length-1]) lines.pop();
+    return {tipo:s.tipo, label, lines, notes, instrumental:!lines.some(l=>l)};
+  });
+}
+
+// Estilos del escenario y de una diapositiva (los usan la medición, el proyector y las vistas previas).
+function _proyFontPx(h){ return Math.max(_PROY_MIN_PX, Math.round(h*_PROY_FONT_K)); }
+function _proyTextHTML(lines, h, scale=1){
+  const fs=Math.round(_proyFontPx(h)*scale);
+  // cada renglón de la letra es un bloque: si no entra y baja de línea, sus partes quedan
+  // juntas (interlineado 1.15) y separadas del renglón siguiente (.3em), así se lee la frase
+  return `<div class="proy-text" style="font-family:${_PROY_FONT};font-weight:600;font-size:${fs}px;line-height:1.15;color:#fff;text-align:center;text-wrap:balance;overflow-wrap:anywhere;text-shadow:0 2px 12px rgba(0,0,0,.55)">${
+    lines.map(l=>l?`<div style="margin:.15em 0">${_printEsc(l)}</div>`:`<div style="height:.45em"></div>`).join('')}</div>`;
+}
+// área útil: la pantalla menos un margen de seguridad (los proyectores suelen recortar bordes)
+function _proyBox(w,h){ return {padX:Math.round(w*0.07), padY:Math.round(h*0.08), innerW:w-2*Math.round(w*0.07), innerH:h-2*Math.round(h*0.08)}; }
+
+// Arma las diapositivas de una canción para una pantalla de w×h.
+// doc: documento donde medir (el del proyector cuando está abierto, así mide con su tamaño real).
+// Devuelve {slides:[{sec,label,lines,scale,overflow,part,parts}], secciones, warnings}.
+function _proySlides(c, w, h, doc=document){
+  const secciones=_proySecciones(c);
+  const box=_proyBox(w,h);
+  const meter=doc.createElement('div');
+  meter.style.cssText=`position:fixed;left:-99999px;top:0;width:${box.innerW}px;visibility:hidden`;
+  doc.body.appendChild(meter);
+  const fits=(lines,scale=1)=>{
+    meter.innerHTML=_proyTextHTML(lines,h,scale);
+    const el=meter.firstElementChild;
+    if(el.offsetHeight>box.innerH) return false;
+    const lh=parseFloat(getComputedStyle(el).fontSize)*1.15;
+    const vlines=[...el.children].reduce((n,d)=>n+(d.textContent?Math.round(d.offsetHeight/lh):0),0);
+    return vlines<=_PROY_MAX_VLINES || lines.filter(Boolean).length===1;
+  };
+  const trimBlank=a=>{ a=a.slice(); while(a.length&&!a[0]) a.shift(); while(a.length&&!a[a.length-1]) a.pop(); return a; };
+  const slides=[], warnings=[];
+  try{
+    secciones.forEach((sec,si)=>{
+      if(sec.instrumental) return;
+      // estrofas internas (separadas por renglón en blanco)
+      const stanzas=[]; let cur=[];
+      for(const l of sec.lines){ if(l) cur.push(l); else if(cur.length){ stanzas.push(cur); cur=[]; } }
+      if(cur.length) stanzas.push(cur);
+      const out=[];  // [{lines,scale}]
+      let acc=[];
+      const flush=()=>{ if(acc.length){ out.push({lines:trimBlank(acc),scale:1}); acc=[]; } };
+      for(const st of stanzas){
+        const joined=acc.length?[...acc,'',...st]:st;
+        if(fits(joined)){ acc=joined; continue; }
+        flush();
+        if(fits(st)){ acc=st.slice(); continue; }
+        // la estrofa sola no entra: partes parejas de renglones completos (8 → 4+4, 7 → 4+3)
+        let k=2, parts;
+        for(;k<=st.length;k++){
+          parts=[]; const size=Math.ceil(st.length/k);
+          for(let i=0;i<st.length;i+=size) parts.push(st.slice(i,i+size));
+          if(parts.every(p=>fits(p))) break;
+        }
+        if(k>st.length) parts=st.map(l=>[l]); // ni de a un renglón: cada renglón solo
+        for(const p of parts){
+          if(fits(p)){ out.push({lines:p,scale:1}); continue; }
+          // un único renglón que no entra ni solo: achicar un poco, nunca por debajo del 80%
+          let sc=0.95; while(sc>_PROY_SHRINK&&!fits(p,sc)) sc=Math.round((sc-0.05)*100)/100;
+          // ni achicado entra: queda marcada y nunca se proyecta cortada (la salida pasa a negro)
+          const overflow=!fits(p,sc);
+          if(overflow) warnings.push(`"${c.name}" · ${sec.label}: un renglón no entra en ${w}×${h} ni achicado`);
+          out.push({lines:p,scale:Math.max(sc,_PROY_SHRINK),overflow});
+        }
+      }
+      flush();
+      out.forEach((o,i)=>slides.push({sec:si,label:sec.label,lines:o.lines,scale:o.scale,overflow:!!o.overflow,part:i+1,parts:out.length}));
+    });
+  } finally { meter.remove(); }
+  if(!slides.length) warnings.push(`"${c.name}" no tiene letra para proyectar`);
+  return {slides, secciones, warnings};
+}
+
+// ═══════════════════════════════════════════════
 // LISTAS ARMADAS
 // ═══════════════════════════════════════════════
 function openListaModal(id=null){
